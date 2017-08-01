@@ -186,3 +186,28 @@ void ExplodeAtPoint(VoxelObject *obj,int x, int y, int z,int radius){
         obj->modificationStartY = obj->modificationStartY <0? starty:obj->modificationStartY<starty?obj->modificationStartY:starty;
         obj->modificationEndY = obj->modificationEndY <0? endy-1:obj->modificationEndY>endy-1?obj->modificationEndY:endy-1;
 }
+
+
+//VoxelPointerArrayUnion(int [total size of pointer], int [number of pointers to join], VoxelObject **[Pointers],int [pointerSize],...)
+VoxelObject **VoxelPointerArrayUnion(int totalPointerSize,int numberOfPointers,...){
+	va_list args;
+	//Inicializa os argumentos variáveis (total =  numberOfPointers)
+	va_start(args,numberOfPointers);
+    printf("Number of pointers to join: %d\n",numberOfPointers);
+	VoxelObject **p = (VoxelObject **)calloc(totalPointerSize,sizeof(VoxelObject *));
+	
+	int pos = 0;
+	for(int i=0; i<numberOfPointers; i++){
+		VoxelObject ** current = va_arg(args,VoxelObject **);
+		int pointerSize = va_arg(args,int);
+        printf("Pointer %d size: %d\n",i,pointerSize);
+		for(int j=0; j<pointerSize; j++){
+			p[pos] = current[j];
+			pos++;
+		}
+	}
+    va_end(args);
+    printf(">Joined pointers successfully\n");
+    
+	return p;
+}

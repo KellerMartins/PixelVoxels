@@ -78,9 +78,13 @@ int main(int argc, char *argv[]){
 	if(LoadMap("Maps/Test.txt")<0){
 		quit = 1;
 	}
-	
-	
+
 	VoxelObject *threadObjs1[1] = {&model};
+	//Cria um ponteiro de ponteiros contendo os elementos de outros ponteiros de ponteiros. 
+	//VoxelPointerArrayUnion(int [total size of pointer],int [number of pointers to join], VoxelObject **[Pointers],int [pointerSize],...)
+	VoxelObject **SceneShadowCasters = VoxelPointerArrayUnion(Pool[0].numberOfInstances+1,2, &(*threadObjs1),1, &(*Pool[0].objs),Pool[0].numberOfInstances );
+	int SceneShadowCastersSize = Pool[0].numberOfInstances+1;
+	
 
     if(SDL_Init(SDL_INIT_EVERYTHING) < 0 && IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG)
 	{
@@ -125,7 +129,7 @@ int main(int argc, char *argv[]){
 					pthread_create(&tID1, NULL, &RenderThread, (void *)&renderArguments1);
 
 					pthread_t tID2;
-					RendererArguments renderArguments2 = {pix,&(*scene),sceneObjectCount,&(*threadObjs1),1};
+					RendererArguments renderArguments2 = {pix,&(*scene),sceneObjectCount,&(*SceneShadowCasters),SceneShadowCastersSize};
 					pthread_create(&tID2, NULL, &RenderThread, (void *)&renderArguments2);
 
 					pthread_join(tID1, NULL);
@@ -252,7 +256,8 @@ int main(int argc, char *argv[]){
 	FreeScene();
 
 	FreePool();
-
+	free(SceneShadowCasters);
+	
 	SDL_DestroyTexture(render);
 	SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow( window );

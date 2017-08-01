@@ -17,7 +17,7 @@ typedef struct Voxel
 int LoadMap(char mapPath[]);
 void FreeScene();
 
-Voxel newVoxel(FILE * file,unsigned int sizey, int subsample);
+Voxel newVoxel(FILE * file,unsigned int sizey);
 VoxelObject FromMagica(FILE* file);
 void FreeObject(VoxelObject *obj);
 

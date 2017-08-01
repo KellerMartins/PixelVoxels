@@ -57,7 +57,7 @@ void FreeScene(){
     sceneObjectCount = 0;
 }
 
-Voxel newVoxel(FILE * file,unsigned int sizey, int subsample)
+Voxel newVoxel(FILE * file,unsigned int sizey)
 {
     Voxel data;
     //data.x = (byte)(subsample ? stream.ReadByte() / 2 : stream.ReadByte());
@@ -119,7 +119,6 @@ VoxelObject FromMagica(FILE* file)
     if (strcmp("VOX ",magic) == 0)
     {
         int sizex = 0, sizey = 0, sizez = 0;
-        int subsample = 0;
         char *chunkId = (char *)calloc(5,sizeof(char));
 
         while (ftell(file)<fileLength)
@@ -147,8 +146,6 @@ VoxelObject FromMagica(FILE* file)
 
                 printf("Dimension: %d %d %d\n",obj.dimension[0],obj.dimension[1],obj.dimension[2]);
 
-                if (sizex > 32 || sizey > 32) subsample = 1;
-
                 fseek(file,(chunkSize - 4 * 3),SEEK_CUR);
             }
             else if (strcmp(chunkId,"XYZI") == 0)
@@ -156,12 +153,11 @@ VoxelObject FromMagica(FILE* file)
                 // XYZI contains n voxels
                 fread(&numVoxels,sizeof(int),1,file);
                 printf("Number of Voxels: %d\n",numVoxels);
-                int div = (subsample ? 2 : 1);
  
                 // each voxel has x, y, z and color index values
                 voxelData = (Voxel*) calloc(numVoxels, sizeof(Voxel));
                 for (int i = 0; i < numVoxels; i++){
-                    voxelData[i] = newVoxel(file,obj.dimension[1], 0);
+                    voxelData[i] = newVoxel(file,obj.dimension[1]);
                 }
             }
             else if (strcmp(chunkId,"RGBA") == 0)

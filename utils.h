@@ -1,7 +1,7 @@
 #ifndef UTILS_H
 #define UTILS_H
 #include <math.h>
-#include <stdarg.h>
+
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \

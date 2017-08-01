@@ -278,7 +278,7 @@ void CalculateRendered(VoxelObject *obj){
     int x,y,z,index,dir,occ;
     for(z = obj->modificationStartZ; z<=obj->modificationEndZ ;z++){
         obj->render[z][0]=0;
-        for(y = 1; y<obj->dimension[1]; y++){
+        for(y = 0; y<obj->dimension[1]; y++){
             for(x = 0; x<obj->dimension[0]; x++){
                 occ = 0;
                 index = (x + z * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);
@@ -346,6 +346,16 @@ void CalculateRendered(VoxelObject *obj){
                     }
                     if(z==0 && (y!=0 && x<obj->maxDimension-1)){
                         dir = (x + z * obj->maxDimension + (y+1) * obj->maxDimension * obj->maxDimension);//0 -1 0
+                        if(obj->model[dir]!=0){
+                            occ = 7;
+                        }
+                        dir = ((x+1) + (z) * obj->maxDimension + (y) * obj->maxDimension * obj->maxDimension);//1 0 0
+                        if(obj->model[dir]!=0){
+                            occ += 5;
+                        }
+                    }
+                    if(y==0 && (z+1< obj->maxDimension && x+1<obj->maxDimension)){
+                        dir = (x + (z+1) * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);//0 -1 0
                         if(obj->model[dir]!=0){
                             occ = 7;
                         }
@@ -449,7 +459,7 @@ void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
     int starty = shadowCaster->position.y-obj->position.y;
     int startz = (shadowCaster->position.z-obj->position.z)+shadowCaster->dimension[2];
 
-    int endx = startx + shadowCaster->dimension[0];
+    int endx = startx + shadowCaster->dimension[0]+1;
     int endy = starty + shadowCaster->dimension[1];
     if(endx<0 || endy<0 ){
         return;
@@ -471,7 +481,7 @@ void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
 
             for(z=startz; z>=0; z--){
                 index = (x + z * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);
-                if(x>=startx && x<endx && y>=starty && y<endy && z<=startz){
+                //if(x>=startx && x<endx && y>=starty && y<endy && z<=startz){
                     if(obj->model[index]==0){
                         if(shadowCaster->enabled == 0){
                             continue;
@@ -494,9 +504,9 @@ void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
                             finalShadow = obj->model[dir]==0? shadowVal:1;
                         }
                     }
-                }else{
-                    finalShadow = 1;
-                }
+                //}else{
+                //    finalShadow = 1;
+                //}
                 //lighting => 8bits  [1-Empty] [3-Occlusion][2-Direct Light(2), Ambient(1) and self shadow(0)] [1-Shadow from caster]
                 obj->lighting[index] = (unsigned char)(((obj->lighting[index]>>1)<<1) | (finalShadow&1));
             }

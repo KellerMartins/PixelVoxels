@@ -49,6 +49,9 @@ int LoadMap(char mapPath[]){
 }
 
 void FreeScene(){
+    if(scene==NULL)
+        return;
+
     for(int i=0; i<sceneObjectCount; i++){
         FreeObject(scene[i]);
         free(scene[i]);
@@ -225,12 +228,9 @@ VoxelObject FromMagica(FILE* file)
         printf("Magic word: %s\n",magic);
     }
     free(magic);
-    if(voxelData != NULL){
-        free(voxelData);
-    }
-    if(colors != NULL){
-        free(colors);
-    }
+    free(voxelData);
+    free(colors);
+
     if(data == NULL){
         data = (unsigned char *)calloc(1,sizeof(unsigned char));
     }
@@ -272,16 +272,11 @@ VoxelObject FromMagica(FILE* file)
 }
 
 void FreeObject(VoxelObject *obj){
-    if(obj->model!=NULL)
-        free(obj->model);
-
-    if(obj->lighting!=NULL)
-        free(obj->lighting);
+    free(obj->model);
+    free(obj->lighting);
 
     for(int i=0;i<obj->maxDimension;i++){
-        if(obj->render[i]!=NULL)
-            free(obj->render[i]);
+        free(obj->render[i]);
     }
-    if(obj->render!=NULL)
-        free(obj->render);
+     free(obj->render);
 }

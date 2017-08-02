@@ -77,16 +77,6 @@ void PostProcess(Pixel* screen){
     int y,x,cp = 0;
     char outlineBrightness = 64;
 
-    /*Vector3 sample_sphere[16] = { (Vector3){ 0.5381, 0.1856,-0.4319}, (Vector3){ 0.1379, 0.2486, 0.4430},
-                                        (Vector3){ 0.3371, 0.5679,-0.0057}, (Vector3){-0.6999,-0.0451,-0.0019},
-                                        (Vector3){ 0.0689,-0.1598,-0.8547}, (Vector3){ 0.0560, 0.0069,-0.1843},
-                                        (Vector3){-0.0146, 0.1402, 0.0762}, (Vector3){ 0.0100,-0.1924,-0.0344},
-                                        (Vector3){-0.3577,-0.5301,-0.4358}, (Vector3){-0.3169, 0.1063, 0.0158},
-                                        (Vector3){ 0.0103,-0.5869, 0.0046}, (Vector3){-0.0897,-0.4940, 0.3287},
-                                        (Vector3){ 0.7119,-0.0154,-0.0918}, (Vector3){-0.0533, 0.0596,-0.5411},
-                                        (Vector3){ 0.0352,-0.0631, 0.5460}, (Vector3){-0.4776, 0.2847,-0.0271}
-                                };*/
-
     for(y=0;y<GAME_SCREEN_HEIGHT;y++){
         for(x=0;x<GAME_SCREEN_WIDTH;x++){
             if(screen[cp].a!=0 && cp%GAME_SCREEN_WIDTH !=0 && cp%GAME_SCREEN_WIDTH !=GAME_SCREEN_WIDTH-1){
@@ -481,57 +471,31 @@ void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
 
             for(z=startz; z>=0; z--){
                 index = (x + z * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);
-                //if(x>=startx && x<endx && y>=starty && y<endy && z<=startz){
-                    if(obj->model[index]==0){
-                        if(shadowCaster->enabled == 0){
-                            continue;
-                        }
+                if(obj->model[index]==0){
+                    if(shadowCaster->enabled == 0){
+                        continue;
+                    }
 
-                        cx = x-shadowCaster->position.x+obj->position.x;
-                        cy = y-shadowCaster->position.y+obj->position.y;
-                        cz = z-shadowCaster->position.z+obj->position.z;
+                    cx = x-shadowCaster->position.x+obj->position.x;
+                    cy = y-shadowCaster->position.y+obj->position.y;
+                    cz = z-shadowCaster->position.z+obj->position.z;
 
-                        if(cx>-1 && cx<shadowCaster->maxDimension && cy>-1 && cy<shadowCaster->maxDimension && cz>-1 && cz<shadowCaster->maxDimension){
-                            o = (cx + cz * shadowCaster->maxDimension + cy * shadowCaster->maxDimension * shadowCaster->maxDimension);
-                            if(shadowCaster->model[o]!=0){
-                                shadowVal = 0;
-                            }
-                        }
-                        finalShadow = shadowVal;
-                    }else{
-                        if(z<obj->dimension[2]-1){ //Up
-                            dir = (x + (z+1) * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);
-                            finalShadow = obj->model[dir]==0? shadowVal:1;
+                    if(cx>-1 && cx<shadowCaster->maxDimension && cy>-1 && cy<shadowCaster->maxDimension && cz>-1 && cz<shadowCaster->maxDimension){
+                        o = (cx + cz * shadowCaster->maxDimension + cy * shadowCaster->maxDimension * shadowCaster->maxDimension);
+                        if(shadowCaster->model[o]!=0){
+                            shadowVal = 0;
                         }
                     }
-                //}else{
-                //    finalShadow = 1;
-                //}
+                    finalShadow = shadowVal;
+                }else{
+                    if(z<obj->dimension[2]-1){ //Up
+                        dir = (x + (z+1) * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);
+                        finalShadow = obj->model[dir]==0? shadowVal:1;
+                    }
+                }
                 //lighting => 8bits  [1-Empty] [3-Occlusion][2-Direct Light(2), Ambient(1) and self shadow(0)] [1-Shadow from caster]
                 obj->lighting[index] = (unsigned char)(((obj->lighting[index]>>1)<<1) | (finalShadow&1));
             }
         }
     }
-}
-
-unsigned short int intersection(int minx, int miny, int minz, int maxx, int maxy, int maxz,Ray ray) {
-    int j;
-    float bmin[3] = {minx-0.57735,miny-0.57735,minz-0.57735};
-	float bmax[3] = {maxx+0.57735,maxy+0.57735,maxz+0.57735};
-
-    float t1 = (bmin[0] - ray.origin[0])*ray.inverseDirection[0];
-    float t2 = (bmax[0] - ray.origin[0])*ray.inverseDirection[0];
- 
-    float tmin = min(t1, t2);
-    float tmax = max(t1, t2);
- 
-    for (j = 1;j < 3; ++j) {
-        t1 = (bmin[j] - ray.origin[j])*ray.inverseDirection[j];
-        t2 = (bmax[j] - ray.origin[j])*ray.inverseDirection[j];
- 
-        tmin = max(tmin, min(t1, t2));
-        tmax = min(tmax, max(t1, t2));
-    }
- 
-    return tmax > max(tmin, 0.0)? 1:0;
 }

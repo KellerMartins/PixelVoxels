@@ -85,6 +85,4 @@ void CalculateRendered(VoxelObject *obj);
 void CalculateLighting(VoxelObject *obj);
 void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster);
 void RenderObject(Pixel* screen,VoxelObject *obj);
-
-unsigned short int intersection(int minx, int miny, int minz, int maxx, int maxy, int maxz,Ray ray);
 #endif

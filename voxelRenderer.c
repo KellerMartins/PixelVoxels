@@ -481,32 +481,28 @@ void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
 
             for(z=startz; z>=0; z--){
                 index = (x + z * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);
-                //if(x>=startx && x<endx && y>=starty && y<endy && z<=startz){
-                    if(obj->model[index]==0){
-                        if(shadowCaster->enabled == 0){
-                            continue;
-                        }
+                if(obj->model[index]==0){
+                    if(shadowCaster->enabled == 0){
+                        continue;
+                    }
 
-                        cx = x-shadowCaster->position.x+obj->position.x;
-                        cy = y-shadowCaster->position.y+obj->position.y;
-                        cz = z-shadowCaster->position.z+obj->position.z;
+                    cx = x-shadowCaster->position.x+obj->position.x;
+                    cy = y-shadowCaster->position.y+obj->position.y;
+                    cz = z-shadowCaster->position.z+obj->position.z;
 
-                        if(cx>-1 && cx<shadowCaster->maxDimension && cy>-1 && cy<shadowCaster->maxDimension && cz>-1 && cz<shadowCaster->maxDimension){
-                            o = (cx + cz * shadowCaster->maxDimension + cy * shadowCaster->maxDimension * shadowCaster->maxDimension);
-                            if(shadowCaster->model[o]!=0){
-                                shadowVal = 0;
-                            }
-                        }
-                        finalShadow = shadowVal;
-                    }else{
-                        if(z<obj->dimension[2]-1){ //Up
-                            dir = (x + (z+1) * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);
-                            finalShadow = obj->model[dir]==0? shadowVal:1;
+                    if(cx>-1 && cx<shadowCaster->maxDimension && cy>-1 && cy<shadowCaster->maxDimension && cz>-1 && cz<shadowCaster->maxDimension){
+                        o = (cx + cz * shadowCaster->maxDimension + cy * shadowCaster->maxDimension * shadowCaster->maxDimension);
+                        if(shadowCaster->model[o]!=0){
+                            shadowVal = 0;
                         }
                     }
-                //}else{
-                //    finalShadow = 1;
-                //}
+                    finalShadow = shadowVal;
+                }else{
+                    if(z<obj->dimension[2]-1){ //Up
+                        dir = (x + (z+1) * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);
+                        finalShadow = obj->model[dir]==0? shadowVal:1;
+                    }
+                }
                 //lighting => 8bits  [1-Empty] [3-Occlusion][2-Direct Light(2), Ambient(1) and self shadow(0)] [1-Shadow from caster]
                 obj->lighting[index] = (unsigned char)(((obj->lighting[index]>>1)<<1) | (finalShadow&1));
             }

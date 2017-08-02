@@ -1,9 +1,10 @@
 # PixelVoxels
-
 Pixel art voxel rendering experiment.
-Currently supports:
+#### Currently supports:
 * .vox File loading
 * Multiple voxel objects renderization in pixel art
-* Multithreaded rendering
+    * Multithreaded rendering
+    * Outline post process
+    * Self shadowing and shadow casting
 * Collision with destruction
 * Object pool

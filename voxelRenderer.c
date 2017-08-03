@@ -354,6 +354,9 @@ void CalculateRendered(VoxelObject *obj){
                             occ += 5;
                         }
                     }
+                    if(y == obj->dimension[1]){
+                        occ = 5;
+                    }
                     if(occ!=12){
                         obj->render[z][0]++;
                         obj->render[z][(int)obj->render[z][0]] = (unsigned short int)(( y << 7) | x);
@@ -494,7 +497,7 @@ void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
                     }
                 }
                 //lighting => 8bits  [1-Empty] [3-Occlusion][2-Direct Light(2), Ambient(1) and self shadow(0)] [1-Shadow from caster]
-                obj->lighting[index] = (unsigned char)(((obj->lighting[index]>>1)<<1) | (finalShadow&1));
+                obj->lighting[index] = (unsigned char)(obj->lighting[index] & (0b11111110  | (finalShadow&1)));
             }
         }
     }

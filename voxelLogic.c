@@ -85,20 +85,22 @@ void PoolUpdate(){
         for(int o=0;o<Pool[p].numberOfInstances;o++){
 
             if(Pool[p].objs[o]->enabled){
-                if(Pool[p].objs[o]->timeOfActivation+2000 <= SDL_GetTicks()){
+                if(Pool[p].type == BULLET){
+                    if(Pool[p].objs[o]->timeOfActivation+2000 <= SDL_GetTicks()){
 
-                    Pool[p].objs[o]->enabled = 0;
-                    
-                    memcpy(Pool[p].objs[o]->model,Pool[p].baseObj.model,maxSize*sizeof(unsigned char));
-                    memcpy(Pool[p].objs[o]->lighting,Pool[p].baseObj.lighting, maxSize*sizeof(unsigned char ));
+                        Pool[p].objs[o]->enabled = 0;
+                        
+                        memcpy(Pool[p].objs[o]->model,Pool[p].baseObj.model,maxSize*sizeof(unsigned char));
+                        memcpy(Pool[p].objs[o]->lighting,Pool[p].baseObj.lighting, maxSize*sizeof(unsigned char ));
 
-                   for(int j=0;j<Pool[p].baseObj.maxDimension;j++){
-                        memcpy(Pool[p].objs[o]->render[j],Pool[p].baseObj.render[j],maxXY*sizeof(unsigned short int ));
+                    for(int j=0;j<Pool[p].baseObj.maxDimension;j++){
+                            memcpy(Pool[p].objs[o]->render[j],Pool[p].baseObj.render[j],maxXY*sizeof(unsigned short int ));
+                        }
+
+                        Pool[p].avaliableInstances++;  
+                    }else{
+                        MoveObject(Pool[p].objs[o],250,0,0,&(*scene),sceneObjectCount,4,8);
                     }
-
-                    Pool[p].avaliableInstances++;  
-                }else{
-                    MoveObject(Pool[p].objs[o],250,0,0,&(*scene),sceneObjectCount,4,8);
                 }
             }
         }

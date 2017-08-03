@@ -7,7 +7,7 @@
 #include "voxelRenderer.h"
 #include "voxelLoader.h"
 #include "utils.h"
-#define POOLSIZE 1
+#define POOLSIZE 2
 
 typedef enum ObjectType{PLAYER,BULLET,ENEMY}ObjectType;
 

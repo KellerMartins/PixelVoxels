@@ -66,7 +66,7 @@ int main(int argc, char *argv[]){
 	
 	fpscounter = (char*)calloc(50,sizeof(char));
 
-	//Carrega modelo da nave
+	//Carrega modelo da nave do player
 	VoxelObject model;
 	FILE *voxelFile = fopen("Models/Spaceship.vox","rb");
 	model = FromMagica(voxelFile);
@@ -79,7 +79,16 @@ int main(int argc, char *argv[]){
 	fclose(voxelFile);
 	//Define o número de instâncias disponíveis
 	Pool[0].numberOfInstances = 60;
+	Pool[0].type = BULLET;
 
+	//Carrega modelo da nave inimiga no pool
+	voxelFile = fopen("Models/SpaceshipEnemy.vox","rb");
+	Pool[1].baseObj = FromMagica(voxelFile);
+	fclose(voxelFile);
+	//Define o número de instâncias disponíveis
+	Pool[1].numberOfInstances = 5;
+	Pool[1].type = ENEMY;
+	
 	//Inicializa o pool
 	InitializePool(Pool);
 	//Inicializa rand
@@ -95,8 +104,11 @@ int main(int argc, char *argv[]){
 
 	//Cria um ponteiro de ponteiros contendo os elementos de outros ponteiros de ponteiros. 
 	//VoxelPointerArrayUnion(int [total size of pointer],int [number of pointers to join], VoxelObject **[Pointers],int [pointerSize],...)
-	VoxelObject **SceneShadowCasters = VoxelPointerArrayUnion(Pool[0].numberOfInstances+1,2, &(*threadObjs1),1, &(*Pool[0].objs),Pool[0].numberOfInstances );
-	int SceneShadowCastersSize = Pool[0].numberOfInstances+1;
+	VoxelObject **SceneShadowCasters = VoxelPointerArrayUnion(Pool[0].numberOfInstances+Pool[1].numberOfInstances+1,3, &(*threadObjs1),1, &(*Pool[0].objs),Pool[0].numberOfInstances,&(*Pool[1].objs),Pool[1].numberOfInstances );
+	int SceneShadowCastersSize = Pool[0].numberOfInstances+1+Pool[1].numberOfInstances;
+
+	VoxelObject **EnemiesAndBullets = VoxelPointerArrayUnion(Pool[0].numberOfInstances+Pool[1].numberOfInstances,2, &(*Pool[0].objs),Pool[0].numberOfInstances, &(*Pool[1].objs),Pool[1].numberOfInstances );
+	int EnemiesAndBulletsSize = Pool[0].numberOfInstances+Pool[1].numberOfInstances;
 	
 	if(IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG){
 		SDLIMGFailed = 1;
@@ -146,16 +158,16 @@ int main(int argc, char *argv[]){
 			ClearScreen(pix);
 
 			pthread_t tID1;
-			RendererArguments renderArguments1 = {pix,&(*threadObjs1),1,NULL,0};
+			RendererArguments renderArguments1 = {pix,threadObjs1,1,NULL,0};
 			pthread_create(&tID1, NULL, &RenderThread, (void *)&renderArguments1);
 
 			pthread_t tID2;
-			RendererArguments renderArguments2 = {pix,&(*scene),sceneObjectCount,&(*SceneShadowCasters),SceneShadowCastersSize};
+			RendererArguments renderArguments2 = {pix,scene,sceneObjectCount,SceneShadowCasters,SceneShadowCastersSize};
 			pthread_create(&tID2, NULL, &RenderThread, (void *)&renderArguments2);
 
 			pthread_join(tID1, NULL);
 
-			RendererArguments renderArguments3 = {pix,&(*Pool[0].objs),Pool[0].numberOfInstances,NULL,0};
+			RendererArguments renderArguments3 = {pix,EnemiesAndBullets,EnemiesAndBulletsSize,NULL,0};
 			pthread_create(&tID1, NULL, &RenderThread, (void *)&renderArguments3);
 
 			pthread_join(tID2, NULL);
@@ -208,28 +220,28 @@ int main(int argc, char *argv[]){
 
 		if (keyboard_current[SDL_SCANCODE_W])
 		{
-			MoveCamera(0,-100,0);
+			MoveCamera(0,-50,0);
 		}
 		else if (keyboard_current[SDL_SCANCODE_S])
 		{
-			MoveCamera(0,100,0);
+			MoveCamera(0,50,0);
 		}
 
 		if (keyboard_current[SDL_SCANCODE_D])
 		{
-			MoveCamera(100,0,0);
+			MoveCamera(50,0,0);
 		}
 		else if (keyboard_current[SDL_SCANCODE_A])
 		{
-			MoveCamera(-100,0,0);
+			MoveCamera(-50,0,0);
 		}
 		if (keyboard_current[SDL_SCANCODE_E])
 		{
-			MoveCamera(0,0,100);
+			MoveCamera(0,0,50);
 		}
 		else if (keyboard_current[SDL_SCANCODE_Q])
 		{
-			MoveCamera(0,0,-100);
+			MoveCamera(0,0,-50);
 		}
 		if (keyboard_current[SDL_SCANCODE_ESCAPE])
 		{

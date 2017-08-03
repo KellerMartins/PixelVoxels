@@ -222,7 +222,16 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
             }
             py = ((y)+roundf(obj->position.y-cameraPosition.y)+(125-nz))*2;
             px = ((x)+roundf(obj->position.x-cameraPosition.x)+(125-nz))*2;
-            for(j=0;j<4;j++){
+
+            int numberOfPixels = 3;
+            if(z-1>=0){
+                numberOfPixels = voxColors[obj->model[(x) + (z-1) * obj->maxDimension + (y) * obj->maxDimension * obj->maxDimension]]==0? 5:numberOfPixels;
+            }
+            if(x-1>=0){
+                numberOfPixels = voxColors[obj->model[(x-1) + (z) * obj->maxDimension + (y) * obj->maxDimension * obj->maxDimension]]==0? 4:numberOfPixels;
+            }
+
+            for(j=0;j<=numberOfPixels;j++){
                 switch (j){
                     case 0:
                         sumx = 0;
@@ -240,6 +249,14 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
                         sumx = 0;
                         sumy = 1;
                     break;
+                    case 4:
+                        sumx = 1;
+                        sumy = 2;
+                    break;
+                    case 5:
+                        sumx = 0;
+                        sumy = 2;
+                    break;
                 }
                 cp = sumy+py;
                 cp = cp>=GAME_SCREEN_HEIGHT? -1: (cp<0? -1:cp*GAME_SCREEN_WIDTH);
@@ -252,8 +269,14 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
                     continue;
                 }
 
-                if(zp+1 >= screen[cp].a){
+                if(zp+1 > screen[cp].a){
                     screen[cp] = p;
+                    if(j==4 || j==5){
+                        screen[cp].a = screen[cp].a>0? screen[cp].a-1:0;
+                        screen[cp].r*=shadow;
+                        screen[cp].g*=shadow;
+                        screen[cp].b*=shadow;
+                    }
                 }
             }
             

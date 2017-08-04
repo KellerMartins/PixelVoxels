@@ -164,7 +164,7 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
 
     unsigned int color = 0;
 
-    int x,y,z,i,j,px,py,zp,startz,aux,nv,cp = 0,colorIndex,sumx = 0,sumy = 0,edgeIndx,lightIndx;
+    int x,y,z,i,j,px,py,zp,startz,aux,nv,cp = 0,colorIndex,sumx = 0,sumy = 0,edgeIndx,lightIndx,numberOfPixels;
 
     const float edge = 0.80;
     const float base = 0.75;
@@ -192,6 +192,7 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
 
         nv = obj->render[z][0];
         for(i = 1; i <= nv ; i++){
+            numberOfPixels = 4;
 
             x = (obj->render[z][i] & 127);
             y = ((obj->render[z][i]>>7) & 127);
@@ -223,37 +224,30 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
             py = ((y)+roundf(obj->position.y-cameraPosition.y)+(125-nz))*2;
             px = ((x)+roundf(obj->position.x-cameraPosition.x)+(125-nz))*2;
 
-            int numberOfPixels = 3;
-            if(z-1>=0){
-                numberOfPixels = voxColors[obj->model[(x) + (z-1) * obj->maxDimension + (y) * obj->maxDimension * obj->maxDimension]]==0? 5:numberOfPixels;
-            }
-            if(x-1>=0){
-                numberOfPixels = voxColors[obj->model[(x-1) + (z) * obj->maxDimension + (y) * obj->maxDimension * obj->maxDimension]]==0? 4:numberOfPixels;
-            }
-
-            for(j=0;j<=numberOfPixels;j++){
+            numberOfPixels = 4+(obj->render[z][i]>>14);
+            for(j=1;j<=numberOfPixels;j++){
                 switch (j){
-                    case 0:
+                    case 1:
                         sumx = 0;
                         sumy = 0;
-                    break;
-                    case 1:
-                        sumx = 1;
-                        sumy = 1;
                     break;
                     case 2:
                         sumx = 1;
-                        sumy = 0;
+                        sumy = 1;
                     break;
                     case 3:
+                        sumx = 1;
+                        sumy = 0;
+                    break;
+                    case 4:
                         sumx = 0;
                         sumy = 1;
                     break;
-                    case 4:
+                    case 5:
                         sumx = 1;
                         sumy = 2;
                     break;
-                    case 5:
+                    case 6:
                         sumx = 0;
                         sumy = 2;
                     break;
@@ -271,7 +265,7 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
 
                 if(zp+1 > screen[cp].a){
                     screen[cp] = p;
-                    if(j==4 || j==5){
+                    if(j==5 || j==6){
                         screen[cp].a = screen[cp].a>0? screen[cp].a-1:0;
                         screen[cp].r*=shadow;
                         screen[cp].g*=shadow;
@@ -288,22 +282,28 @@ void CalculateRendered(VoxelObject *obj){
     if(obj->modificationStartZ <0 || obj->modificationEndZ <0 ){
         return;
     }
-    int x,y,z,index,dir,occ;
+    int x,y,z,index,dir,occ,occPixel,occUp,occLeft,occDown;
     for(z = obj->modificationStartZ; z<=obj->modificationEndZ ;z++){
         obj->render[z][0]=0;
         for(y = 0; y<obj->dimension[1]; y++){
             for(x = 0; x<obj->dimension[0]; x++){
                 occ = 0;
+                occUp   = 0;
+                occLeft = 0;
+                occDown = 0;
+
                 index = (x + z * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);
                 if(obj->model[index]!=0){
                     if(x!=0 && x<obj->maxDimension-1 && y!=0 && y<obj->maxDimension-1 && z!=0 && z<obj->maxDimension-1){
                         dir = (x + (z+1) * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);//0 0 1
                         if(obj->model[dir]!=0){
-                            occ++;
+                            occ++; 
+                            occUp=1;
                         }
                         dir = (x + (z-1) * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);//0 0 -1
                         if(obj->model[dir]!=0){
                             occ++;
+                            occDown = 1;
                         }
                         dir = (x + z * obj->maxDimension + (y+1) * obj->maxDimension * obj->maxDimension);//0 1 0
                         if(obj->model[dir]!=0){
@@ -320,6 +320,7 @@ void CalculateRendered(VoxelObject *obj){
                         dir = ( (x-1) + z * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);//1 0 0 
                         if(obj->model[dir]!=0){
                             occ++;
+                            occLeft = 1;
                         }
                         dir = ((x-1) + z * obj->maxDimension + (y-1) * obj->maxDimension * obj->maxDimension);//-1 -1 0
                         if(obj->model[dir]!=0){
@@ -381,8 +382,24 @@ void CalculateRendered(VoxelObject *obj){
                         occ = 5;
                     }
                     if(occ!=12){
+                        if((occLeft && occDown && occUp) || y == obj->dimension[1]-1){
+                            occPixel = 0;
+                        }else{
+                            if(!occLeft && !occDown && occUp){
+                                occPixel = 1;
+                            }
+                            if(!occLeft && occDown && occUp){
+                                occPixel = 1;
+                            }
+                            if(!occDown && !occUp && x>0){
+                                occPixel = 2;
+                            }
+                            if(occLeft && !occDown){
+                                occPixel = 2;
+                            }
+                        }
                         obj->render[z][0]++;
-                        obj->render[z][(int)obj->render[z][0]] = (unsigned short int)(( y << 7) | x);
+                        obj->render[z][(int)obj->render[z][0]] = (unsigned short int)((occPixel<<14) | ( y << 7) | x);
                     }
                 }
             }

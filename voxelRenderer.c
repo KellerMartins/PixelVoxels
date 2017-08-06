@@ -239,7 +239,7 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
             py = ((ry)+roundf(obj->position.y-cameraPosition.y)+(125-nz))*2;
             px = ((rx)+roundf(obj->position.x-cameraPosition.x)+(125-nz))*2;
 
-            numberOfPixels = 4;//+(obj->render[z][i]>>14);
+            numberOfPixels = 4+(obj->render[z][i]>>14);
             for(j=1;j<=numberOfPixels;j++){
                 switch (j){
                     case 1:
@@ -541,8 +541,8 @@ void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
                     if(shadowCaster->enabled == 0){
                         continue;
                     }
-                    cx = x-shadowCaster->position.x;
-                    cy = y-shadowCaster->position.y;
+                    cx = x-shadowCaster->position.x+obj->position.x;
+                    cy = y-shadowCaster->position.y+obj->position.y;
                     if(useRotZ){
                         rx = ( ((cx-(shadowCaster->dimension[0]*0.5)) *cosz - (cy-(shadowCaster->dimension[1]*0.5)) *sinz) + shadowCaster->dimension[0]*0.5);
                         ry = ( ((cx-(shadowCaster->dimension[0]*0.5)) *sinz + (cy-(shadowCaster->dimension[1]*0.5)) *cosz) + shadowCaster->dimension[1]*0.5);
@@ -551,8 +551,8 @@ void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
                         ry = cy;
                     }
 
-                    cx = rx+obj->position.x;
-                    cy = ry+obj->position.y;
+                    cx = rx;
+                    cy = ry;
                     cz = z-shadowCaster->position.z+obj->position.z;
 
                     if(cx>-1 && cx<shadowCaster->maxDimension && cy>-1 && cy<shadowCaster->maxDimension && cz>-1 && cz<shadowCaster->maxDimension){

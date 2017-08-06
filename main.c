@@ -219,11 +219,11 @@ int main(int argc, char *argv[]){
 
 		if (keyboard_current[SDL_SCANCODE_KP_0])
 		{
-			model.rotation.z-=10;
+			model.rotation.z-=1;
 		}
 		else if (keyboard_current[SDL_SCANCODE_KP_1])
 		{
-			model.rotation.z+=10;
+			model.rotation.z+=1;
 		}
 		
 

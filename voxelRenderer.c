@@ -164,8 +164,15 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
 
     unsigned int color = 0;
 
-    int x,y,z,i,j,px,py,zp,startz,aux,nv,cp = 0,colorIndex,sumx = 0,sumy = 0,edgeIndx,lightIndx,numberOfPixels;
+    int x,y,z,i,j,px,py,zp,startz,aux,nv,cp = 0,colorIndex,sumx = 0,sumy = 0,edgeIndx,lightIndx,numberOfPixels,useRotZ = 0;
 
+    float rx,ry;
+    float sinz,cosz;
+    if(abs(obj->rotation.z)> 0.001 ){
+        useRotZ = 1;
+        sinz = sin(obj->rotation.z * 0.01745329251);
+        cosz = cos(obj->rotation.z * 0.01745329251);
+    }
     const float edge = 0.80;
     const float base = 0.75;
     const float crease = 0.70;
@@ -194,8 +201,16 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
         for(i = 1; i <= nv ; i++){
             numberOfPixels = 4;
 
+            
             x = (obj->render[z][i] & 127);
             y = ((obj->render[z][i]>>7) & 127);
+            if(useRotZ){
+                rx = ( ((x-(obj->dimension[0]*0.5)) *cosz - (y-(obj->dimension[1]*0.5)) *sinz) + obj->dimension[0]*0.5);
+                ry = ( ((x-(obj->dimension[0]*0.5)) *sinz + (y-(obj->dimension[1]*0.5)) *cosz) + obj->dimension[1]*0.5);
+            }else{
+                rx = x;
+                ry = y;
+            }
 
             colorIndex = (x) + ((z)) * obj->maxDimension + (y) * obj->maxDimension * obj->maxDimension;
             color = voxColors[obj->model[colorIndex]];
@@ -221,10 +236,10 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
                 color = (color>>8);
                 p.b = ((color & 255)*illuminFrac)>255? 255:((color & 255)*illuminFrac);
             }
-            py = ((y)+roundf(obj->position.y-cameraPosition.y)+(125-nz))*2;
-            px = ((x)+roundf(obj->position.x-cameraPosition.x)+(125-nz))*2;
+            py = ((ry)+roundf(obj->position.y-cameraPosition.y)+(125-nz))*2;
+            px = ((rx)+roundf(obj->position.x-cameraPosition.x)+(125-nz))*2;
 
-            numberOfPixels = 4+(obj->render[z][i]>>14);
+            numberOfPixels = 4;//+(obj->render[z][i]>>14);
             for(j=1;j<=numberOfPixels;j++){
                 switch (j){
                     case 1:
@@ -486,7 +501,15 @@ void CalculateLighting(VoxelObject *obj){
 
 void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
 
-    int y,x,z,o,index,dir,cx,cy,cz;
+    int y,x,z,o,index,dir,cx,cy,cz,useRotZ = 0;
+
+    float rx,ry;
+    float sinz,cosz;
+    if(abs(shadowCaster->rotation.z)> 0.001 ){
+        useRotZ = 1;
+        sinz = sin((360-shadowCaster->rotation.z) * 0.01745329251);
+        cosz = cos((360-shadowCaster->rotation.z) * 0.01745329251);
+    }
 
     int startx = shadowCaster->position.x-obj->position.x;
     int starty = shadowCaster->position.y-obj->position.y;
@@ -518,9 +541,18 @@ void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
                     if(shadowCaster->enabled == 0){
                         continue;
                     }
+                    cx = x-shadowCaster->position.x;
+                    cy = y-shadowCaster->position.y;
+                    if(useRotZ){
+                        rx = ( ((cx-(shadowCaster->dimension[0]*0.5)) *cosz - (cy-(shadowCaster->dimension[1]*0.5)) *sinz) + shadowCaster->dimension[0]*0.5);
+                        ry = ( ((cx-(shadowCaster->dimension[0]*0.5)) *sinz + (cy-(shadowCaster->dimension[1]*0.5)) *cosz) + shadowCaster->dimension[1]*0.5);
+                    }else{
+                        rx = cx;
+                        ry = cy;
+                    }
 
-                    cx = x-shadowCaster->position.x+obj->position.x;
-                    cy = y-shadowCaster->position.y+obj->position.y;
+                    cx = rx+obj->position.x;
+                    cy = ry+obj->position.y;
                     cz = z-shadowCaster->position.z+obj->position.z;
 
                     if(cx>-1 && cx<shadowCaster->maxDimension && cy>-1 && cy<shadowCaster->maxDimension && cz>-1 && cz<shadowCaster->maxDimension){

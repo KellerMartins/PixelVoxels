@@ -216,6 +216,15 @@ int main(int argc, char *argv[]){
 		{
 			MoveObject(&model,0,0,-100,&(*scene),sceneObjectCount,5,2);
 		}
+
+		if (keyboard_current[SDL_SCANCODE_KP_0])
+		{
+			model.rotation.z-=10;
+		}
+		else if (keyboard_current[SDL_SCANCODE_KP_1])
+		{
+			model.rotation.z+=10;
+		}
 		
 
 		if (keyboard_current[SDL_SCANCODE_W])

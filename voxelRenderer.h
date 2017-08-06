@@ -47,6 +47,7 @@ typedef struct VoxelObject{
 	unsigned int voxelsRemaining;
 
 	Vector3 position;
+	Vector3 rotation;
 }VoxelObject;
 
 typedef struct ObjectList{

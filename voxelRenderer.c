@@ -167,7 +167,7 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
     int x,y,z,i,j,px,py,zp,startz,aux,nv,cp = 0,colorIndex,sumx = 0,sumy = 0,edgeIndx,lightIndx,numberOfPixels,useRotZ = 0;
     int halfDimX = obj->dimension[0]/2.0, halfDimY = obj->dimension[1]/2.0;
     float rx,ry;
-    float sinz,cosz;
+    float sinz = 0,cosz = 1;
     if(abs(obj->rotation.z)> 0.001 ){
         useRotZ = 1;
         sinz = sin(obj->rotation.z * 0.01745329251);
@@ -296,7 +296,7 @@ void CalculateRendered(VoxelObject *obj){
     if(obj->modificationStartZ <0 || obj->modificationEndZ <0 ){
         return;
     }
-    int x,y,z,index,dir,occ,occPixel,occUp,occLeft,occDown;
+    int x,y,z,index,dir,occ,occPixel = 0,occUp,occLeft,occDown;
     for(z = obj->modificationStartZ; z<=obj->modificationEndZ ;z++){
         obj->render[z][0]=0;
         for(y = 0; y<obj->dimension[1]; y++){
@@ -504,7 +504,7 @@ void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
     int halfDimX = shadowCaster->dimension[0]/2.0, halfDimY = shadowCaster->dimension[1]/2.0;
 
     float rx,ry;
-    float sinz,cosz;
+    float sinz = 1,cosz = 0;
 
     if(abs(shadowCaster->rotation.z)> 0.001 ){
         RotZMode = 0;
@@ -531,7 +531,7 @@ void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
     endx = endx>obj->dimension[0]? obj->dimension[0] : endx;
     endy = endy>obj->dimension[1]? obj->dimension[1] : endy;
         
-    int shadowVal,finalShadow;
+    int shadowVal,finalShadow = 1;
     for(y=starty; y<endy; y++){
         for(x=startx; x<endx; x++){
 

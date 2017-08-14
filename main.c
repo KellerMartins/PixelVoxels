@@ -97,7 +97,6 @@ int main(int argc, char *argv[]){
 
 	if(LoadMap("Maps/Test.txt")<0){
 		ErrorOcurred = 1;
-		goto EndProgram;
 	}
 
 	VoxelObject *threadObjs1[1] = {&model};
@@ -109,6 +108,10 @@ int main(int argc, char *argv[]){
 
 	VoxelObject **EnemiesAndBullets = VoxelPointerArrayUnion(Pool[0].numberOfInstances+Pool[1].numberOfInstances,2, &(*Pool[0].objs),Pool[0].numberOfInstances, &(*Pool[1].objs),Pool[1].numberOfInstances );
 	int EnemiesAndBulletsSize = Pool[0].numberOfInstances+Pool[1].numberOfInstances;
+
+	if(ErrorOcurred){
+		goto EndProgram;
+	}
 	
 	if(IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG){
 		SDLIMGFailed = 1;

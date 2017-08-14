@@ -167,8 +167,8 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
     int x,y,z,i,j,px,py,zp,startz,aux,nv,cp = 0,colorIndex,sumx = 0,sumy = 0,edgeIndx,lightIndx,numberOfPixels,useRotZ = 0;
     int halfDimX = obj->dimension[0]/2.0, halfDimY = obj->dimension[1]/2.0;
     float rx,ry;
-    float sinz = 0,cosz = 1;
-    if(abs(obj->rotation.z)> 0.001 ){
+    float sinz,cosz;
+    if(obj->rotation.z > 0.1f ){
         useRotZ = 1;
         sinz = sin(obj->rotation.z * 0.01745329251);
         cosz = cos(obj->rotation.z * 0.01745329251);

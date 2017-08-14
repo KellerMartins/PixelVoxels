@@ -195,38 +195,38 @@ int main(int argc, char *argv[]){
 
 		if (keyboard_current[SDL_SCANCODE_UP])
 		{
-			MoveObject(&model,0,-100,0,&(*scene),sceneObjectCount,5,2);
+			MoveObject(&model,0,-100,0,0,0,0,&(*scene),sceneObjectCount,5,2);
 		}
 		else if (keyboard_current[SDL_SCANCODE_DOWN])
 		{
-			MoveObject(&model,0,100,0,&(*scene),sceneObjectCount,5,2);
+			MoveObject(&model,0,100,0,0,0,0,&(*scene),sceneObjectCount,5,2);
 		}
 
 		if (keyboard_current[SDL_SCANCODE_RIGHT])
 		{
-			MoveObject(&model,100,0,0,&(*scene),sceneObjectCount,5,2);
+			MoveObject(&model,100,0,0,0,0,0,&(*scene),sceneObjectCount,5,2);
 		}
 		else if (keyboard_current[SDL_SCANCODE_LEFT])
 		{
-			MoveObject(&model,-100,0,0,&(*scene),sceneObjectCount,5,2);
+			MoveObject(&model,-100,0,0,0,0,0,&(*scene),sceneObjectCount,5,2);
 		}
 
 		if (keyboard_current[SDL_SCANCODE_RSHIFT])
 		{
-			MoveObject(&model,0,0,100,&(*scene),sceneObjectCount,5,2);
+			MoveObject(&model,0,0,100,0,0,0,&(*scene),sceneObjectCount,5,2);
 		}
 		else if (keyboard_current[SDL_SCANCODE_RCTRL])
 		{
-			MoveObject(&model,0,0,-100,&(*scene),sceneObjectCount,5,2);
+			MoveObject(&model,0,0,-100,0,0,0,&(*scene),sceneObjectCount,5,2);
 		}
 
 		if (keyboard_current[SDL_SCANCODE_KP_0])
 		{
-			model.rotation.z-=1;
+			MoveObject(&model,0,0,0,0,0,100,&(*scene),sceneObjectCount,5,2);
 		}
 		else if (keyboard_current[SDL_SCANCODE_KP_1])
 		{
-			model.rotation.z+=1;
+			MoveObject(&model,0,0,0,0,0,-100,&(*scene),sceneObjectCount,5,2);
 		}
 		
 

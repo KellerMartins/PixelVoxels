@@ -99,7 +99,7 @@ void PoolUpdate(){
 
                         Pool[p].avaliableInstances++;  
                     }else{
-                        MoveObject(Pool[p].objs[o],250,0,0,&(*scene),sceneObjectCount,4,8);
+                        MoveObject(Pool[p].objs[o],250,0,0,0,0,0,&(*scene),sceneObjectCount,4,8);
                     }
                 }
             }
@@ -107,20 +107,43 @@ void PoolUpdate(){
     }
 }
 
-void MoveObject(VoxelObject *obj,float x, float y, float z,	VoxelObject **col,const int numCol,int damageColRadius,int damageObjRadius){
+void MoveObject(VoxelObject *obj,float mx, float my, float mz,float rx, float ry, float rz,	VoxelObject **col,const int numCol,int damageColRadius,int damageObjRadius){
     //printf("%0.0f Per cent\n",100*(obj->voxelsRemaining/(float)obj->voxelCount));
-    int o,i,iz,nv,px,py,pz,index = 0,allowMovement = 1;
+    int o,i,iz,nv,px,py,pz,index = 0,allowMovement = 1,useRotZ = 0;
+    int halfDimX = obj->dimension[0]/2.0, halfDimY = obj->dimension[1]/2.0;
     double moveDelta = deltaTime>0.02? 0.02:deltaTime;
+
+    float rotx,roty;
+    float sinz,cosz;
+    if(abs(obj->rotation.z+(rz*moveDelta))> 0.1 ){
+        useRotZ = 1;
+        sinz = sin((obj->rotation.z+(rz*moveDelta)) * 0.01745329251);
+        cosz = cos((obj->rotation.z+(rz*moveDelta)) * 0.01745329251);
+    }
+
     if(col!=NULL){
         for(iz=obj->maxDimension-1;iz>=0;iz--){
-            pz = iz+(obj->position.z+(z*moveDelta));
+            pz = iz+(obj->position.z+(mz*moveDelta));
             nv = obj->render[iz][0];
             for(i = nv; i > 0  ; i--){
                 if(allowMovement == 0){
                     break;
                 }
-                px = ((obj->render[iz][i] & 127)+(obj->position.x+(x*moveDelta)));
-                py = (((obj->render[iz][i]>>7) & 127)+(obj->position.y+(y*moveDelta)));
+
+                if(useRotZ){
+
+                    px = (obj->render[iz][i] & 127);
+                    py = ((obj->render[iz][i]>>7) & 127);
+
+                    rotx = ( ((px-halfDimX) *cosz - (py-halfDimY) *sinz) + halfDimX);
+                    roty = ( ((px-halfDimX) *sinz + (py-halfDimY) *cosz) + halfDimY);
+
+                    px = rotx + (obj->position.x+(mx*moveDelta));
+                    py = roty + (obj->position.y+(my*moveDelta));
+                }else{
+                    px = ((obj->render[iz][i] & 127)+(obj->position.x+(mx*moveDelta)));
+                    py = (((obj->render[iz][i]>>7) & 127)+(obj->position.y+(my*moveDelta)));
+                }
 
                 for(o=0; o<numCol; o++){
                     
@@ -138,14 +161,38 @@ void MoveObject(VoxelObject *obj,float x, float y, float z,	VoxelObject **col,co
         }
     }
     if(allowMovement){
-        obj->position.x +=(x*moveDelta);
-        obj->position.y +=(y*moveDelta);
-        obj->position.z +=(z*moveDelta);
+        obj->position.x +=(mx*moveDelta);
+        obj->position.y +=(my*moveDelta);
+        obj->position.z +=(mz*moveDelta);
+
+        obj->rotation.x +=(rx*moveDelta);
+        obj->rotation.y +=(ry*moveDelta);
+        obj->rotation.z +=(rz*moveDelta);
     }
 }
 
 void ExplodeAtPoint(VoxelObject *obj,int x, int y, int z,int radius){
-    int px = x-obj->position.x,py = y-obj->position.y,pz = z-obj->position.z;
+    int halfDimX = obj->dimension[0]/2.0, halfDimY = obj->dimension[1]/2.0;
+    int px,py,pz;
+    if(abs(-obj->rotation.z)> 0.1 ){
+        float sinz = sin((-obj->rotation.z) * 0.01745329251);
+        float cosz = cos((-obj->rotation.z) * 0.01745329251);
+
+        px = x - obj->position.x;
+        py = y - obj->position.y;
+
+        float rotx = ( ((px-halfDimX) *cosz - (py-halfDimY) *sinz) + halfDimX);
+        float roty = ( ((px-halfDimX) *sinz + (py-halfDimY) *cosz) + halfDimY);
+
+        px = rotx;
+        py = roty;
+    }else{
+        px = x-obj->position.x;
+        py = y-obj->position.y; 
+    }
+    pz = z-obj->position.z;
+
+
     int startx,endx,starty,endy,startz,endz;
     int ix,iy,iz,index;
         startx = px-radius <0? 0:px-radius;

@@ -16,7 +16,7 @@ LIBRARY_PATHS = -L $(PD)\SDL2\SDL2_MinGW_32Bits\lib
 # -Wl,-subsystem,windows gets rid of the console window
 # -Wl,-subsystem,windows
 # -fopenmp enables openmp support
-COMPILER_FLAGS = -Wall -ffast-math -O3
+COMPILER_FLAGS = -Wall -ffast-math 
 
 #LINKER_FLAGS specifies the libraries we're linking against -lglew32  -mwindows
 LINKER_FLAGS = -lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lpthread

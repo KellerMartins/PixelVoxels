@@ -241,6 +241,7 @@ VoxelObject FromMagica(FILE* file)
     obj.lighting = lighting;
     obj.render = render;
     obj.position = (Vector3){0,0,0};
+    obj.rotation = (Vector3){0,0,0};
     obj.numberOfPoints = numPoints;
     obj.points = points;
 

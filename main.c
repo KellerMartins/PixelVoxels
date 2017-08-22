@@ -220,15 +220,32 @@ int main(int argc, char *argv[]){
 			MoveObject(&model,0,0,-100,0,0,0,&(*scene),sceneObjectCount,5,2);
 		}
 
-		if (keyboard_current[SDL_SCANCODE_KP_0])
+		if (keyboard_current[SDL_SCANCODE_KP_4])
 		{
 			MoveObject(&model,0,0,0,0,0,100,&(*scene),sceneObjectCount,5,2);
 		}
-		else if (keyboard_current[SDL_SCANCODE_KP_1])
+		else if (keyboard_current[SDL_SCANCODE_KP_6])
 		{
 			MoveObject(&model,0,0,0,0,0,-100,&(*scene),sceneObjectCount,5,2);
 		}
 		
+		if (keyboard_current[SDL_SCANCODE_KP_8])
+		{
+			MoveObject(&model,0,0,0,0,100,0,&(*scene),sceneObjectCount,5,2);
+		}
+		else if (keyboard_current[SDL_SCANCODE_KP_2])
+		{
+			MoveObject(&model,0,0,0,0,-100,0,&(*scene),sceneObjectCount,5,2);
+		}
+
+		if (keyboard_current[SDL_SCANCODE_KP_1])
+		{
+			MoveObject(&model,0,0,0,100,0,0,&(*scene),sceneObjectCount,5,2);
+		}
+		else if (keyboard_current[SDL_SCANCODE_KP_3])
+		{
+			MoveObject(&model,0,0,0,-100,0,0,&(*scene),sceneObjectCount,5,2);
+		}
 
 		if (keyboard_current[SDL_SCANCODE_W])
 		{

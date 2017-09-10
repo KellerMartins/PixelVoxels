@@ -74,11 +74,23 @@ void FillBackground(Pixel* screen){
 }
 
 void PostProcess(Pixel* screen){
-    int y,x,cp = 0;
+    int y,x,shift,tmp,cp = 0;
     char outlineBrightness = 64;
+    float vignettePower = 0.5;
+    float chrAberrationPower = 5;
+    float chrAberrationAmount = 0;
+    int useOcclusion = 0;
+    float occlusionAttenuation = 1.25;
+
+    int tScreenR = 0;
+    int tScreenG = 0;
+    int tScreenB = 0;
+    int tScreenA = 0;
 
     for(y=0;y<GAME_SCREEN_HEIGHT;y++){
         for(x=0;x<GAME_SCREEN_WIDTH;x++){
+
+            //Outline effect
             if(screen[cp].a!=0 && cp%GAME_SCREEN_WIDTH !=0 && cp%GAME_SCREEN_WIDTH !=GAME_SCREEN_WIDTH-1){
                 if(cp-1>0){
                     if((screen[cp-1].a-screen[cp].a)<-10 || screen[cp-1].a == 0){
@@ -109,6 +121,86 @@ void PostProcess(Pixel* screen){
                     }
                 }
             }
+
+            tScreenR = screen[cp].r;
+            tScreenG = screen[cp].g;
+            tScreenB = screen[cp].b;
+            tScreenA = screen[cp].a;
+
+            //Vignette effect
+            Vector3 dist = {((x /(float)GAME_SCREEN_WIDTH) - 0.5f) * 1.25f,
+                            ((y/(float)GAME_SCREEN_HEIGHT) - 0.5f) * 1.25f,0};
+            float vignette = clamp(1 - dot(dist, dist)*vignettePower,0,1);
+            
+            //Scanline
+            if(chrAberrationAmount>0){
+                vignette *= y%3==0 ? 0.95f:1;
+            }
+
+            tScreenR *= vignette;
+            tScreenG *= vignette;
+            tScreenB *= vignette;
+
+            //Red Chromatic aberration
+            if(chrAberrationAmount>0){
+                shift = clamp(dot(dist, dist)*chrAberrationPower,0,1)*chrAberrationAmount;
+                if(cp>shift){
+                    tmp =  tScreenR;
+                    tScreenR = screen[cp-shift].r;
+                    screen[cp-shift].r = tmp;
+                }
+            }
+
+
+            //Screen Space Ambient Occlusion
+            if(useOcclusion){
+                int px,py;
+
+                px = x;
+                py = y; 
+
+                int radius = 3;
+                int startx,endx,starty,endy;
+                int ix,iy,index,total = 0;
+                float occ = 0;
+
+                startx = px-radius <0? 0:px-radius;
+                starty = py-radius <0? 0:py-radius;
+
+                endx = px+radius>=GAME_SCREEN_WIDTH? GAME_SCREEN_WIDTH-1 : px+radius;
+                endy = py+radius>=GAME_SCREEN_HEIGHT? GAME_SCREEN_HEIGHT-1 : py+radius;
+
+                for(ix = startx;ix<endx;ix++){
+                    for(iy = starty;iy<endy;iy++){
+                        if( ((ix-px)*(ix-px))+((iy-py)*(iy-py)) <= (radius*radius)){
+                            total++;
+                            index = ix+(iy*GAME_SCREEN_WIDTH);
+                            if(screen[index].a <= tScreenA){
+                                occ +=screen[index].a+128;
+                            }
+                            if(screen[index].a == 0 || tScreenA-screen[index].a == 1){
+                                occ+=128;
+                            }
+                        }
+                    }   
+                }
+
+                occ /=(float)total; 
+                occ += (128-tScreenA);
+                occ /=255;
+                occ = clamp(occ*occlusionAttenuation,0,1);
+
+                tScreenR *= occ;
+                tScreenG *= occ;
+                tScreenB *= occ;
+            }
+
+            //Transfer changes to the pixel in the screen
+            screen[cp].r = tScreenR;
+            screen[cp].g = tScreenG;
+            screen[cp].b = tScreenB;
+
+
             cp++;
         }
     }
@@ -244,7 +336,7 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
                 obj->lighting[colorIndex] |= 1;
                 edgeIndx = obj->lighting[colorIndex]>>3;
                 
-                lightVal = lightIndx == 1? 1:(lightIndx == 2? sunlight:shadow);
+                lightVal = lightIndx == 1? 1:(lightIndx >= 2? sunlight:shadow);
                 edgeVal = (edgeIndx<5? edge:edgeIndx == 5? base:crease);
 
                 illuminFrac = lightVal * edgeVal;
@@ -519,7 +611,51 @@ void CalculateLighting(VoxelObject *obj){
             }
         }
     }
+    /*for(y=obj->modificationStartY; y<obj->modificationEndY; y++){
+        for(x=obj->modificationStartX; x<obj->modificationEndX; x++){
+            for(z=zstart; z>=0; z--){
+                index = (x + z * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);
+                if(obj->model[index]==0){
+                    PointLight(obj,x,y,z,3);
+                }
+            }
+        }
+    }*/
 }
+
+/*void PointLight(VoxelObject *obj,int x, int y, int z,int radius){
+    int px,py,pz;
+
+    px = x;
+    py = y; 
+    pz = z;
+
+    int startx,endx,starty,endy,startz,endz;
+    int ix,iy,iz,index,total = 0;
+
+    startx = px-radius <0? 0:px-radius;
+    starty = py-radius <0? 0:py-radius;
+    startz = pz-radius <0? 0:pz-radius;
+
+    endx = px+radius>obj->maxDimension? obj->maxDimension : px+radius;
+    endy = py+radius>obj->maxDimension? obj->maxDimension : py+radius;
+    endz = pz+radius>obj->maxDimension? obj->maxDimension : pz+radius;
+
+    for(ix = startx;ix<endx;ix++){
+        for(iy = starty;iy<endy;iy++){
+            for(iz = startz;iz<endz;iz++){
+                int randRadius = radius+0;//(rand() % 3);
+                if( ((ix-px)*(ix-px))+((iy-py)*(iy-py))+((iz-pz)*(iz-pz)) <= (randRadius*randRadius)){
+                    total++;
+                    index = (ix) + (iz) * obj->maxDimension + (iy) * obj->maxDimension * obj->maxDimension;
+
+                    //lighting => 8bits  [2-Empty] [3-Occlusion][2-Point Light(3) Direct Light(2), Ambient(1) and self shadow(0)] [1-Shadow from caster]
+                    obj->lighting[index] = (unsigned char)(obj->lighting[index] | 0b00000110);
+                }
+            }
+        }   
+    }
+}*/
 
 void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
 

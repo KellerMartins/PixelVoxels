@@ -81,7 +81,7 @@ void FillBackground(Pixel* screen);
 void PostProcess(Pixel* screen);
 
 void *RenderThread(void *arguments);
-
+//void PointLight(VoxelObject *obj,int x, int y, int z,int radius);
 void CalculateRendered(VoxelObject *obj);
 void CalculateLighting(VoxelObject *obj);
 void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster);

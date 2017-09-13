@@ -4,6 +4,8 @@
 #include <pthread.h>
 #include <time.h>
 
+#include "soloud_c.h"
+
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 //#include <SDL2/SDL_opengl.h>
@@ -33,6 +35,9 @@ float framespersecond;
 char *fpscounter;
 void fpsinit();
 void fpsthink();
+
+//Sound engine variable
+Soloud *soloud;
 
 //Tempo entre frames, calculado ao fim do loop principal
 double deltaTime = 0;
@@ -113,6 +118,9 @@ int main(int argc, char *argv[]){
 		goto EndProgram;
 	}
 	
+	soloud = Soloud_create();
+	Soloud_initEx(soloud,SOLOUD_CLIP_ROUNDOFF | SOLOUD_ENABLE_VISUALIZATION, SOLOUD_AUTO, SOLOUD_AUTO, SOLOUD_AUTO, SOLOUD_AUTO);
+
 	if(IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG){
 		SDLIMGFailed = 1;
 		ErrorOcurred = 1;
@@ -320,11 +328,15 @@ int main(int argc, char *argv[]){
 
 	FreePool();
 	free(SceneShadowCasters);
+
+	if(soloud!=NULL){
+		Soloud_deinit(soloud);
+		Soloud_destroy(soloud);
+	}
 	
 	if(render!=NULL)
 		SDL_DestroyTexture(render);
 			
-	
 	if(renderer!=NULL)
 		SDL_DestroyRenderer(renderer);
 

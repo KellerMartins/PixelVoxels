@@ -1,9 +1,180 @@
 #include "voxelLogic.h"
 
+extern int ExitGame;
 extern VoxelObject **scene;
 extern int sceneObjectCount;
 extern PoolObject Pool[POOLSIZE];
 extern double deltaTime;
+
+//Array com o estado do teclado (atual e do frame anterior)
+const Uint8 *keyboard_current = NULL;
+Uint8 *keyboard_last;
+SDL_Event event;
+VoxelObject model;
+
+void InputStart(){
+    //Inicializa as vars do teclado
+	keyboard_last = (Uint8 *)calloc(284,sizeof(Uint8));
+	keyboard_current = SDL_GetKeyboardState(NULL);
+}
+
+void InputUpdate(){
+    //Atualiza o vetor de input e gerencia eventos
+    if(keyboard_current!=NULL){
+        memcpy(keyboard_last,keyboard_current,284*sizeof(Uint8));
+    }
+    while (SDL_PollEvent(&event)) {
+        switch (event.type)
+        {
+            case SDL_QUIT:
+                ExitGame = 1;
+                break;
+        }
+    }
+}
+
+void FreeInput(){
+    free(keyboard_last);
+}
+
+void GameStart(){
+//[ Define objetos do pool e o inicializa ]
+    
+    FILE *voxelFile;
+
+    //Carrega modelo da nave do player
+	
+	voxelFile = fopen("Models/Spaceship.vox","rb");
+	model = FromMagica(voxelFile);
+	model.position = (Vector3){0,30,20};
+	fclose(voxelFile);
+
+    //Carrega modelo da bala no pool
+	voxelFile = fopen("Models/Bullet.vox","rb");
+	Pool[0].baseObj = FromMagica(voxelFile);
+	fclose(voxelFile);
+	//Define o número de instâncias disponíveis
+	Pool[0].numberOfInstances = 60;
+	Pool[0].type = BULLET;
+
+	//Carrega modelo da nave inimiga no pool
+	voxelFile = fopen("Models/SpaceshipEnemy.vox","rb");
+	Pool[1].baseObj = FromMagica(voxelFile);
+	fclose(voxelFile);
+	//Define o número de instâncias disponíveis
+	Pool[1].numberOfInstances = 5;
+	Pool[1].type = ENEMY;
+	
+	//Inicializa o pool
+	InitializePool(Pool);
+}
+
+void GameUpdate(){
+
+    //Movimento da nave
+    if (GetKey(SDL_SCANCODE_UP))
+    {
+        MoveObject(&model,0,-100,0,0,0,0,&(*scene),sceneObjectCount,5,2);
+    }
+    else if (GetKey(SDL_SCANCODE_DOWN))
+    {
+        MoveObject(&model,0,100,0,0,0,0,&(*scene),sceneObjectCount,5,2);
+    }
+
+    if (GetKey(SDL_SCANCODE_RIGHT))
+    {
+        MoveObject(&model,100,0,0,0,0,0,&(*scene),sceneObjectCount,5,2);
+    }
+    else if (GetKey(SDL_SCANCODE_LEFT))
+    {
+        MoveObject(&model,-100,0,0,0,0,0,&(*scene),sceneObjectCount,5,2);
+    }
+
+    if (GetKey(SDL_SCANCODE_RSHIFT))
+    {
+        MoveObject(&model,0,0,100,0,0,0,&(*scene),sceneObjectCount,5,2);
+    }
+    else if (GetKey(SDL_SCANCODE_RCTRL))
+    {
+        MoveObject(&model,0,0,-100,0,0,0,&(*scene),sceneObjectCount,5,2);
+    }
+   
+    //Tiro da nave
+    if (GetKeyDown(SDL_SCANCODE_SPACE))
+    {
+        if(model.numberOfPoints !=0){
+            for(int i=0;i<model.numberOfPoints;i++){
+                if(model.points[i].type == 0){
+                    Spawn(0,model.points[i].x+model.position.x,model.points[i].y+model.position.y,model.points[i].z+model.position.z);
+                }
+            }
+        }
+    }
+    
+    //Movimento da camera
+    if (GetKey(SDL_SCANCODE_W))
+    {
+        MoveCamera(0,-50,0);
+    }
+    else if (GetKey(SDL_SCANCODE_S))
+    {
+        MoveCamera(0,50,0);
+    }
+    if (GetKey(SDL_SCANCODE_D))
+    {
+        MoveCamera(50,0,0);
+    }
+    else if (GetKey(SDL_SCANCODE_A))
+    {
+        MoveCamera(-50,0,0);
+    }
+    if (GetKey(SDL_SCANCODE_E))
+    {
+        MoveCamera(0,0,50);
+    }
+    else if (GetKey(SDL_SCANCODE_Q))
+    {
+        MoveCamera(0,0,-50);
+    }
+    if (GetKey(SDL_SCANCODE_ESCAPE))
+    {
+        ExitGame = 1;
+    }
+}
+
+//--------------------------------------------------------- Pool de objetos ----------------------------------------------------------------------------
+
+void PoolUpdate(){
+    int maxSize,maxXY;
+    for(int p=0;p<POOLSIZE;p++){
+
+        maxSize = pow(Pool[p].baseObj.maxDimension,3);
+        maxXY = pow(Pool[p].baseObj.maxDimension,2);
+
+        for(int o=0;o<Pool[p].numberOfInstances;o++){
+
+            if(Pool[p].objs[o]->enabled){
+                if(Pool[p].type == BULLET){
+                    if(Pool[p].objs[o]->timeOfActivation+2000 <= SDL_GetTicks()){
+
+                        Pool[p].objs[o]->enabled = 0;
+                        
+                        memcpy(Pool[p].objs[o]->model,Pool[p].baseObj.model,maxSize*sizeof(unsigned char));
+                        memcpy(Pool[p].objs[o]->lighting,Pool[p].baseObj.lighting, maxSize*sizeof(unsigned char ));
+
+                    for(int j=0;j<Pool[p].baseObj.maxDimension;j++){
+                            memcpy(Pool[p].objs[o]->render[j],Pool[p].baseObj.render[j],maxXY*sizeof(unsigned short int ));
+                        }
+
+                        Pool[p].avaliableInstances++;  
+                    }else{
+                        MoveObject(Pool[p].objs[o],250,0,0,0,0,0,&(*scene),sceneObjectCount,4,8);
+                    }
+                }
+            }
+        }
+    }
+}
 
 void InitializePool(){
     int maxSize,maxXY;
@@ -44,6 +215,7 @@ void InitializePool(){
     }
     printf(">Pool Sucessfully initialized.\n\n");
 }
+
 void FreePool(){
     for(int p=0;p<POOLSIZE;p++){
         for(int i=0; i<Pool[p].numberOfInstances; i++){
@@ -75,37 +247,7 @@ void Spawn(unsigned int index,int x, int y, int z){
     }
 }
 
-void PoolUpdate(){
-    int maxSize,maxXY;
-    for(int p=0;p<POOLSIZE;p++){
-
-        maxSize = pow(Pool[p].baseObj.maxDimension,3);
-        maxXY = pow(Pool[p].baseObj.maxDimension,2);
-
-        for(int o=0;o<Pool[p].numberOfInstances;o++){
-
-            if(Pool[p].objs[o]->enabled){
-                if(Pool[p].type == BULLET){
-                    if(Pool[p].objs[o]->timeOfActivation+2000 <= SDL_GetTicks()){
-
-                        Pool[p].objs[o]->enabled = 0;
-                        
-                        memcpy(Pool[p].objs[o]->model,Pool[p].baseObj.model,maxSize*sizeof(unsigned char));
-                        memcpy(Pool[p].objs[o]->lighting,Pool[p].baseObj.lighting, maxSize*sizeof(unsigned char ));
-
-                    for(int j=0;j<Pool[p].baseObj.maxDimension;j++){
-                            memcpy(Pool[p].objs[o]->render[j],Pool[p].baseObj.render[j],maxXY*sizeof(unsigned short int ));
-                        }
-
-                        Pool[p].avaliableInstances++;  
-                    }else{
-                        MoveObject(Pool[p].objs[o],250,0,0,0,0,0,&(*scene),sceneObjectCount,4,8);
-                    }
-                }
-            }
-        }
-    }
-}
+//------------------------------------------------------------------ Física e movimento -----------------------------------------------------
 
 void MoveObject(VoxelObject *obj,float mx, float my, float mz,float rx, float ry, float rz,	VoxelObject **col,const int numCol,int damageColRadius,int damageObjRadius){
     //printf("%0.0f Per cent\n",100*(obj->voxelsRemaining/(float)obj->voxelCount));
@@ -237,7 +379,7 @@ void ExplodeAtPoint(VoxelObject *obj,int x, int y, int z,int radius){
 }
 
 
-//VoxelPointerArrayUnion(int [total size of pointer], int [number of pointers to join], VoxelObject **[Pointers],int [pointerSize],...)
+//VoxelPointerArrayUnion(int [tamanho final do ponteiro], int [número de ponteiros a unir], VoxelObject **[ponteiro1],int [tamanho do ponteiro1],...)
 VoxelObject **VoxelPointerArrayUnion(int totalPointerSize,int numberOfPointers,...){
 	va_list args;
 	//Inicializa os argumentos variáveis (total =  numberOfPointers)

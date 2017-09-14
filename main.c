@@ -83,7 +83,11 @@ int main(int argc, char *argv[]){
 	
 	//Inicializa bibliotecas e a janela do jogo
 	soloud = Soloud_create();
-	Soloud_initEx(soloud,SOLOUD_CLIP_ROUNDOFF | SOLOUD_ENABLE_VISUALIZATION, SOLOUD_AUTO, SOLOUD_AUTO, SOLOUD_AUTO, SOLOUD_AUTO);
+	if(Soloud_initEx(soloud,SOLOUD_CLIP_ROUNDOFF | SOLOUD_ENABLE_VISUALIZATION, SOLOUD_AUTO, SOLOUD_AUTO, SOLOUD_AUTO, SOLOUD_AUTO)<0){
+		printf("SoLoud could not initialize! \n");
+		ErrorOcurred = 1;
+		goto EndProgram;
+	}
 
 
 	if(IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG){

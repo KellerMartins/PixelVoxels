@@ -44,7 +44,7 @@ void MoveCamera(float x, float y, float z){
     cameraPosition.x +=x*deltaTime;
     cameraPosition.y +=y*deltaTime;
     cameraPosition.z +=z*deltaTime;
-    printf("CamPos: |%2.1f|%2.1f|%2.1f|\n",cameraPosition.x,cameraPosition.y,cameraPosition.z);
+    //printf("CamPos: |%2.1f|%2.1f|%2.1f|\n",cameraPosition.x,cameraPosition.y,cameraPosition.z);
 }
 
 void ClearScreen(Pixel* screen){

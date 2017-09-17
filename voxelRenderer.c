@@ -264,14 +264,14 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
     float sinz = 1,cosz = 0;
     if(obj->rotation.x != 0.0f || obj->rotation.y != 0.0f || obj->rotation.z != 0.0f){
         useRot = 1;
-        sinx = sin(obj->rotation.x * 0.01745329251);
-        cosx = cos(obj->rotation.x * 0.01745329251);
+        sinx = sin(obj->rotation.x * PI_OVER_180);
+        cosx = cos(obj->rotation.x * PI_OVER_180);
 
-        siny = sin(obj->rotation.y * 0.01745329251);
-        cosy = cos(obj->rotation.y * 0.01745329251);
+        siny = sin(obj->rotation.y * PI_OVER_180);
+        cosy = cos(obj->rotation.y * PI_OVER_180);
         
-        sinz = sin(obj->rotation.z * 0.01745329251);
-        cosz = cos(obj->rotation.z * 0.01745329251);
+        sinz = sin(obj->rotation.z * PI_OVER_180);
+        cosz = cos(obj->rotation.z * PI_OVER_180);
     }
     const float edge = 0.80;
     const float base = 0.75;
@@ -476,40 +476,6 @@ void CalculateRendered(VoxelObject *obj){
                             occ++;
                         }
                     }
-                    if(x==obj->maxDimension-1 && y<obj->maxDimension-1 && z<obj->maxDimension-1){
-                        
-                        dir = (x + z * obj->maxDimension + (y+1) * obj->maxDimension * obj->maxDimension);//0 1 0
-                        if(obj->model[dir]!=0){
-                            occ = 7;
-                        }
-                        dir = ((x+1) + (z+1) * obj->maxDimension + (y+1) * obj->maxDimension * obj->maxDimension);//1 1 1
-                        if(obj->model[dir]!=0){
-                            occ += 5;
-                        }
-                    }
-                    if(z==0 && (y!=0 && x<obj->maxDimension-1)){
-                        dir = (x + z * obj->maxDimension + (y+1) * obj->maxDimension * obj->maxDimension);//0 -1 0
-                        if(obj->model[dir]!=0){
-                            occ = 7;
-                        }
-                        dir = ((x+1) + (z) * obj->maxDimension + (y) * obj->maxDimension * obj->maxDimension);//1 0 0
-                        if(obj->model[dir]!=0){
-                            occ += 5;
-                        }
-                    }
-                    if(y==0 && (z+1< obj->maxDimension && x+1<obj->maxDimension)){
-                        dir = (x + (z+1) * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);//0 -1 0
-                        if(obj->model[dir]!=0){
-                            occ = 7;
-                        }
-                        dir = ((x+1) + (z) * obj->maxDimension + (y) * obj->maxDimension * obj->maxDimension);//1 0 0
-                        if(obj->model[dir]!=0){
-                            occ += 5;
-                        }
-                    }
-                    if(y == obj->dimension[1]){
-                        occ = 5;
-                    }
                     if(occ!=12){
                         if((occLeft && occDown && occUp) || y == obj->dimension[1]-1){
                             occPixel = 0;
@@ -669,14 +635,14 @@ void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
     //Revisitar essa parte, projeção inverte em certos ângulos
     if(shadowCaster->rotation.x != 0.0f || shadowCaster->rotation.y != 0.0f || shadowCaster->rotation.z != 0.0f){
         useRot = 1;
-        sinx = -sin(shadowCaster->rotation.x * 0.01745329251);
-        cosx = cos(shadowCaster->rotation.x * 0.01745329251);
+        sinx = -sin(shadowCaster->rotation.x * PI_OVER_180);
+        cosx = cos(shadowCaster->rotation.x * PI_OVER_180);
 
-        siny = -sin(shadowCaster->rotation.y * 0.01745329251);
-        cosy = cos(shadowCaster->rotation.y * 0.01745329251);
+        siny = -sin(shadowCaster->rotation.y * PI_OVER_180);
+        cosy = cos(shadowCaster->rotation.y * PI_OVER_180);
         
-        sinz = -sin(shadowCaster->rotation.z * 0.01745329251);
-        cosz = cos(shadowCaster->rotation.z * 0.01745329251);
+        sinz = -sin(shadowCaster->rotation.z * PI_OVER_180);
+        cosz = cos(shadowCaster->rotation.z * PI_OVER_180);
     }
 
     

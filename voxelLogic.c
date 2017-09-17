@@ -129,8 +129,22 @@ void GameUpdate(){
     {
         if(model.numberOfPoints !=0){
             for(int i=0;i<model.numberOfPoints;i++){
+                Vector3 rotatedPoint = {model.points[i].x,model.points[i].y,model.points[i].z};
+                rotatedPoint = RotatePoint(rotatedPoint,
+                                            model.rotation.x, 
+                                            model.rotation.y, 
+                                            model.rotation.z,
+                                            model.dimension[0]/2,
+                                            model.dimension[1]/2,
+                                            model.dimension[2]/2);
+
                 if(model.points[i].type == 0){
-                    Spawn(0,model.points[i].x+model.position.x,model.points[i].y+model.position.y,model.points[i].z+model.position.z);
+                    Spawn(0,rotatedPoint.x+model.position.x,
+                            rotatedPoint.y+model.position.y,
+                            rotatedPoint.z+model.position.z,
+                            model.rotation.x,
+                            model.rotation.y,
+                            model.rotation.z);
                 }
             }
         }
@@ -193,7 +207,10 @@ void PoolUpdate(){
 
                         Pool[p].avaliableInstances++;  
                     }else{
-                        MoveObject(Pool[p].objs[o],250,0,0,0,0,0,&(*scene),sceneObjectCount,4,8);
+                        Vector3 dir = {1,0,0};
+                        Vector3 rot = Pool[p].objs[o]->rotation;
+                        dir = RotatePoint(dir,rot.z,rot.y,rot.z,0,0,0);
+                        MoveObject(Pool[p].objs[o],dir.x*250,dir.y*250,dir.z*250,0,0,0,&(*scene),sceneObjectCount,4,8);
                     }
                 }
             }
@@ -252,7 +269,7 @@ void FreePool(){
     }
 }
 
-void Spawn(unsigned int index,int x, int y, int z){
+void Spawn(unsigned int index,float x, float y, float z, float rx, float ry, float rz){
     if(Pool[index].avaliableInstances==0){
         printf("Pool limit reached on object %d !\n",index);
         return;
@@ -266,6 +283,10 @@ void Spawn(unsigned int index,int x, int y, int z){
             Pool[index].objs[i]->position.x = x;
             Pool[index].objs[i]->position.y = y;
             Pool[index].objs[i]->position.z = z;
+
+            Pool[index].objs[i]->rotation.x = rx;
+            Pool[index].objs[i]->rotation.y = ry;
+            Pool[index].objs[i]->rotation.z = rz;
 
             return;
         }
@@ -287,14 +308,14 @@ void MoveObject(VoxelObject *obj,float mx, float my, float mz,float rx, float ry
 
     if(obj->rotation.x != 0.0f || obj->rotation.y != 0.0f || obj->rotation.z != 0.0f){
         useRot = 1;
-        sinx = sin(obj->rotation.x * 0.01745329251);
-        cosx = cos(obj->rotation.x * 0.01745329251);
+        sinx = sin(obj->rotation.x * PI_OVER_180);
+        cosx = cos(obj->rotation.x * PI_OVER_180);
 
-        siny = sin(obj->rotation.y * 0.01745329251);
-        cosy = cos(obj->rotation.y * 0.01745329251);
+        siny = sin(obj->rotation.y * PI_OVER_180);
+        cosy = cos(obj->rotation.y * PI_OVER_180);
         
-        sinz = sin(obj->rotation.z * 0.01745329251);
-        cosz = cos(obj->rotation.z * 0.01745329251);
+        sinz = sin(obj->rotation.z * PI_OVER_180);
+        cosz = cos(obj->rotation.z * PI_OVER_180);
     }
 
     if(col!=NULL){
@@ -355,8 +376,8 @@ void ExplodeAtPoint(VoxelObject *obj,int x, int y, int z,int radius){
     int halfDimX = obj->dimension[0]/2.0, halfDimY = obj->dimension[1]/2.0;
     int px,py,pz;
     if(abs(-obj->rotation.z)> 0.1 ){
-        float sinz = sin((-obj->rotation.z) * 0.01745329251);
-        float cosz = cos((-obj->rotation.z) * 0.01745329251);
+        float sinz = sin((-obj->rotation.z) * PI_OVER_180);
+        float cosz = cos((-obj->rotation.z) * PI_OVER_180);
 
         px = x - obj->position.x;
         py = y - obj->position.y;
@@ -414,6 +435,38 @@ void ExplodeAtPoint(VoxelObject *obj,int x, int y, int z,int radius){
 
         obj->modificationStartY = obj->modificationStartY <0? starty:obj->modificationStartY<starty?obj->modificationStartY:starty;
         obj->modificationEndY = obj->modificationEndY <0? endy-1:obj->modificationEndY>endy-1?obj->modificationEndY:endy-1;
+}
+
+Vector3 RotatePoint(Vector3 p, float rx, float ry, float rz, float pivotX, float pivotY, float pivotZ){
+
+    float rotx,roty,rotz,x,y,z;
+
+    float sinx = sin(rx* PI_OVER_180);
+    float cosx = cos(rx* PI_OVER_180);
+
+    float siny = sin(ry * PI_OVER_180);
+    float cosy = cos(ry * PI_OVER_180);
+        
+    float sinz = sin(rz * PI_OVER_180);
+    float cosz = cos(rz * PI_OVER_180);
+
+    x = p.x - pivotX;
+    y = p.y - pivotY;
+    z = p.z - pivotZ;
+
+    rotx = x*cosy*cosz + y*(cosz*sinx*siny - cosx*sinz) + z*(cosx*cosz*siny + sinx*sinz);
+    roty = x*cosy*sinz + z*(cosx*siny*sinz - cosz*sinx) + y*(cosx*cosz + sinx*siny*sinz);
+    rotz = z*cosx*cosy + y*sinx*cosy - x*siny;
+
+    x = rotx + pivotX;
+    y = roty + pivotY;
+    z = rotz + pivotZ;
+
+    p.x = x;
+    p.y = y;
+    p.z = z;
+    return p;
+
 }
 
 

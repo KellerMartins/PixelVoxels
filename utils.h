@@ -2,6 +2,8 @@
 #define UTILS_H
 #include <math.h>
 
+#define PI_OVER_180 0.01745329251
+
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \

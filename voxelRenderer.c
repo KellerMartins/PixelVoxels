@@ -659,16 +659,24 @@ void CalculateLighting(VoxelObject *obj){
 
 void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
 
-    int y,x,z,o,index,dir,cx,cy,cz,RotZMode = 1;
-    int halfDimX = shadowCaster->dimension[0]/2.0, halfDimY = shadowCaster->dimension[1]/2.0;
+    int y,x,z,o,index,dir,cx,cy,cz,useRot = 0;
 
-    float rx,ry;
+    int halfDimX = shadowCaster->dimension[0]/2.0, halfDimY = shadowCaster->dimension[1]/2.0,halfDimZ = shadowCaster->dimension[2]/2.0;
+    float rx,ry,rz;
+    float sinx = 1,cosx = 0;
+    float siny = 1,cosy = 0;
     float sinz = 1,cosz = 0;
+    //Revisitar essa parte, projeção inverte em certos ângulos
+    if(shadowCaster->rotation.x != 0.0f || shadowCaster->rotation.y != 0.0f || shadowCaster->rotation.z != 0.0f){
+        useRot = 1;
+        sinx = -sin(shadowCaster->rotation.x * 0.01745329251);
+        cosx = cos(shadowCaster->rotation.x * 0.01745329251);
 
-    if(abs(shadowCaster->rotation.z)> 0.001 ){
-        RotZMode = 0;
-        sinz = sin((360-shadowCaster->rotation.z) * 0.01745329251);
-        cosz = cos((360-shadowCaster->rotation.z) * 0.01745329251);
+        siny = -sin(shadowCaster->rotation.y * 0.01745329251);
+        cosy = cos(shadowCaster->rotation.y * 0.01745329251);
+        
+        sinz = -sin(shadowCaster->rotation.z * 0.01745329251);
+        cosz = cos(shadowCaster->rotation.z * 0.01745329251);
     }
 
     
@@ -704,18 +712,26 @@ void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
                     }
                     cx = x-shadowCaster->position.x+obj->position.x;
                     cy = y-shadowCaster->position.y+obj->position.y;
-                    
-                    if(RotZMode == 0){
-                        rx = ( ((cx-halfDimX) *cosz - (cy-halfDimY) *sinz) + halfDimX);
-                        ry = ( ((cx-halfDimX) *sinz + (cy-halfDimY) *cosz) + halfDimY);
-                    }else{
-                        rx = cx;
-                        ry = cy;
+                    cz = z-shadowCaster->position.z+obj->position.z;
+
+                    if(useRot==1){
+                        cx -= halfDimX;
+                        cy -= halfDimY;
+                        cz -= halfDimZ;
+        
+                        rx = cx*cosy*cosz + cy*(cosz*sinx*siny - cosx*sinz) + cz*(cosx*cosz*siny + sinx*sinz);
+                        ry = cx*cosy*sinz + cz*(cosx*siny*sinz - cosz*sinx) + cy*(cosx*cosz + sinx*siny*sinz);
+                        rz = cz*cosx*cosy + cy*sinx*cosy - cx*siny;
+        
+                        rx += halfDimX;
+                        ry += halfDimY;
+                        rz += halfDimZ;                       
+                        
+                        cx = rx;
+                        cy = ry;
+                        cz = rz;
                     }
 
-                    cx = rx;
-                    cy = ry;
-                    cz = z-shadowCaster->position.z+obj->position.z;
 
                     if(cx>-1 && cx<shadowCaster->maxDimension && cy>-1 && cy<shadowCaster->maxDimension && cz>-1 && cz<shadowCaster->maxDimension){
                         o = (cx + cz * shadowCaster->maxDimension + cy * shadowCaster->maxDimension * shadowCaster->maxDimension);

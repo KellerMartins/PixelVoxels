@@ -109,49 +109,62 @@ void PoolUpdate(){
 
 void MoveObject(VoxelObject *obj,float mx, float my, float mz,float rx, float ry, float rz,	VoxelObject **col,const int numCol,int damageColRadius,int damageObjRadius){
     //printf("%0.0f Per cent\n",100*(obj->voxelsRemaining/(float)obj->voxelCount));
-    int o,i,iz,nv,px,py,pz,index = 0,allowMovement = 1,useRotZ = 0;
-    int halfDimX = obj->dimension[0]/2.0, halfDimY = obj->dimension[1]/2.0;
+    int o,i,iz,nv,x,y,z,index = 0,allowMovement = 1,useRot = 0;
+    int halfDimX = obj->dimension[0]/2.0, halfDimY = obj->dimension[1]/2.0,halfDimZ = obj->dimension[2]/2.0;
     double moveDelta = deltaTime>0.02? 0.02:deltaTime;
 
-    float rotx,roty;
-    float sinz,cosz;
-    if(abs(obj->rotation.z+(rz*moveDelta))> 0.1 ){
-        useRotZ = 1;
-        sinz = sin((obj->rotation.z+(rz*moveDelta)) * 0.01745329251);
-        cosz = cos((obj->rotation.z+(rz*moveDelta)) * 0.01745329251);
+    float rotx,roty,rotz;
+    float sinx = 1,cosx = 0;
+    float siny = 1,cosy = 0;
+    float sinz = 1,cosz = 0;
+
+    if(obj->rotation.x != 0.0f || obj->rotation.y != 0.0f || obj->rotation.z != 0.0f){
+        useRot = 1;
+        sinx = sin(obj->rotation.x * 0.01745329251);
+        cosx = cos(obj->rotation.x * 0.01745329251);
+
+        siny = sin(obj->rotation.y * 0.01745329251);
+        cosy = cos(obj->rotation.y * 0.01745329251);
+        
+        sinz = sin(obj->rotation.z * 0.01745329251);
+        cosz = cos(obj->rotation.z * 0.01745329251);
     }
 
     if(col!=NULL){
         for(iz=obj->maxDimension-1;iz>=0;iz--){
-            pz = iz+(obj->position.z+(mz*moveDelta));
             nv = obj->render[iz][0];
             for(i = nv; i > 0  ; i--){
                 if(allowMovement == 0){
                     break;
                 }
 
-                if(useRotZ){
+                if(useRot){
 
-                    px = (obj->render[iz][i] & 127);
-                    py = ((obj->render[iz][i]>>7) & 127);
+                    x = (obj->render[iz][i] & 127) - halfDimX;
+                    y = ((obj->render[iz][i]>>7) & 127) - halfDimY;
+                    z = iz - halfDimZ;
 
-                    rotx = ( ((px-halfDimX) *cosz - (py-halfDimY) *sinz) + halfDimX);
-                    roty = ( ((px-halfDimX) *sinz + (py-halfDimY) *cosz) + halfDimY);
+                    rotx = x*cosy*cosz + y*(cosz*sinx*siny - cosx*sinz) + z*(cosx*cosz*siny + sinx*sinz);
+                    roty = x*cosy*sinz + z*(cosx*siny*sinz - cosz*sinx) + y*(cosx*cosz + sinx*siny*sinz);
+                    rotz = z*cosx*cosy + y*sinx*cosy - x*siny;
 
-                    px = rotx + (obj->position.x+(mx*moveDelta));
-                    py = roty + (obj->position.y+(my*moveDelta));
+                    x = rotx + (obj->position.x+(mx*moveDelta)) + halfDimX;
+                    y = roty + (obj->position.y+(my*moveDelta)) + halfDimY;
+                    z = rotz + (obj->position.z+(mz*moveDelta)) + halfDimZ;
+
                 }else{
-                    px = ((obj->render[iz][i] & 127)+(obj->position.x+(mx*moveDelta)));
-                    py = (((obj->render[iz][i]>>7) & 127)+(obj->position.y+(my*moveDelta)));
+                    x = ((obj->render[iz][i] & 127)+(obj->position.x+(mx*moveDelta)));
+                    y = (((obj->render[iz][i]>>7) & 127)+(obj->position.y+(my*moveDelta)));
+                    z = iz+(obj->position.z+(mz*moveDelta));
                 }
 
                 for(o=0; o<numCol; o++){
                     
-                    if((px-col[o]->position.x)<col[o]->maxDimension && (px-col[o]->position.x)>-1 && (pz-col[o]->position.z)<col[o]->maxDimension && (pz-col[o]->position.z)>-1 && (py+col[o]->position.y)<col[o]->maxDimension && (py+col[o]->position.y)>-1){
-                        index = (px-col[o]->position.x) + (pz-col[o]->position.z) * col[o]->maxDimension + (py-col[o]->position.y) * col[o]->maxDimension * col[o]->maxDimension;
+                    if((x-col[o]->position.x)<col[o]->maxDimension && (x-col[o]->position.x)>-1 && (z-col[o]->position.z)<col[o]->maxDimension && (z-col[o]->position.z)>-1 && (y+col[o]->position.y)<col[o]->maxDimension && (y+col[o]->position.y)>-1){
+                        index = (x-col[o]->position.x) + (z-col[o]->position.z) * col[o]->maxDimension + (y-col[o]->position.y) * col[o]->maxDimension * col[o]->maxDimension;
                         if(col[o]->model[index]!=0){
-                            ExplodeAtPoint(col[o],px,py,pz,damageColRadius);
-                            ExplodeAtPoint(obj,px,py,pz,damageObjRadius);
+                            ExplodeAtPoint(col[o],x,y,z,damageColRadius);
+                            ExplodeAtPoint(obj,x,y,z,damageObjRadius);
                             allowMovement = 0;
                             break;
                         }

@@ -298,11 +298,13 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
 
         nv = obj->render[z][0];
         for(i = 1; i <= nv ; i++){
-            numberOfPixels = 4;
-
             
             x = (obj->render[z][i] & 127);
             y = ((obj->render[z][i]>>7) & 127);
+
+            colorIndex = (x) + ((z)) * obj->maxDimension + (y) * obj->maxDimension * obj->maxDimension;
+            color = voxColors[obj->model[colorIndex]];
+
             if(useRot){
                 x -= halfDimX;
                 y -= halfDimY;
@@ -316,10 +318,7 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
                 ry += halfDimY;
                 rz += halfDimZ;
 
-                x += halfDimX;
-                y += halfDimY;
                 z += halfDimZ;
-
             }else{
                 rx = x;
                 ry = y;
@@ -327,29 +326,26 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
             }
             zp = rz + roundf(obj->position.z+cameraPosition.z);
 
-            colorIndex = (x) + ((z)) * obj->maxDimension + (y) * obj->maxDimension * obj->maxDimension;
-            color = voxColors[obj->model[colorIndex]];
+        
+            lightIndx = (obj->lighting[colorIndex] & 6)>>1;
+            lightIndx *=obj->lighting[colorIndex] & 1; 
+            obj->lighting[colorIndex] |= 1;
+            edgeIndx = obj->lighting[colorIndex]>>3;
+            
+            lightVal = lightIndx == 1? 1:(lightIndx >= 2? sunlight:shadow);
+            edgeVal = (edgeIndx<5? edge:edgeIndx == 5? base:crease);
 
-            if(color!=0){
-                lightIndx = (obj->lighting[colorIndex] & 6)>>1;
-                lightIndx *=obj->lighting[colorIndex] & 1; 
-                obj->lighting[colorIndex] |= 1;
-                edgeIndx = obj->lighting[colorIndex]>>3;
-                
-                lightVal = lightIndx == 1? 1:(lightIndx >= 2? sunlight:shadow);
-                edgeVal = (edgeIndx<5? edge:edgeIndx == 5? base:crease);
-
-                illuminFrac = lightVal * edgeVal;
-                illuminFrac *=((1.0+((zp*0.5))/128));
-                //Pega a cor do voxel e coloca no pixel
-                //A cor é transformada do int16 para cada um dos componentes RGB
-                p.a = zp+1;
-                p.r = ((color & 255)*illuminFrac)>255? 255:((color & 255)*illuminFrac);
-                color = (color>>8);
-                p.g = ((color & 255)*illuminFrac)>255? 255:((color & 255)*illuminFrac);
-                color = (color>>8);
-                p.b = ((color & 255)*illuminFrac)>255? 255:((color & 255)*illuminFrac);
-            }
+            illuminFrac = lightVal * edgeVal;
+            illuminFrac *=((1.0+((zp*0.5))/128));
+            //Pega a cor do voxel e coloca no pixel
+            //A cor é transformada do int16 para cada um dos componentes RGB
+            p.a = zp+1;
+            p.r = clamp((color & 255)*illuminFrac,0,255);
+            color = (color>>8);
+            p.g = clamp((color & 255)*illuminFrac,0,255);
+            color = (color>>8);
+            p.b = clamp((color & 255)*illuminFrac,0,255);
+        
             py = ((ry)+roundf(obj->position.y-cameraPosition.y)+(125-(zp*0.5)))*2;
             px = ((rx)+roundf(obj->position.x-cameraPosition.x)+(125-(zp*0.5)))*2;
 
@@ -394,7 +390,7 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
 
                 if(zp+1 > screen[cp].a){
                     screen[cp] = p;
-                    if(j==5 || j==6){
+                    if(j>4){
                         screen[cp].a = screen[cp].a>0? screen[cp].a-1:0;
                         screen[cp].r*=shadow;
                         screen[cp].g*=shadow;
@@ -402,7 +398,6 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
                     }
                 }
             }
-            
         }
     }
 }
@@ -687,15 +682,11 @@ void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
         
                         rx = cx*cosy*cosz + cy*(cosz*sinx*siny - cosx*sinz) + cz*(cosx*cosz*siny + sinx*sinz);
                         ry = cx*cosy*sinz + cz*(cosx*siny*sinz - cosz*sinx) + cy*(cosx*cosz + sinx*siny*sinz);
-                        rz = cz*cosx*cosy + cy*sinx*cosy - cx*siny;
-        
-                        rx += halfDimX;
-                        ry += halfDimY;
-                        rz += halfDimZ;                       
+                        rz = cz*cosx*cosy + cy*sinx*cosy - cx*siny;                      
                         
-                        cx = rx;
-                        cy = ry;
-                        cz = rz;
+                        cx = rx + halfDimX;
+                        cy = ry + halfDimY;
+                        cz = rz + halfDimZ;
                     }
 
 

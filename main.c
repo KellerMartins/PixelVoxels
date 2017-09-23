@@ -18,8 +18,8 @@
 #define FRAMES_PER_SECOND 60
 
 //Resolução interna, utilizada na renderização
-const int GAME_SCREEN_WIDTH = 640;
-const int GAME_SCREEN_HEIGHT = 360;
+const int GAME_SCREEN_WIDTH = 1280;
+const int GAME_SCREEN_HEIGHT = 720;
 
 //Resolução da janela do jogo
 const int SCREEN_WIDTH = 1280;
@@ -113,7 +113,7 @@ int main(int argc, char *argv[]){
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 	render = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
 	SDL_RenderSetLogicalSize(renderer, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
-
+	
 	//Define o vetor que irá receber os pixels da tela
 	Pixel *pix;
 	int pitch = GAME_SCREEN_WIDTH * sizeof(unsigned int);
@@ -130,6 +130,7 @@ int main(int argc, char *argv[]){
 	Uint64 LAST = 0;
 
 	//Inicializações do jogo
+	InitRenderer();
 	InputStart();
 	GameStart();
 

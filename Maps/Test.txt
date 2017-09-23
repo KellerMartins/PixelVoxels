@@ -1,5 +1,2 @@
-4
-0 0 0Models/Dune.vox
-90 0 0Models/Dune.vox
-180 0 0Models/Dune.vox
--90 0 0Models/Dune.vox
+1
+0 0 0Models/axis.vox

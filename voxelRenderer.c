@@ -38,6 +38,7 @@ extern const int GAME_SCREEN_WIDTH;
 extern const int GAME_SCREEN_HEIGHT;
 extern double deltaTime;
 
+SDL_Surface * cube;
 Vector3 cameraPosition = {62,71,0};
 
 void MoveCamera(float x, float y, float z){
@@ -252,11 +253,26 @@ void *RenderThread(void *arguments){
     return NULL;
 }
 
+Pixel GetPixel(SDL_Surface *surface, int x, int y)
+{
+    int bpp = surface->format->BytesPerPixel;
+    Uint8* p = (Uint8*) surface->pixels + y * surface->pitch + x * bpp;
+    
+    Uint32 pixelColor = *(Uint32*)p;
+    Pixel pixel;
+    SDL_GetRGBA(pixelColor,surface->format,&pixel.r,&pixel.g,&pixel.b,&pixel.a);
+    return pixel;
+}
+
+void InitRenderer(){
+   cube = IMG_Load("Textures/cube.png");
+}
+
 void RenderObject(Pixel* screen,VoxelObject *obj){
 
     unsigned int color = 0;
 
-    int x,y,z,i,j,px,py,zp,startz,aux,nv,cp = 0,colorIndex,sumx = 0,sumy = 0,edgeIndx,lightIndx,numberOfPixels,useRot = 0;
+    int x,y,z,i,px,py,zp,startz,aux,nv,cp = 0,colorIndex,sumx = 0,sumy = 0,edgeIndx,lightIndx,numberOfPixels,useRot = 0;
     int halfDimX = obj->dimension[0]/2.0, halfDimY = obj->dimension[1]/2.0,halfDimZ = obj->dimension[2]/2.0;
     float rx,ry,rz;
     float sinx = 1,cosx = 0;
@@ -346,10 +362,41 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
             color = (color>>8);
             p.b = clamp((color & 255)*illuminFrac,0,255);
         
-            py = ((ry)+roundf(obj->position.y-cameraPosition.y)+(125-(zp*0.5)))*2;
-            px = ((rx)+roundf(obj->position.x-cameraPosition.x)+(125-(zp*0.5)))*2;
+            //py = ((ry)+roundf(obj->position.y-cameraPosition.y)+(125-(zp*0.5)))*2;
+            //px = ((rx)+roundf(obj->position.x-cameraPosition.x)+(125-(zp*0.5)))*2;
 
-            numberOfPixels = 4+(obj->render[z][i]>>14);
+            py = ( (((rx+obj->position.x)+(ry+obj->position.y))*0.41 -(zp*0.80)) +roundf(-cameraPosition.y))*6;
+            px = ( ((rx+obj->position.x)-(ry+obj->position.y))*0.73 +roundf(-cameraPosition.x))*6;
+
+            int cx,cy;
+            for(cy=0;cy<10;cy++){
+                for(cx=0;cx<9;cx++){
+                    cp = sumy+py+cy;
+                    cp = cp>=GAME_SCREEN_HEIGHT? -1: (cp<0? -1:cp*GAME_SCREEN_WIDTH);
+                    if(cp <0){
+                        continue;
+                    }
+                    aux = sumx+px+cx;
+                    cp = (aux)>=GAME_SCREEN_WIDTH? -1: ((aux)<0? -1:cp + (aux));
+                    if(cp <0){
+                        continue;
+                    }
+
+                    if(zp+1 > screen[cp].a){
+                        Pixel pixel = GetPixel(cube,cx,cy);
+                        if(pixel.a==0) continue;
+
+                        pixel.r *= p.r/255.0f;
+                        pixel.g *= p.g/255.0f;
+                        pixel.b *= p.b/255.0f;
+                        pixel.a = p.a;
+                        screen[cp] = pixel;
+                    }
+                }
+            }
+
+
+            /*numberOfPixels = 4+(obj->render[z][i]>>14);
             for(j=1;j<=numberOfPixels;j++){
                 switch (j){
                     case 1:
@@ -397,7 +444,7 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
                         screen[cp].b*=shadow;
                     }
                 }
-            }
+            }*/
         }
     }
 }

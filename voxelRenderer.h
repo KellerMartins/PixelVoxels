@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #include "utils.h"
 
 typedef struct Pixel{
@@ -80,6 +82,7 @@ void ClearScreen(Pixel* screen);
 void FillBackground(Pixel* screen);
 void PostProcess(Pixel* screen);
 
+void InitRenderer();
 void *RenderThread(void *arguments);
 //void PointLight(VoxelObject *obj,int x, int y, int z,int radius);
 void CalculateRendered(VoxelObject *obj);

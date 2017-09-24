@@ -178,7 +178,7 @@ int main(int argc, char *argv[]){
 			pthread_join(tID2, NULL);
 
 			FillBackground(pix);
-			PostProcess(pix);
+			//PostProcess(pix);
 
 		SDL_UnlockTexture(render);
 
@@ -211,6 +211,7 @@ int main(int argc, char *argv[]){
 	EndProgram:
 	free(fpscounter);
 
+	FreeRenderer();
 	FreeInput();
 	FreeScene();
 	FreePool();

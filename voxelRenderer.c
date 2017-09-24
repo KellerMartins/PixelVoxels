@@ -38,7 +38,11 @@ extern const int GAME_SCREEN_WIDTH;
 extern const int GAME_SCREEN_HEIGHT;
 extern double deltaTime;
 
-SDL_Surface * cube;
+float val1 = 0.33,val2 = 0.67,val3 = 0.70;
+
+Pixel *cube;
+Uint8 *cubeDepth;
+int cubePitch = 0;
 Vector3 cameraPosition = {62,71,0};
 
 void MoveCamera(float x, float y, float z){
@@ -197,9 +201,9 @@ void PostProcess(Pixel* screen){
             }
 
             //Transfer changes to the pixel in the screen
-            screen[cp].r = tScreenR;
-            screen[cp].g = tScreenG;
-            screen[cp].b = tScreenB;
+            screen[cp].r = screen[cp].a;//tScreenR;
+            screen[cp].g = screen[cp].a;//tScreenG;
+            screen[cp].b = screen[cp].a;//tScreenB;
 
 
             cp++;
@@ -253,20 +257,37 @@ void *RenderThread(void *arguments){
     return NULL;
 }
 
-Pixel GetPixel(SDL_Surface *surface, int x, int y)
-{
-    int bpp = surface->format->BytesPerPixel;
-    Uint8* p = (Uint8*) surface->pixels + y * surface->pitch + x * bpp;
-    
-    Uint32 pixelColor = *(Uint32*)p;
-    Pixel pixel;
-    SDL_GetRGBA(pixelColor,surface->format,&pixel.r,&pixel.g,&pixel.b,&pixel.a);
-    return pixel;
-}
-
 void InitRenderer(){
-   cube = IMG_Load("Textures/cube.png");
+    SDL_Surface *cubeimg = IMG_Load("Textures/cube.png");
+    SDL_Surface *cubeDepthimg = IMG_Load("Textures/cubeDepth.png");
+
+    int bpp = cubeimg->format->BytesPerPixel;
+    cubePitch = cubeimg->w;
+
+    cube = (Pixel*)calloc(cubeimg->w*cubeimg->h,sizeof(Pixel));
+    cubeDepth = (Uint8 *)calloc(cubeimg->w*cubeimg->h,sizeof(Uint8));
+
+    int i;
+    for(i=0;i<cubeimg->w*cubeimg->h;i++){
+        
+        Uint8* p = (Uint8*) cubeimg->pixels + i * bpp;
+        Uint32 pixelColor = *(Uint32*)p;
+
+        SDL_GetRGBA(pixelColor,cubeimg->format,&cube[i].r,&cube[i].g,&cube[i].b,&cube[i].a);
+
+        Uint8* d = (Uint8*) cubeDepthimg->pixels + i * bpp;
+        Uint32 depthColor = *(Uint32*)d;
+        Uint8 discart;
+        Uint8 depth;
+        SDL_GetRGBA(depthColor,cubeDepthimg->format,&depth,&discart,&discart,&discart);
+
+        cubeDepth[i] = depth/64;
+    }
 }
+void FreeRenderer(){
+    free(cube);
+    free(cubeDepth);
+ }
 
 void RenderObject(Pixel* screen,VoxelObject *obj){
 
@@ -355,7 +376,7 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
             illuminFrac *=((1.0+((zp*0.5))/128));
             //Pega a cor do voxel e coloca no pixel
             //A cor é transformada do int16 para cada um dos componentes RGB
-            p.a = zp+1;
+            p.a = zp*3;
             p.r = clamp((color & 255)*illuminFrac,0,255);
             color = (color>>8);
             p.g = clamp((color & 255)*illuminFrac,0,255);
@@ -365,8 +386,8 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
             //py = ((ry)+roundf(obj->position.y-cameraPosition.y)+(125-(zp*0.5)))*2;
             //px = ((rx)+roundf(obj->position.x-cameraPosition.x)+(125-(zp*0.5)))*2;
 
-            py = ( (((rx+obj->position.x)+(ry+obj->position.y))*0.41 -(zp*0.80)) +roundf(-cameraPosition.y))*6;
-            px = ( ((rx+obj->position.x)-(ry+obj->position.y))*0.73 +roundf(-cameraPosition.x))*6;
+            py = ( (((rx+obj->position.x)+(ry+obj->position.y))*val1 -(zp*val3)) +roundf(-cameraPosition.y))*6;
+            px = ( ((rx+obj->position.x)-(ry+obj->position.y))*val2 +roundf(-cameraPosition.x))*6;
 
             int cx,cy;
             for(cy=0;cy<10;cy++){
@@ -382,14 +403,15 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
                         continue;
                     }
 
-                    if(zp+1 > screen[cp].a){
-                        Pixel pixel = GetPixel(cube,cx,cy);
-                        if(pixel.a==0) continue;
+                    
+                    Pixel pixel = cube[cx+cy*cubePitch];
+                    if(pixel.a==0) continue;
 
-                        pixel.r *= p.r/255.0f;
-                        pixel.g *= p.g/255.0f;
-                        pixel.b *= p.b/255.0f;
-                        pixel.a = p.a;
+                    pixel.r *= p.r/255.0f;
+                    pixel.g *= p.g/255.0f;
+                    pixel.b *= p.b/255.0f;
+                    pixel.a = p.a+cubeDepth[cx+cy*cubePitch];
+                    if(pixel.a > screen[cp].a){
                         screen[cp] = pixel;
                     }
                 }
@@ -466,54 +488,7 @@ void CalculateRendered(VoxelObject *obj){
                 index = (x + z * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);
                 if(obj->model[index]!=0){
                     if(x!=0 && x<obj->maxDimension-1 && y!=0 && y<obj->maxDimension-1 && z!=0 && z<obj->maxDimension-1){
-                        dir = (x + (z+1) * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);//0 0 1
-                        if(obj->model[dir]!=0){
-                            occ++; 
-                            occUp=1;
-                        }
-                        dir = (x + (z-1) * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);//0 0 -1
-                        if(obj->model[dir]!=0){
-                            occ++;
-                            occDown = 1;
-                        }
-                        dir = (x + z * obj->maxDimension + (y+1) * obj->maxDimension * obj->maxDimension);//0 1 0
-                        if(obj->model[dir]!=0){
-                            occ++;
-                        }
-                        dir = (x + z * obj->maxDimension + (y-1) * obj->maxDimension * obj->maxDimension);//0 -1 0 
-                        if(obj->model[dir]!=0){
-                            occ++;
-                        }
-                        dir = ( (x+1) + z * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);//1 0 0
-                        if(obj->model[dir]!=0){
-                            occ++;
-                        }
-                        dir = ( (x-1) + z * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);//1 0 0 
-                        if(obj->model[dir]!=0){
-                            occ++;
-                            occLeft = 1;
-                        }
-                        dir = ((x-1) + z * obj->maxDimension + (y-1) * obj->maxDimension * obj->maxDimension);//-1 -1 0
-                        if(obj->model[dir]!=0){
-                            occ++;
-                        }
-                        dir = ((x+1) + z * obj->maxDimension + (y-1) * obj->maxDimension * obj->maxDimension);//-1 1 0
-                        if(obj->model[dir]!=0){
-                            occ++;
-                        }
                         dir = ((x+1) + (z+1) * obj->maxDimension + (y+1) * obj->maxDimension * obj->maxDimension);//1 1 1
-                        if(obj->model[dir]!=0){
-                            occ++;
-                        }
-                        dir = ((x-1) + (z+1) * obj->maxDimension + (y+1) * obj->maxDimension * obj->maxDimension);//-1 1 1
-                        if(obj->model[dir]!=0){
-                            occ++;
-                        }
-                        dir = ((x-1) + (z+1) * obj->maxDimension + (y-1) * obj->maxDimension * obj->maxDimension);//-1 -1 1
-                        if(obj->model[dir]!=0){
-                            occ++;
-                        }
-                        dir = ((x+1) + (z+1) * obj->maxDimension + (y-1) * obj->maxDimension * obj->maxDimension);//1 -1 1
                         if(obj->model[dir]!=0){
                             occ++;
                         }

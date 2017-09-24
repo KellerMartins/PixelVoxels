@@ -5,7 +5,7 @@ extern VoxelObject **scene;
 extern int sceneObjectCount;
 extern PoolObject Pool[POOLSIZE];
 extern double deltaTime;
-
+extern float val1,val2,val3;
 //Array com o estado do teclado (atual e do frame anterior)
 const Uint8 *keyboard_current = NULL;
 Uint8 *keyboard_last;
@@ -74,7 +74,7 @@ void GameUpdate(){
     //Movimento da nave
     if (GetKey(SDL_SCANCODE_UP))
     {
-        MoveObject(&model,0,-100,0,0,10,0,&(*scene),sceneObjectCount,5,2);
+        MoveObject(&model,0,-100,0,0,0,0,&(*scene),sceneObjectCount,5,2);
     }
     else if (GetKey(SDL_SCANCODE_DOWN))
     {
@@ -179,6 +179,15 @@ void GameUpdate(){
     {
         ExitGame = 1;
     }
+
+    if (GetKeyDown(SDL_SCANCODE_T)){val1+=0.01; printf("\n %f %f %f\n",val1,val2,val3);} 
+    if (GetKeyDown(SDL_SCANCODE_G)){val1-=0.01; printf("\n %f %f %f\n",val1,val2,val3);}
+
+    if (GetKeyDown(SDL_SCANCODE_Y)){val2+=0.01; printf("\n %f %f %f\n",val1,val2,val3);}
+    if (GetKeyDown(SDL_SCANCODE_H)){val2-=0.01; printf("\n %f %f %f\n",val1,val2,val3);}
+    
+    if (GetKeyDown(SDL_SCANCODE_U)){val3+=0.01; printf("\n %f %f %f\n",val1,val2,val3);}
+    if (GetKeyDown(SDL_SCANCODE_J)){val3-=0.01; printf("\n %f %f %f\n",val1,val2,val3);}
 }
 
 //--------------------------------------------------------- Pool de objetos ----------------------------------------------------------------------------

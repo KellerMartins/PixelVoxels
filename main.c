@@ -114,10 +114,11 @@ int main(int argc, char *argv[]){
 	render = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
 	SDL_RenderSetLogicalSize(renderer, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
 	
-	//Define o vetor que irá receber os pixels da tela
+	//Define o vetor que irá receber os pixels da tela e o que recebe os valores de profundidade
 	Pixel *pix;
 	int pitch = GAME_SCREEN_WIDTH * sizeof(unsigned int);
-
+	Uint16 *depth = (Uint16*) calloc(GAME_SCREEN_HEIGHT*GAME_SCREEN_WIDTH,sizeof(Uint16));
+	
 	//Define e carrega texturas da UI
 	SDL_Rect topUIRect = { 0, 0, 640, 32 };
 	SDL_Rect topUIDest = { 0, 0, 640, 32 };
@@ -130,7 +131,7 @@ int main(int argc, char *argv[]){
 	Uint64 LAST = 0;
 
 	//Inicializações do jogo
-	InitRenderer();
+	InitRenderer(depth);
 	InputStart();
 	GameStart();
 
@@ -159,26 +160,25 @@ int main(int argc, char *argv[]){
 
 		//Trava a textura da tela na memória e Inicia renderização
 		SDL_LockTexture(render, NULL, (void**)&pix, &pitch);
-
-			ClearScreen(pix);
-
+			UpdateScreenPointer(pix);
+			ClearScreen();
 			pthread_t tID1;
-			RendererArguments renderArguments1 = {pix,threadObjs1,1,NULL,0};
+			RendererArguments renderArguments1 = {threadObjs1,1,NULL,0};
 			pthread_create(&tID1, NULL, &RenderThread, (void *)&renderArguments1);
 
 			pthread_t tID2;
-			RendererArguments renderArguments2 = {pix,scene,sceneObjectCount,SceneShadowCasters,SceneShadowCastersSize};
+			RendererArguments renderArguments2 = {scene,sceneObjectCount,SceneShadowCasters,SceneShadowCastersSize};
 			pthread_create(&tID2, NULL, &RenderThread, (void *)&renderArguments2);
 
 			pthread_join(tID1, NULL);
 
-			RendererArguments renderArguments3 = {pix,EnemiesAndBullets,EnemiesAndBulletsSize,NULL,0};
+			RendererArguments renderArguments3 = {EnemiesAndBullets,EnemiesAndBulletsSize,NULL,0};
 			pthread_create(&tID1, NULL, &RenderThread, (void *)&renderArguments3);
 
 			pthread_join(tID2, NULL);
 
-			FillBackground(pix);
-			//PostProcess(pix);
+			FillBackground();
+			//PostProcess();
 
 		SDL_UnlockTexture(render);
 

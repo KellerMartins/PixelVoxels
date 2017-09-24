@@ -180,14 +180,14 @@ void GameUpdate(){
         ExitGame = 1;
     }
 
-    if (GetKeyDown(SDL_SCANCODE_T)){val1+=0.01; printf("\n %f %f %f\n",val1,val2,val3);} 
-    if (GetKeyDown(SDL_SCANCODE_G)){val1-=0.01; printf("\n %f %f %f\n",val1,val2,val3);}
+    if (GetKeyDown(SDL_SCANCODE_T)){val1+=0.001; printf("\n %f %f %f\n",val1,val2,val3);} 
+    if (GetKeyDown(SDL_SCANCODE_G)){val1-=0.001; printf("\n %f %f %f\n",val1,val2,val3);}
 
-    if (GetKeyDown(SDL_SCANCODE_Y)){val2+=0.01; printf("\n %f %f %f\n",val1,val2,val3);}
-    if (GetKeyDown(SDL_SCANCODE_H)){val2-=0.01; printf("\n %f %f %f\n",val1,val2,val3);}
+    if (GetKeyDown(SDL_SCANCODE_Y)){val2+=0.001; printf("\n %f %f %f\n",val1,val2,val3);}
+    if (GetKeyDown(SDL_SCANCODE_H)){val2-=0.001; printf("\n %f %f %f\n",val1,val2,val3);}
     
-    if (GetKeyDown(SDL_SCANCODE_U)){val3+=0.01; printf("\n %f %f %f\n",val1,val2,val3);}
-    if (GetKeyDown(SDL_SCANCODE_J)){val3-=0.01; printf("\n %f %f %f\n",val1,val2,val3);}
+    if (GetKeyDown(SDL_SCANCODE_U)){val3+=0.001; printf("\n %f %f %f\n",val1,val2,val3);}
+    if (GetKeyDown(SDL_SCANCODE_J)){val3-=0.001; printf("\n %f %f %f\n",val1,val2,val3);}
 }
 
 //--------------------------------------------------------- Pool de objetos ----------------------------------------------------------------------------

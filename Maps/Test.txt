@@ -1,2 +1,2 @@
 1
-0 0 0Models/axis.vox
+0 0 0Models/dune.vox

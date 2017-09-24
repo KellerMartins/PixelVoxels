@@ -38,11 +38,15 @@ extern const int GAME_SCREEN_WIDTH;
 extern const int GAME_SCREEN_HEIGHT;
 extern double deltaTime;
 
-float val1 = 0.33,val2 = 0.67,val3 = 0.70;
+float val1 = 0.334,val2 = 0.667,val3 = 0.702;
+
+Pixel *screen = NULL;
+Uint16 *depth = NULL;
 
 Pixel *cube;
 Uint8 *cubeDepth;
-int cubePitch = 0;
+int cubeWidth = 0;
+int cubeHeight = 0;
 Vector3 cameraPosition = {62,71,0};
 
 void MoveCamera(float x, float y, float z){
@@ -52,23 +56,23 @@ void MoveCamera(float x, float y, float z){
     //printf("CamPos: |%2.1f|%2.1f|%2.1f|\n",cameraPosition.x,cameraPosition.y,cameraPosition.z);
 }
 
-void ClearScreen(Pixel* screen){
+void ClearScreen(){
     int y,x,cp = 0;
     for(y=0;y<GAME_SCREEN_HEIGHT;y++){
         for(x=0;x<GAME_SCREEN_WIDTH;x++){
             screen[cp].r = 0;
             screen[cp].g = 0;
             screen[cp].b = 0;
-            screen[cp].a = 0;
+            depth[cp] = 0;
             cp++;
         }
     }
 }
-void FillBackground(Pixel* screen){
+void FillBackground(){
     int y,x,cp = 0;
     for(y=0;y<GAME_SCREEN_HEIGHT;y++){
         for(x=0;x<GAME_SCREEN_WIDTH;x++){
-            if(screen[cp].a == 0){
+            if(depth[cp] == 0){
                 screen[cp].r = (y)>255? 255:y;
                 screen[cp].g = 145;
                 screen[cp].b = (255-y)>255? 255:(255-y<0? 0: 255-y);
@@ -78,12 +82,12 @@ void FillBackground(Pixel* screen){
     }
 }
 
-void PostProcess(Pixel* screen){
+void PostProcess(){
     int y,x,shift,tmp,cp = 0;
     char outlineBrightness = 64;
     float vignettePower = 0.5;
     float chrAberrationPower = 5;
-    float chrAberrationAmount = 0;
+    float chrAberrationAmount = 1;
     int useOcclusion = 0;
     float occlusionAttenuation = 1.25;
 
@@ -96,30 +100,30 @@ void PostProcess(Pixel* screen){
         for(x=0;x<GAME_SCREEN_WIDTH;x++){
 
             //Outline effect
-            if(screen[cp].a!=0 && cp%GAME_SCREEN_WIDTH !=0 && cp%GAME_SCREEN_WIDTH !=GAME_SCREEN_WIDTH-1){
+            if(depth[cp]!=0 && cp%GAME_SCREEN_WIDTH !=0 && cp%GAME_SCREEN_WIDTH !=GAME_SCREEN_WIDTH-1){
                 if(cp-1>0){
-                    if((screen[cp-1].a-screen[cp].a)<-10 || screen[cp-1].a == 0){
+                    if((depth[cp-1]-depth[cp])<-10 || depth[cp-1] == 0){
                         screen[cp-1].r = outlineBrightness;
                         screen[cp-1].g = outlineBrightness;
                         screen[cp-1].b = outlineBrightness;
                     }
                 }
                 if(cp+1<GAME_SCREEN_HEIGHT*GAME_SCREEN_WIDTH){
-                    if((screen[cp+1].a-screen[cp].a)<-10 || screen[cp+1].a == 0){
+                    if((depth[cp+1]-depth[cp])<-10 || depth[cp+1] == 0){
                         screen[cp+1].r = outlineBrightness;
                         screen[cp+1].g = outlineBrightness;
                         screen[cp+1].b = outlineBrightness;
                     }
                 }
                 if(cp-GAME_SCREEN_WIDTH>0){
-                    if((screen[cp-GAME_SCREEN_WIDTH].a-screen[cp].a)<-10 || screen[cp-GAME_SCREEN_WIDTH].a == 0){
+                    if((depth[cp-GAME_SCREEN_WIDTH]-depth[cp])<-10 || depth[cp-GAME_SCREEN_WIDTH] == 0){
                         screen[cp-GAME_SCREEN_WIDTH].r = outlineBrightness;
                         screen[cp-GAME_SCREEN_WIDTH].g = outlineBrightness;
                         screen[cp-GAME_SCREEN_WIDTH].b = outlineBrightness;
                     }
                 }
                 if(cp+GAME_SCREEN_WIDTH<GAME_SCREEN_HEIGHT*GAME_SCREEN_WIDTH){
-                    if((screen[cp+GAME_SCREEN_WIDTH].a-screen[cp].a)<-10 || screen[cp+GAME_SCREEN_WIDTH].a == 0){
+                    if((depth[cp+GAME_SCREEN_WIDTH]-depth[cp])<-10 || depth[cp+GAME_SCREEN_WIDTH] == 0){
                         screen[cp+GAME_SCREEN_WIDTH].r = outlineBrightness;
                         screen[cp+GAME_SCREEN_WIDTH].g = outlineBrightness;
                         screen[cp+GAME_SCREEN_WIDTH].b = outlineBrightness;
@@ -130,7 +134,7 @@ void PostProcess(Pixel* screen){
             tScreenR = screen[cp].r;
             tScreenG = screen[cp].g;
             tScreenB = screen[cp].b;
-            tScreenA = screen[cp].a;
+            tScreenA = depth[cp];
 
             //Vignette effect
             Vector3 dist = {((x /(float)GAME_SCREEN_WIDTH) - 0.5f) * 1.25f,
@@ -164,7 +168,7 @@ void PostProcess(Pixel* screen){
                 px = x;
                 py = y; 
 
-                int radius = 3;
+                int radius = 5;
                 int startx,endx,starty,endy;
                 int ix,iy,index,total = 0;
                 float occ = 0;
@@ -180,19 +184,19 @@ void PostProcess(Pixel* screen){
                         if( ((ix-px)*(ix-px))+((iy-py)*(iy-py)) <= (radius*radius)){
                             total++;
                             index = ix+(iy*GAME_SCREEN_WIDTH);
-                            if(screen[index].a <= tScreenA){
-                                occ +=screen[index].a+128;
+                            if(depth[index] <= tScreenA){
+                                occ +=depth[index]+128*8;
                             }
-                            if(screen[index].a == 0 || tScreenA-screen[index].a == 1){
-                                occ+=128;
+                            if(depth[index] == 0 || tScreenA-depth[index] == 1){
+                                occ+=128*8;
                             }
                         }
                     }   
                 }
 
                 occ /=(float)total; 
-                occ += (128-tScreenA);
-                occ /=255;
+                occ += (128*8-tScreenA);
+                occ /=255*8;
                 occ = clamp(occ*occlusionAttenuation,0,1);
 
                 tScreenR *= occ;
@@ -201,10 +205,9 @@ void PostProcess(Pixel* screen){
             }
 
             //Transfer changes to the pixel in the screen
-            screen[cp].r = screen[cp].a;//tScreenR;
-            screen[cp].g = screen[cp].a;//tScreenG;
-            screen[cp].b = screen[cp].a;//tScreenB;
-
+            screen[cp].r = tScreenR;//depth[cp]/4;
+            screen[cp].g = tScreenG;//depth[cp]/4;
+            screen[cp].b = tScreenB;//depth[cp]/4;
 
             cp++;
         }
@@ -213,7 +216,6 @@ void PostProcess(Pixel* screen){
 void *RenderThread(void *arguments){
     RendererArguments *args = arguments;
 
-    Pixel *screen = args->screen;
 	VoxelObject **objs = args->objs;
 	unsigned int numObjs = args->numObjs;
 	VoxelObject **shadowCasters = args->shadowCasters;
@@ -224,7 +226,7 @@ void *RenderThread(void *arguments){
     for(i=0; i<numObjs; i++){
         if(objs[i]->enabled){
             if(objs[i]->maxDimension >= 100 && numObjs-(i+1)>0){
-				RendererArguments renderArguments = {screen,objs+(i+1),numObjs-(i+1),shadowCasters,numCasters};
+				RendererArguments renderArguments = {objs+(i+1),numObjs-(i+1),shadowCasters,numCasters};
 				pthread_create(&tID, NULL, &RenderThread, (void *)&renderArguments);
                 endLoop = 1;
             }
@@ -242,7 +244,7 @@ void *RenderThread(void *arguments){
                 objs[i]->modificationEndZ = -1;
 
             }
-            RenderObject(screen,objs[i]);
+            RenderObject(objs[i]);
             if(shadowCasters!=NULL){
                 for(int j=0;j<numCasters;j++){
                     CalculateShadow(objs[i],shadowCasters[j]);
@@ -257,12 +259,19 @@ void *RenderThread(void *arguments){
     return NULL;
 }
 
-void InitRenderer(){
+void InitRenderer(Uint16 *dpth){
+    depth = dpth;
+
+    if(depth == NULL){
+        printf("\nError initializing renderer!\n");
+        system("pause");
+    }
     SDL_Surface *cubeimg = IMG_Load("Textures/cube.png");
     SDL_Surface *cubeDepthimg = IMG_Load("Textures/cubeDepth.png");
 
     int bpp = cubeimg->format->BytesPerPixel;
-    cubePitch = cubeimg->w;
+    cubeWidth = cubeimg->w;
+    cubeHeight = cubeimg->h;
 
     cube = (Pixel*)calloc(cubeimg->w*cubeimg->h,sizeof(Pixel));
     cubeDepth = (Uint8 *)calloc(cubeimg->w*cubeimg->h,sizeof(Uint8));
@@ -281,19 +290,26 @@ void InitRenderer(){
         Uint8 depth;
         SDL_GetRGBA(depthColor,cubeDepthimg->format,&depth,&discart,&discart,&discart);
 
-        cubeDepth[i] = depth/64;
+        cubeDepth[i] = depth/32;
     }
 }
+
+void UpdateScreenPointer(Pixel* scrn){
+    screen = scrn;
+}
+
 void FreeRenderer(){
+    free(depth);
     free(cube);
     free(cubeDepth);
  }
 
-void RenderObject(Pixel* screen,VoxelObject *obj){
+void RenderObject(VoxelObject *obj){
 
     unsigned int color = 0;
 
-    int x,y,z,i,px,py,zp,startz,aux,nv,cp = 0,colorIndex,sumx = 0,sumy = 0,edgeIndx,lightIndx,numberOfPixels,useRot = 0;
+    int x,y,z,i,px,py,zp,startz,aux,nv,cp = 0,colorIndex,sumx = 0,sumy = 0,edgeIndx,lightIndx,useRot = 0;
+    Uint16 voxeld;
     int halfDimX = obj->dimension[0]/2.0, halfDimY = obj->dimension[1]/2.0,halfDimZ = obj->dimension[2]/2.0;
     float rx,ry,rz;
     float sinx = 1,cosx = 0;
@@ -376,7 +392,7 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
             illuminFrac *=((1.0+((zp*0.5))/128));
             //Pega a cor do voxel e coloca no pixel
             //A cor é transformada do int16 para cada um dos componentes RGB
-            p.a = zp*3;
+            voxeld = zp*8;
             p.r = clamp((color & 255)*illuminFrac,0,255);
             color = (color>>8);
             p.g = clamp((color & 255)*illuminFrac,0,255);
@@ -390,8 +406,8 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
             px = ( ((rx+obj->position.x)-(ry+obj->position.y))*val2 +roundf(-cameraPosition.x))*6;
 
             int cx,cy;
-            for(cy=0;cy<10;cy++){
-                for(cx=0;cx<9;cx++){
+            for(cy=0;cy<cubeHeight;cy++){
+                for(cx=0;cx<cubeWidth;cx++){
                     cp = sumy+py+cy;
                     cp = cp>=GAME_SCREEN_HEIGHT? -1: (cp<0? -1:cp*GAME_SCREEN_WIDTH);
                     if(cp <0){
@@ -404,69 +420,19 @@ void RenderObject(Pixel* screen,VoxelObject *obj){
                     }
 
                     
-                    Pixel pixel = cube[cx+cy*cubePitch];
+                    Pixel pixel = cube[cx+cy*cubeWidth];
                     if(pixel.a==0) continue;
 
                     pixel.r *= p.r/255.0f;
                     pixel.g *= p.g/255.0f;
                     pixel.b *= p.b/255.0f;
-                    pixel.a = p.a+cubeDepth[cx+cy*cubePitch];
-                    if(pixel.a > screen[cp].a){
+                    Uint16 pixeld = voxeld+cubeDepth[cx+cy*cubeWidth];
+                    if(pixeld > depth[cp]){
                         screen[cp] = pixel;
+                        depth[cp] = pixeld;
                     }
                 }
             }
-
-
-            /*numberOfPixels = 4+(obj->render[z][i]>>14);
-            for(j=1;j<=numberOfPixels;j++){
-                switch (j){
-                    case 1:
-                        sumx = 0;
-                        sumy = 0;
-                    break;
-                    case 2:
-                        sumx = 1;
-                        sumy = 1;
-                    break;
-                    case 3:
-                        sumx = 1;
-                        sumy = 0;
-                    break;
-                    case 4:
-                        sumx = 0;
-                        sumy = 1;
-                    break;
-                    case 5:
-                        sumx = 1;
-                        sumy = 2;
-                    break;
-                    case 6:
-                        sumx = 0;
-                        sumy = 2;
-                    break;
-                }
-                cp = sumy+py;
-                cp = cp>=GAME_SCREEN_HEIGHT? -1: (cp<0? -1:cp*GAME_SCREEN_WIDTH);
-                if(cp <0){
-                    continue;
-                }
-                aux = sumx+px;
-                cp = (aux)>=GAME_SCREEN_WIDTH? -1: ((aux)<0? -1:cp + (aux));
-                if(cp <0){
-                    continue;
-                }
-
-                if(zp+1 > screen[cp].a){
-                    screen[cp] = p;
-                    if(j>4){
-                        screen[cp].a = screen[cp].a>0? screen[cp].a-1:0;
-                        screen[cp].r*=shadow;
-                        screen[cp].g*=shadow;
-                        screen[cp].b*=shadow;
-                    }
-                }
-            }*/
         }
     }
 }
@@ -478,8 +444,8 @@ void CalculateRendered(VoxelObject *obj){
     int x,y,z,index,dir,occ,occPixel = 0,occUp,occLeft,occDown;
     for(z = obj->modificationStartZ; z<=obj->modificationEndZ ;z++){
         obj->render[z][0]=0;
-        for(y = 0; y<obj->dimension[1]; y++){
-            for(x = 0; x<obj->dimension[0]; x++){
+        for(y = obj->dimension[1]-1; y>=0; y--){
+            for(x = obj->dimension[0]-1; x>=0; x--){
                 occ = 0;
                 occUp   = 0;
                 occLeft = 0;

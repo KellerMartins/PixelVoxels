@@ -454,10 +454,91 @@ void CalculateRendered(VoxelObject *obj){
                 index = (x + z * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);
                 if(obj->model[index]!=0){
                     if(x!=0 && x<obj->maxDimension-1 && y!=0 && y<obj->maxDimension-1 && z!=0 && z<obj->maxDimension-1){
+                        dir = (x + (z+1) * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);//0 0 1
+                        if(obj->model[dir]!=0){
+                            occ++; 
+                            occUp=1;
+                        }
+                        dir = (x + (z-1) * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);//0 0 -1
+                        if(obj->model[dir]!=0){
+                            occ++;
+                            occDown = 1;
+                        }
+                        dir = (x + z * obj->maxDimension + (y+1) * obj->maxDimension * obj->maxDimension);//0 1 0
+                        if(obj->model[dir]!=0){
+                            occ++;
+                        }
+                        dir = (x + z * obj->maxDimension + (y-1) * obj->maxDimension * obj->maxDimension);//0 -1 0 
+                        if(obj->model[dir]!=0){
+                            occ++;
+                        }
+                        dir = ( (x+1) + z * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);//1 0 0
+                        if(obj->model[dir]!=0){
+                            occ++;
+                        }
+                        dir = ( (x-1) + z * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);//1 0 0 
+                        if(obj->model[dir]!=0){
+                            occ++;
+                            occLeft = 1;
+                        }
+                        dir = ((x-1) + z * obj->maxDimension + (y-1) * obj->maxDimension * obj->maxDimension);//-1 -1 0
+                        if(obj->model[dir]!=0){
+                            occ++;
+                        }
+                        dir = ((x+1) + z * obj->maxDimension + (y-1) * obj->maxDimension * obj->maxDimension);//-1 1 0
+                        if(obj->model[dir]!=0){
+                            occ++;
+                        }
                         dir = ((x+1) + (z+1) * obj->maxDimension + (y+1) * obj->maxDimension * obj->maxDimension);//1 1 1
                         if(obj->model[dir]!=0){
                             occ++;
                         }
+                        dir = ((x-1) + (z+1) * obj->maxDimension + (y+1) * obj->maxDimension * obj->maxDimension);//-1 1 1
+                        if(obj->model[dir]!=0){
+                            occ++;
+                        }
+                        dir = ((x-1) + (z+1) * obj->maxDimension + (y-1) * obj->maxDimension * obj->maxDimension);//-1 -1 1
+                        if(obj->model[dir]!=0){
+                            occ++;
+                        }
+                        dir = ((x+1) + (z+1) * obj->maxDimension + (y-1) * obj->maxDimension * obj->maxDimension);//1 -1 1
+                        if(obj->model[dir]!=0){
+                            occ++;
+                        }
+                    }
+                    if(x==obj->maxDimension-1 && y<obj->maxDimension-1 && z<obj->maxDimension-1){
+                        
+                        dir = (x + z * obj->maxDimension + (y+1) * obj->maxDimension * obj->maxDimension);//0 1 0
+                        if(obj->model[dir]!=0){
+                            occ = 7;
+                        }
+                        dir = ((x+1) + (z+1) * obj->maxDimension + (y+1) * obj->maxDimension * obj->maxDimension);//1 1 1
+                        if(obj->model[dir]!=0){
+                            occ += 5;
+                        }
+                    }
+                    if(z==0 && (y!=0 && x<obj->maxDimension-1)){
+                        dir = (x + z * obj->maxDimension + (y+1) * obj->maxDimension * obj->maxDimension);//0 -1 0
+                        if(obj->model[dir]!=0){
+                            occ = 7;
+                        }
+                        dir = ((x+1) + (z) * obj->maxDimension + (y) * obj->maxDimension * obj->maxDimension);//1 0 0
+                        if(obj->model[dir]!=0){
+                            occ += 5;
+                        }
+                    }
+                    if(y==0 && (z+1< obj->maxDimension && x+1<obj->maxDimension)){
+                        dir = (x + (z+1) * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);//0 -1 0
+                        if(obj->model[dir]!=0){
+                            occ = 7;
+                        }
+                        dir = ((x+1) + (z) * obj->maxDimension + (y) * obj->maxDimension * obj->maxDimension);//1 0 0
+                        if(obj->model[dir]!=0){
+                            occ += 5;
+                        }
+                    }
+                    if(y == obj->dimension[1]){
+                        occ = 5;
                     }
                     if(occ!=12){
                         if((occLeft && occDown && occUp) || y == obj->dimension[1]-1){

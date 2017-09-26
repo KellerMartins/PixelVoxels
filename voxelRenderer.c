@@ -345,10 +345,6 @@ void RenderObject(VoxelObject *obj){
     }
     
     for(z=startz;z>=0;z--){
-        zp = z + roundf(obj->position.z+cameraPosition.z);
-        if(zp<0 || zp>128){
-            continue;
-        }
 
         nv = obj->render[z][0];
         for(i = 1; i <= nv ; i++){
@@ -379,7 +375,7 @@ void RenderObject(VoxelObject *obj){
                 rz = z;
             }
             zp = rz + roundf(obj->position.z+cameraPosition.z);
-
+            if(zp<0 || zp>255) continue;
         
             lightIndx = (obj->lighting[colorIndex] & 6)>>1;
             lightIndx *=obj->lighting[colorIndex] & 1; 
@@ -390,7 +386,7 @@ void RenderObject(VoxelObject *obj){
             edgeVal = (edgeIndx<5? edge:edgeIndx == 5? base:crease);
 
             illuminFrac = lightVal * edgeVal;
-            illuminFrac *=((1.0+((zp*0.5))/128));
+            illuminFrac *= clamp(((1.0+((zp*0.5))/128)),0,1.4);
             //Pega a cor do voxel e coloca no pixel
             //A cor é transformada do int16 para cada um dos componentes RGB
             voxeld = zp*8;
@@ -409,6 +405,9 @@ void RenderObject(VoxelObject *obj){
             int cx,cy;
             for(cy=0;cy<cubeHeight;cy++){
                 for(cx=0;cx<cubeWidth;cx++){
+                    Pixel pixel = cube[cx+cy*cubeWidth];
+                    if(pixel.a==0) continue;
+
                     cp = sumy+py+cy;
                     cp = cp>=GAME_SCREEN_HEIGHT? -1: (cp<0? -1:cp*GAME_SCREEN_WIDTH);
                     if(cp <0){
@@ -420,15 +419,12 @@ void RenderObject(VoxelObject *obj){
                         continue;
                     }
 
-                    
-                    Pixel pixel = cube[cx+cy*cubeWidth];
-                    if(pixel.a==0) continue;
-
-                    pixel.r *= p.r/255.0f;
-                    pixel.g *= p.g/255.0f;
-                    pixel.b *= p.b/255.0f;
                     Uint16 pixeld = voxeld+cubeDepth[cx+cy*cubeWidth];
                     if(pixeld > depth[cp]){
+                        pixel.r *= p.r/255.0f;
+                        pixel.g *= p.g/255.0f;
+                        pixel.b *= p.b/255.0f;
+                    
                         screen[cp] = pixel;
                         depth[cp] = pixeld;
                     }
@@ -482,32 +478,8 @@ void CalculateRendered(VoxelObject *obj){
                             occ++;
                             occLeft = 1;
                         }
-                        dir = ((x-1) + z * obj->maxDimension + (y-1) * obj->maxDimension * obj->maxDimension);//-1 -1 0
-                        if(obj->model[dir]!=0){
-                            occ++;
-                        }
-                        dir = ((x+1) + z * obj->maxDimension + (y-1) * obj->maxDimension * obj->maxDimension);//-1 1 0
-                        if(obj->model[dir]!=0){
-                            occ++;
-                        }
-                        dir = ((x+1) + (z+1) * obj->maxDimension + (y+1) * obj->maxDimension * obj->maxDimension);//1 1 1
-                        if(obj->model[dir]!=0){
-                            occ++;
-                        }
-                        dir = ((x-1) + (z+1) * obj->maxDimension + (y+1) * obj->maxDimension * obj->maxDimension);//-1 1 1
-                        if(obj->model[dir]!=0){
-                            occ++;
-                        }
-                        dir = ((x-1) + (z+1) * obj->maxDimension + (y-1) * obj->maxDimension * obj->maxDimension);//-1 -1 1
-                        if(obj->model[dir]!=0){
-                            occ++;
-                        }
-                        dir = ((x+1) + (z+1) * obj->maxDimension + (y-1) * obj->maxDimension * obj->maxDimension);//1 -1 1
-                        if(obj->model[dir]!=0){
-                            occ++;
-                        }
                     }
-                    if(occ!=12){
+                    if(occ!=6){
                         if((occLeft && occDown && occUp) || y == obj->dimension[1]-1){
                             occPixel = 0;
                         }else{

@@ -25,19 +25,7 @@ const int GAME_SCREEN_HEIGHT = 720;
 const int SCREEN_WIDTH = 1280;
 const int SCREEN_HEIGHT = 720;
 
-//Variáveis do contador de FPS
-//Número de frames armazenados
-#define FRAME_VALUES 10
-Uint32 frameTimes[FRAME_VALUES];
-Uint32 frameTicksLast;
-Uint32 frameCount;
-float framesPerSecond;
 char *fpscounter;
-void InitFPS();
-void ProcessFPS();
-
-//Sound engine variable
-Soloud *soloud;
 
 //Tempo entre frames, calculado ao fim do loop principal
 double deltaTime = 0;
@@ -54,10 +42,6 @@ int sceneObjectCount;
 //Pool de objetos
 PoolObject Pool[POOLSIZE];
 
-
-extern const Uint8 *keyboard_current;
-extern Uint8 *keyboard_last;
-extern 	SDL_Event event;
 extern VoxelObject model;
 
 int main(int argc, char *argv[]){
@@ -70,25 +54,17 @@ int main(int argc, char *argv[]){
 	SDL_Texture * render = NULL;
 	SDL_Window* window = NULL;	
 	
-	//Inicializa string para o contador de frames
-	fpscounter = (char*)calloc(50,sizeof(char));
-	//Inicializa rand
+	//Inicializações gerais
+
 	srand( (unsigned)time(NULL) );
 
-	//Carrega o mapa
-	if(LoadMap("Maps/Test.txt")<0){
-		ErrorOcurred = 1;
-		goto EndProgram;
-	}
-	
-	//Inicializa bibliotecas e a janela do jogo
+	Soloud *soloud = NULL;
 	soloud = Soloud_create();
 	if(Soloud_initEx(soloud,SOLOUD_CLIP_ROUNDOFF | SOLOUD_ENABLE_VISUALIZATION, SOLOUD_AUTO, SOLOUD_AUTO, SOLOUD_AUTO, SOLOUD_AUTO)<0){
 		printf("SoLoud could not initialize! \n");
 		ErrorOcurred = 1;
 		goto EndProgram;
 	}
-
 
 	if(IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG){
 		printf("SDL Image could not initialize! \n");
@@ -108,6 +84,9 @@ int main(int argc, char *argv[]){
 		ErrorOcurred = 1;
 		goto EndProgram;
 	}
+
+	//Inicializa string para o contador de frames
+	fpscounter = (char*)calloc(50,sizeof(char));	
 
 	//Inicializa o renderizador e a textura da tela
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
@@ -129,6 +108,12 @@ int main(int argc, char *argv[]){
 	InitFPS();
 	Uint64 NOW = SDL_GetPerformanceCounter();
 	Uint64 LAST = 0;
+	
+	//Carrega o mapa
+	if(LoadMap("Maps/Test.txt")<0){
+		ErrorOcurred = 1;
+		ExitGame = 1;
+	}
 
 	//Inicializações do jogo
 	InitRenderer(depth);
@@ -200,7 +185,7 @@ int main(int argc, char *argv[]){
 		//Conta MS e FPS gastos e coloca como título da tela
 		mstime = SDL_GetTicks()-frameTicks;
 		ProcessFPS();
-		sprintf(fpscounter, "FPS: %0.2f |Render MS: %d |DeltaTime: %7.6lf", framesPerSecond, mstime, deltaTime);
+		sprintf(fpscounter, "FPS: %0.2f |Render MS: %d |DeltaTime: %7.6lf", GetFPS(), mstime, deltaTime);
 		SDL_SetWindowTitle(window,fpscounter);
 		
 
@@ -242,51 +227,4 @@ int main(int argc, char *argv[]){
 	if(ErrorOcurred)
 		system("pause");
     return 0;
-}
-
-void InitFPS() {
-	//Inicializa FPS em 0
-	memset(frameTimes, 0, sizeof(frameTimes));
-	frameCount = 0;
-	framesPerSecond = 0;
-	frameTicksLast = SDL_GetTicks();
-}
-
-void ProcessFPS() {
-	Uint32 frameTimesIndex;
-	Uint32 currentTicks;
-	Uint32 count;
-	Uint32 i;
-
-	frameTimesIndex = frameCount % FRAME_VALUES;
-
-	currentTicks = SDL_GetTicks();
-	// save the frame time value
-	frameTimes[frameTimesIndex] = currentTicks - frameTicksLast;
-
-	// save the last frame time for the next fpsthink
-	frameTicksLast = currentTicks;
-
-	// increment the frame count
-	frameCount++;
-
-	// Work out the current framerate
-	// I've included a test to see if the whole array has been written to or not. This will stop
-	// strange values on the first few (FRAME_VALUES) frames.
-	if (frameCount < FRAME_VALUES) {
-		count = frameCount;
-	} else {
-		count = FRAME_VALUES;
-	}
-
-	// add up all the values and divide to get the average frame time.
-	framesPerSecond = 0;
-	for (i = 0; i < count; i++) {
-		framesPerSecond += frameTimes[i];
-	}
-
-	framesPerSecond /= count;
-
-	// now to make it an actual frames per second value...
-	framesPerSecond = 1000.f / framesPerSecond;
 }

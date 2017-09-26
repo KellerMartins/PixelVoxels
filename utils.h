@@ -1,6 +1,10 @@
 #ifndef UTILS_H
 #define UTILS_H
 #include <math.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <SDL2/SDL.h>
 
 #define PI_OVER_180 0.01745329251
 
@@ -29,6 +33,10 @@ typedef struct Vector3{
 	float y;
 	float z;
 }Vector3;
+
+void InitFPS();
+void ProcessFPS();
+float GetFPS();
 
 void NormalizeVector(Vector3* v);
 void NormalizeAVector(float* v);

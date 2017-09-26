@@ -85,7 +85,7 @@ void FillBackground(){
 void PostProcess(){
     int y,x,shift,tmp,cp = 0;
     char outlineBrightness = 64;
-    float vignettePower = 0.25;
+    float vignettePower = 0;
     float chrAberrationPower = 5;
     float chrAberrationAmount = 0;
     int useOcclusion = 0;
@@ -136,30 +136,31 @@ void PostProcess(){
             tScreenB = screen[cp].b;
             tScreenA = depth[cp];
 
-            //Vignette effect
-            Vector3 dist = {((x /(float)GAME_SCREEN_WIDTH) - 0.5f) * 1.25f,
-                            ((y/(float)GAME_SCREEN_HEIGHT) - 0.5f) * 1.25f,0};
-            float vignette = clamp(1 - dot(dist, dist)*vignettePower,0,1);
-            
-            //Scanline
-            if(chrAberrationAmount>0){
-                vignette *= y%3==0 ? 0.95f:1;
-            }
+            if(vignettePower>0 || chrAberrationAmount>0){
+                //Vignette effect
+                Vector3 dist = {((x /(float)GAME_SCREEN_WIDTH) - 0.5f) * 1.25f,
+                                ((y/(float)GAME_SCREEN_HEIGHT) - 0.5f) * 1.25f,0};
+                float vignette = clamp(1 - dot(dist, dist)*vignettePower,0,1);
+                
+                //Scanline
+                if(chrAberrationAmount>0){
+                    vignette *= y%3==0 ? 0.95f:1;
+                }
 
-            tScreenR *= vignette;
-            tScreenG *= vignette;
-            tScreenB *= vignette;
+                tScreenR *= vignette;
+                tScreenG *= vignette;
+                tScreenB *= vignette;
 
-            //Red Chromatic aberration
-            if(chrAberrationAmount>0){
-                shift = clamp(dot(dist, dist)*chrAberrationPower,0,1)*chrAberrationAmount;
-                if(cp>shift){
-                    tmp =  tScreenR;
-                    tScreenR = screen[cp-shift].r;
-                    screen[cp-shift].r = tmp;
+                //Red Chromatic aberration
+                if(chrAberrationAmount>0){
+                    shift = clamp(dot(dist, dist)*chrAberrationPower,0,1)*chrAberrationAmount;
+                    if(cp>shift){
+                        tmp =  tScreenR;
+                        tScreenR = screen[cp-shift].r;
+                        screen[cp-shift].r = tmp;
+                    }
                 }
             }
-
 
             //Screen Space Ambient Occlusion
             if(useOcclusion){

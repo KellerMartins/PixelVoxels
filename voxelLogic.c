@@ -12,33 +12,7 @@ Uint8 *keyboard_last;
 SDL_Event event;
 VoxelObject model;
 
-void InputStart(){
-    //Inicializa as vars do teclado
-	keyboard_last = (Uint8 *)calloc(284,sizeof(Uint8));
-	keyboard_current = SDL_GetKeyboardState(NULL);
-}
-
-void InputUpdate(){
-    //Atualiza o vetor de input e gerencia eventos
-    if(keyboard_current!=NULL){
-        memcpy(keyboard_last,keyboard_current,284*sizeof(Uint8));
-    }
-    while (SDL_PollEvent(&event)) {
-        switch (event.type)
-        {
-            case SDL_QUIT:
-                ExitGame = 1;
-                break;
-        }
-    }
-}
-
-void FreeInput(){
-    free(keyboard_last);
-}
-
 void GameStart(){
-//[ Define objetos do pool e o inicializa ]
     
     FILE *voxelFile;
 
@@ -188,6 +162,33 @@ void GameUpdate(){
     
     if (GetKeyDown(SDL_SCANCODE_U)){val3+=0.001; printf("\n %f %f %f\n",val1,val2,val3);}
     if (GetKeyDown(SDL_SCANCODE_J)){val3-=0.001; printf("\n %f %f %f\n",val1,val2,val3);}
+}
+
+//--------------------------------------------------------- Input ----------------------------------------------------------------------------
+
+void InputStart(){
+    //Inicializa as vars do teclado
+	keyboard_last = (Uint8 *)calloc(284,sizeof(Uint8));
+	keyboard_current = SDL_GetKeyboardState(NULL);
+}
+
+void InputUpdate(){
+    //Atualiza o vetor de input e gerencia eventos
+    if(keyboard_current!=NULL){
+        memcpy(keyboard_last,keyboard_current,284*sizeof(Uint8));
+    }
+    while (SDL_PollEvent(&event)) {
+        switch (event.type)
+        {
+            case SDL_QUIT:
+                ExitGame = 1;
+                break;
+        }
+    }
+}
+
+void FreeInput(){
+    free(keyboard_last);
 }
 
 //--------------------------------------------------------- Pool de objetos ----------------------------------------------------------------------------

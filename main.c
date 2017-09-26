@@ -178,7 +178,7 @@ int main(int argc, char *argv[]){
 			pthread_join(tID2, NULL);
 
 			FillBackground();
-			//PostProcess();
+			PostProcess();
 
 		SDL_UnlockTexture(render);
 

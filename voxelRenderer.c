@@ -85,9 +85,9 @@ void FillBackground(){
 void PostProcess(){
     int y,x,shift,tmp,cp = 0;
     char outlineBrightness = 64;
-    float vignettePower = 0.5;
+    float vignettePower = 0.25;
     float chrAberrationPower = 5;
-    float chrAberrationAmount = 1;
+    float chrAberrationAmount = 0;
     int useOcclusion = 0;
     float occlusionAttenuation = 1.25;
 
@@ -185,18 +185,18 @@ void PostProcess(){
                             total++;
                             index = ix+(iy*GAME_SCREEN_WIDTH);
                             if(depth[index] <= tScreenA){
-                                occ +=depth[index]+128*8;
+                                occ +=1;
                             }
-                            if(depth[index] == 0 || tScreenA-depth[index] == 1){
-                                occ+=128*8;
+                            if(depth[index] == 0 || (tScreenA-depth[index] <10 &&tScreenA-depth[index] >0)){
+                                occ+=1;
                             }
                         }
                     }   
                 }
 
                 occ /=(float)total; 
-                occ += (128*8-tScreenA);
-                occ /=255*8;
+                //occ += (1024-tScreenA);
+                //occ /=2048;
                 occ = clamp(occ*occlusionAttenuation,0,1);
 
                 tScreenR *= occ;
@@ -505,40 +505,6 @@ void CalculateRendered(VoxelObject *obj){
                         if(obj->model[dir]!=0){
                             occ++;
                         }
-                    }
-                    if(x==obj->maxDimension-1 && y<obj->maxDimension-1 && z<obj->maxDimension-1){
-                        
-                        dir = (x + z * obj->maxDimension + (y+1) * obj->maxDimension * obj->maxDimension);//0 1 0
-                        if(obj->model[dir]!=0){
-                            occ = 7;
-                        }
-                        dir = ((x+1) + (z+1) * obj->maxDimension + (y+1) * obj->maxDimension * obj->maxDimension);//1 1 1
-                        if(obj->model[dir]!=0){
-                            occ += 5;
-                        }
-                    }
-                    if(z==0 && (y!=0 && x<obj->maxDimension-1)){
-                        dir = (x + z * obj->maxDimension + (y+1) * obj->maxDimension * obj->maxDimension);//0 -1 0
-                        if(obj->model[dir]!=0){
-                            occ = 7;
-                        }
-                        dir = ((x+1) + (z) * obj->maxDimension + (y) * obj->maxDimension * obj->maxDimension);//1 0 0
-                        if(obj->model[dir]!=0){
-                            occ += 5;
-                        }
-                    }
-                    if(y==0 && (z+1< obj->maxDimension && x+1<obj->maxDimension)){
-                        dir = (x + (z+1) * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);//0 -1 0
-                        if(obj->model[dir]!=0){
-                            occ = 7;
-                        }
-                        dir = ((x+1) + (z) * obj->maxDimension + (y) * obj->maxDimension * obj->maxDimension);//1 0 0
-                        if(obj->model[dir]!=0){
-                            occ += 5;
-                        }
-                    }
-                    if(y == obj->dimension[1]){
-                        occ = 5;
                     }
                     if(occ!=12){
                         if((occLeft && occDown && occUp) || y == obj->dimension[1]-1){

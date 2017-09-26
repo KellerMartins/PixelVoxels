@@ -38,7 +38,7 @@ extern const int GAME_SCREEN_WIDTH;
 extern const int GAME_SCREEN_HEIGHT;
 extern double deltaTime;
 
-float val1 = 0.334,val2 = 0.667,val3 = 0.702;
+float val1 = 0.400099,val2 = 0.795598,val3 = 0.793999;
 
 Pixel *screen = NULL;
 Uint16 *depth = NULL;
@@ -47,7 +47,7 @@ Pixel *cube;
 Uint8 *cubeDepth;
 int cubeWidth = 0;
 int cubeHeight = 0;
-Vector3 cameraPosition = {62,71,0};
+Vector3 cameraPosition = {-49.1,-52.1,0};
 
 void MoveCamera(float x, float y, float z){
     cameraPosition.x +=x*deltaTime;
@@ -85,7 +85,7 @@ void FillBackground(){
 void PostProcess(){
     int y,x,shift,tmp,cp = 0;
     char outlineBrightness = 64;
-    float vignettePower = 0;
+    float vignettePower = 0.25;
     float chrAberrationPower = 5;
     float chrAberrationAmount = 0;
     int useOcclusion = 0;
@@ -403,8 +403,8 @@ void RenderObject(VoxelObject *obj){
             //py = ((ry)+roundf(obj->position.y-cameraPosition.y)+(125-(zp*0.5)))*2;
             //px = ((rx)+roundf(obj->position.x-cameraPosition.x)+(125-(zp*0.5)))*2;
 
-            py = ( (((rx+obj->position.x)+(ry+obj->position.y))*val1 -(zp*val3)) +roundf(-cameraPosition.y))*6;
-            px = ( ((rx+obj->position.x)-(ry+obj->position.y))*val2 +roundf(-cameraPosition.x))*6;
+            py = ( (((rx+obj->position.x)+(ry+obj->position.y))*val1 -(zp*val3)) +roundf(-cameraPosition.y))*5;
+            px = ( ((rx+obj->position.x)-(ry+obj->position.y))*val2 +roundf(-cameraPosition.x))*5;
 
             int cx,cy;
             for(cy=0;cy<cubeHeight;cy++){

@@ -18,12 +18,12 @@
 #define FRAMES_PER_SECOND 60
 
 //Resolução interna, utilizada na renderização
-const int GAME_SCREEN_WIDTH = 1280;
-const int GAME_SCREEN_HEIGHT = 720;
+const int GAME_SCREEN_WIDTH = 960;
+const int GAME_SCREEN_HEIGHT = 540;
 
 //Resolução da janela do jogo
-const int SCREEN_WIDTH = 1280;
-const int SCREEN_HEIGHT = 720;
+const int SCREEN_WIDTH = 1920;
+const int SCREEN_HEIGHT = 1080;
 
 char *fpscounter;
 
@@ -78,7 +78,7 @@ int main(int argc, char *argv[]){
 		ErrorOcurred = 1;
 		goto EndProgram;
     }
-	window = SDL_CreateWindow( "Vopix Engine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+	window = SDL_CreateWindow( "Vopix Engine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 	if(window == NULL){
 		printf("Window could not be created! SDL_Error %s\n", SDL_GetError() );
 		ErrorOcurred = 1;

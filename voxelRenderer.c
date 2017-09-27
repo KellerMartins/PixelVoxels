@@ -38,7 +38,7 @@ extern const int GAME_SCREEN_WIDTH;
 extern const int GAME_SCREEN_HEIGHT;
 extern double deltaTime;
 
-float val1 = 0.400099,val2 = 0.795598,val3 = 0.793999;
+float val1 = 0.199600,val2 = 0.398101,val3 = 0.400602;
 
 Pixel *screen = NULL;
 Uint16 *depth = NULL;
@@ -84,10 +84,13 @@ void FillBackground(){
 
 void PostProcess(){
     int y,x,shift,tmp,cp = 0;
+    int showDepth = 0;
+    int useOutline = 1;
     char outlineBrightness = 64;
     float vignettePower = 0.25;
     float chrAberrationPower = 5;
     float chrAberrationAmount = 0;
+    //Necessário revisar.Deixar desativado por enquanto
     int useOcclusion = 0;
     float occlusionAttenuation = 1.25;
 
@@ -99,38 +102,39 @@ void PostProcess(){
     for(y=0;y<GAME_SCREEN_HEIGHT;y++){
         for(x=0;x<GAME_SCREEN_WIDTH;x++){
 
-            //Outline effect
-            if(depth[cp]!=0 && cp%GAME_SCREEN_WIDTH !=0 && cp%GAME_SCREEN_WIDTH !=GAME_SCREEN_WIDTH-1){
-                if(cp-1>0){
-                    if((depth[cp-1]-depth[cp])<-10 || depth[cp-1] == 0){
-                        screen[cp-1].r = outlineBrightness;
-                        screen[cp-1].g = outlineBrightness;
-                        screen[cp-1].b = outlineBrightness;
+            if(useOutline){
+                //Outline effect
+                if(depth[cp]!=0 && cp%GAME_SCREEN_WIDTH !=0 && cp%GAME_SCREEN_WIDTH !=GAME_SCREEN_WIDTH-1){
+                    if(cp-1>0){
+                        if((depth[cp-1]-depth[cp])<-10 || depth[cp-1] == 0){
+                            screen[cp-1].r = outlineBrightness;
+                            screen[cp-1].g = outlineBrightness;
+                            screen[cp-1].b = outlineBrightness;
+                        }
                     }
-                }
-                if(cp+1<GAME_SCREEN_HEIGHT*GAME_SCREEN_WIDTH){
-                    if((depth[cp+1]-depth[cp])<-10 || depth[cp+1] == 0){
-                        screen[cp+1].r = outlineBrightness;
-                        screen[cp+1].g = outlineBrightness;
-                        screen[cp+1].b = outlineBrightness;
+                    if(cp+1<GAME_SCREEN_HEIGHT*GAME_SCREEN_WIDTH){
+                        if((depth[cp+1]-depth[cp])<-10 || depth[cp+1] == 0){
+                            screen[cp+1].r = outlineBrightness;
+                            screen[cp+1].g = outlineBrightness;
+                            screen[cp+1].b = outlineBrightness;
+                        }
                     }
-                }
-                if(cp-GAME_SCREEN_WIDTH>0){
-                    if((depth[cp-GAME_SCREEN_WIDTH]-depth[cp])<-10 || depth[cp-GAME_SCREEN_WIDTH] == 0){
-                        screen[cp-GAME_SCREEN_WIDTH].r = outlineBrightness;
-                        screen[cp-GAME_SCREEN_WIDTH].g = outlineBrightness;
-                        screen[cp-GAME_SCREEN_WIDTH].b = outlineBrightness;
+                    if(cp-GAME_SCREEN_WIDTH>0){
+                        if((depth[cp-GAME_SCREEN_WIDTH]-depth[cp])<-10 || depth[cp-GAME_SCREEN_WIDTH] == 0){
+                            screen[cp-GAME_SCREEN_WIDTH].r = outlineBrightness;
+                            screen[cp-GAME_SCREEN_WIDTH].g = outlineBrightness;
+                            screen[cp-GAME_SCREEN_WIDTH].b = outlineBrightness;
+                        }
                     }
-                }
-                if(cp+GAME_SCREEN_WIDTH<GAME_SCREEN_HEIGHT*GAME_SCREEN_WIDTH){
-                    if((depth[cp+GAME_SCREEN_WIDTH]-depth[cp])<-10 || depth[cp+GAME_SCREEN_WIDTH] == 0){
-                        screen[cp+GAME_SCREEN_WIDTH].r = outlineBrightness;
-                        screen[cp+GAME_SCREEN_WIDTH].g = outlineBrightness;
-                        screen[cp+GAME_SCREEN_WIDTH].b = outlineBrightness;
+                    if(cp+GAME_SCREEN_WIDTH<GAME_SCREEN_HEIGHT*GAME_SCREEN_WIDTH){
+                        if((depth[cp+GAME_SCREEN_WIDTH]-depth[cp])<-10 || depth[cp+GAME_SCREEN_WIDTH] == 0){
+                            screen[cp+GAME_SCREEN_WIDTH].r = outlineBrightness;
+                            screen[cp+GAME_SCREEN_WIDTH].g = outlineBrightness;
+                            screen[cp+GAME_SCREEN_WIDTH].b = outlineBrightness;
+                        }
                     }
                 }
             }
-
             tScreenR = screen[cp].r;
             tScreenG = screen[cp].g;
             tScreenB = screen[cp].b;
@@ -169,7 +173,7 @@ void PostProcess(){
                 px = x;
                 py = y; 
 
-                int radius = 5;
+                int radius = 3;
                 int startx,endx,starty,endy;
                 int ix,iy,index,total = 0;
                 float occ = 0;
@@ -188,7 +192,7 @@ void PostProcess(){
                             if(depth[index] <= tScreenA){
                                 occ +=1;
                             }
-                            if(depth[index] == 0 || (tScreenA-depth[index] <10 &&tScreenA-depth[index] >0)){
+                            if(depth[index] == 0 || (tScreenA-depth[index] <5 &&tScreenA-depth[index] >0)){
                                 occ+=1;
                             }
                         }
@@ -206,10 +210,15 @@ void PostProcess(){
             }
 
             //Transfer changes to the pixel in the screen
-            screen[cp].r = tScreenR;//depth[cp]/4;
-            screen[cp].g = tScreenG;//depth[cp]/4;
-            screen[cp].b = tScreenB;//depth[cp]/4;
+            screen[cp].r = tScreenR;
+            screen[cp].g = tScreenG;
+            screen[cp].b = tScreenB;
 
+            if(showDepth){
+                screen[cp].r = depth[cp]/4;
+                screen[cp].g = depth[cp]/4;
+                screen[cp].b = depth[cp]/4;
+            }
             cp++;
         }
     }

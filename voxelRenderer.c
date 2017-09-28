@@ -38,8 +38,6 @@ extern const int GAME_SCREEN_WIDTH;
 extern const int GAME_SCREEN_HEIGHT;
 extern double deltaTime;
 
-float val1 = 0.199600,val2 = 0.398101,val3 = 0.400602;
-
 Pixel *screen = NULL;
 Uint16 *depth = NULL;
 
@@ -344,13 +342,16 @@ void RenderObject(VoxelObject *obj){
 
     float illuminFrac = 1,lightVal,edgeVal;
     Pixel p;
-
-    //z = obj->position.z>125? 125:(obj->position.z<0? 0:(int)(obj->position.z));
     startz = (obj->dimension[2]-1);
     
-    if( ( ((obj->dimension[1])+roundf(obj->position.y-cameraPosition.y)+125)*2 <0 || -125 + ((obj->dimension[1])+roundf(obj->position.y-cameraPosition.y))*2 >GAME_SCREEN_HEIGHT) ||
-        ( ((obj->dimension[0])+roundf(obj->position.x-cameraPosition.x)+125)*2 <0 || -125 + ((obj->dimension[0])+roundf(obj->position.x-cameraPosition.x))*2 >GAME_SCREEN_WIDTH)){
-       return;
+
+    //Checagem se fora da tela
+    if( /*Esquerda*/ ((obj->maxDimension+obj->position.x)-(obj->position.y))*2 + roundf(-cameraPosition.x) < 0 ||
+        /*Direita*/  ((obj->position.x)-(obj->maxDimension+obj->position.y))*2 + roundf(-cameraPosition.x) > GAME_SCREEN_WIDTH ||
+        /*Acima*/    ((obj->maxDimension+obj->position.x)+(obj->maxDimension+obj->position.y)) + roundf(-cameraPosition.y) < 0 ||
+        /*Abaixo*/   ((obj->position.x)+(obj->position.y)) -(obj->maxDimension*2) + roundf(-cameraPosition.y) > GAME_SCREEN_HEIGHT
+    ){
+        return;
     }
     
     for(z=startz;z>=0;z--){
@@ -404,12 +405,10 @@ void RenderObject(VoxelObject *obj){
             p.g = clamp((color & 255)*illuminFrac,0,255);
             color = (color>>8);
             p.b = clamp((color & 255)*illuminFrac,0,255);
-        
-            //py = ((ry)+roundf(obj->position.y-cameraPosition.y)+(125-(zp*0.5)))*2;
-            //px = ((rx)+roundf(obj->position.x-cameraPosition.x)+(125-(zp*0.5)))*2;
 
-            py = ( (((rx+obj->position.x)+(ry+obj->position.y))*val1 -(zp*val3)) +roundf(-cameraPosition.y))*5;
-            px = ( ((rx+obj->position.x)-(ry+obj->position.y))*val2 +roundf(-cameraPosition.x))*5;
+            //Projeção das posições de 3 dimensões para duas na tela
+            py = ((rx+obj->position.x)+(ry+obj->position.y)) -(zp*2) + roundf(-cameraPosition.y);
+            px = ((rx+obj->position.x)-(ry+obj->position.y))*2 + roundf(-cameraPosition.x);
 
             int cx,cy;
             for(cy=0;cy<cubeHeight;cy++){

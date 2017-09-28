@@ -127,19 +127,19 @@ void GameUpdate(){
     //Movimento da camera
     if (GetKey(SDL_SCANCODE_W))
     {
-        MoveCamera(0,-50,0);
+        MoveCamera(0,-150,0);
     }
     else if (GetKey(SDL_SCANCODE_S))
     {
-        MoveCamera(0,50,0);
+        MoveCamera(0,150,0);
     }
     if (GetKey(SDL_SCANCODE_D))
     {
-        MoveCamera(50,0,0);
+        MoveCamera(150,0,0);
     }
     else if (GetKey(SDL_SCANCODE_A))
     {
-        MoveCamera(-50,0,0);
+        MoveCamera(-150,0,0);
     }
     if (GetKey(SDL_SCANCODE_E))
     {
@@ -153,15 +153,6 @@ void GameUpdate(){
     {
         ExitGame = 1;
     }
-
-    if (GetKeyDown(SDL_SCANCODE_T)){val1+=0.0001; printf("\n %f %f %f\n",val1,val2,val3);} 
-    if (GetKeyDown(SDL_SCANCODE_G)){val1-=0.0001; printf("\n %f %f %f\n",val1,val2,val3);}
-
-    if (GetKeyDown(SDL_SCANCODE_Y)){val2+=0.0001; printf("\n %f %f %f\n",val1,val2,val3);}
-    if (GetKeyDown(SDL_SCANCODE_H)){val2-=0.0001; printf("\n %f %f %f\n",val1,val2,val3);}
-    
-    if (GetKeyDown(SDL_SCANCODE_U)){val3+=0.0001; printf("\n %f %f %f\n",val1,val2,val3);}
-    if (GetKeyDown(SDL_SCANCODE_J)){val3-=0.0001; printf("\n %f %f %f\n",val1,val2,val3);}
 }
 
 //--------------------------------------------------------- Input ----------------------------------------------------------------------------

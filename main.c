@@ -8,7 +8,6 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
-//#include <SDL2/SDL_opengl.h>
 
 #include "utils.h"
 #include "voxelLoader.h"
@@ -18,12 +17,14 @@
 #define FRAMES_PER_SECOND 60
 
 //Resolução interna, utilizada na renderização
-const int GAME_SCREEN_WIDTH = 960;
-const int GAME_SCREEN_HEIGHT = 540;
+int GAME_SCREEN_WIDTH = 640;
+int GAME_SCREEN_HEIGHT = 360;
 
 //Resolução da janela do jogo
-const int SCREEN_WIDTH = 1920;
-const int SCREEN_HEIGHT = 1080;
+int SCREEN_WIDTH = 1280;
+int SCREEN_HEIGHT = 720;
+
+int SCREEN_SCALE = 2;
 
 char *fpscounter;
 
@@ -83,10 +84,11 @@ int main(int argc, char *argv[]){
 		printf("Window could not be created! SDL_Error %s\n", SDL_GetError() );
 		ErrorOcurred = 1;
 		goto EndProgram;
-	}
+	}	
 
-	//Inicializa string para o contador de frames
-	fpscounter = (char*)calloc(50,sizeof(char));	
+	//Define resolução interna do jogo
+	GAME_SCREEN_WIDTH = SCREEN_WIDTH/SCREEN_SCALE;
+	GAME_SCREEN_HEIGHT = SCREEN_HEIGHT/SCREEN_SCALE;
 
 	//Inicializa o renderizador e a textura da tela
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
@@ -103,6 +105,9 @@ int main(int argc, char *argv[]){
 	SDL_Rect topUIDest = { 0, 0, 640, 32 };
 	SDL_Surface * topUISurf = IMG_Load("Interface/UIGameTop.png");
 	SDL_Texture * topUITex = SDL_CreateTextureFromSurface(renderer, topUISurf);
+
+	//Inicializa string para o contador de frames
+	fpscounter = (char*)calloc(50,sizeof(char));
 
 	//Inicializa contadores de FPS
 	InitFPS();
@@ -143,10 +148,11 @@ int main(int argc, char *argv[]){
 		GameUpdate();
 		PoolUpdate();
 
-		//Trava a textura da tela na memória e Inicia renderização
+		//Trava a textura da tela na memória e inicia renderização
 		SDL_LockTexture(render, NULL, (void**)&pix, &pitch);
 			UpdateScreenPointer(pix);
 			ClearScreen();
+
 			pthread_t tID1;
 			RendererArguments renderArguments1 = {threadObjs1,1,NULL,0};
 			pthread_create(&tID1, NULL, &RenderThread, (void *)&renderArguments1);
@@ -162,7 +168,6 @@ int main(int argc, char *argv[]){
 
 			pthread_join(tID2, NULL);
 
-			FillBackground();
 			PostProcess();
 
 		SDL_UnlockTexture(render);
@@ -185,10 +190,9 @@ int main(int argc, char *argv[]){
 		//Conta MS e FPS gastos e coloca como título da tela
 		mstime = SDL_GetTicks()-frameTicks;
 		ProcessFPS();
-		sprintf(fpscounter, "FPS: %0.2f |Render MS: %d |DeltaTime: %7.6lf", GetFPS(), mstime, deltaTime);
+		sprintf(fpscounter, "Vopix Engine || FPS: %0.2f |Render MS: %d |DeltaTime: %7.6lf", GetFPS(), mstime, deltaTime);
 		SDL_SetWindowTitle(window,fpscounter);
 		
-
 		while( SDL_GetTicks()-frameTicks <  (1000/FRAMES_PER_SECOND) ){ }
 	}
 	

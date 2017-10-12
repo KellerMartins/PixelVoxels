@@ -7,7 +7,7 @@
 #include <SDL2/SDL.h>
 
 #define PI_OVER_180 0.01745329251
-
+#define ONE_OVER_256 0.00390625
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \

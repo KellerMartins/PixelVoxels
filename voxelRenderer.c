@@ -57,9 +57,7 @@ void ClearScreen(){
 void PostProcess(){
     int y,x,cp = 0;
     int useOutline = 1;
-    char outlineR = 64;
-    char outlineG = 64;
-    char outlineB = 64;
+    float outline = 0.64;
 
     for(y=0;y<GAME_SCREEN_HEIGHT;y++){
         for(x=0;x<GAME_SCREEN_WIDTH;x++){
@@ -69,30 +67,30 @@ void PostProcess(){
                 if(depth[cp]!=0 && cp%GAME_SCREEN_WIDTH !=0 && cp%GAME_SCREEN_WIDTH !=GAME_SCREEN_WIDTH-1){
                     if(cp-1>0){
                         if((depth[cp-1]-depth[cp])<-10 || depth[cp-1] == 0){
-                            screen[cp-1].r = outlineR;
-                            screen[cp-1].g = outlineG;
-                            screen[cp-1].b = outlineB;
+                            screen[cp-1].r = screen[cp].r*outline;
+                            screen[cp-1].g = screen[cp].g*outline;
+                            screen[cp-1].b = screen[cp].b*outline;
                         }
                     }
                     if(cp+1<GAME_SCREEN_HEIGHT*GAME_SCREEN_WIDTH){
                         if((depth[cp+1]-depth[cp])<-10 || depth[cp+1] == 0){
-                            screen[cp+1].r = outlineR;
-                            screen[cp+1].g = outlineG;
-                            screen[cp+1].b = outlineB;
+                            screen[cp+1].r = screen[cp].r*outline;
+                            screen[cp+1].g = screen[cp].g*outline;
+                            screen[cp+1].b = screen[cp].b*outline;
                         }
                     }
                     if(cp-GAME_SCREEN_WIDTH>0){
                         if((depth[cp-GAME_SCREEN_WIDTH]-depth[cp])<-10 || depth[cp-GAME_SCREEN_WIDTH] == 0){
-                            screen[cp-GAME_SCREEN_WIDTH].r = outlineR;
-                            screen[cp-GAME_SCREEN_WIDTH].g = outlineG;
-                            screen[cp-GAME_SCREEN_WIDTH].b = outlineB;
+                            screen[cp-GAME_SCREEN_WIDTH].r = screen[cp].r*outline;
+                            screen[cp-GAME_SCREEN_WIDTH].g = screen[cp].g*outline;
+                            screen[cp-GAME_SCREEN_WIDTH].b = screen[cp].b*outline;
                         }
                     }
                     if(cp+GAME_SCREEN_WIDTH<GAME_SCREEN_HEIGHT*GAME_SCREEN_WIDTH){
                         if((depth[cp+GAME_SCREEN_WIDTH]-depth[cp])<-10 || depth[cp+GAME_SCREEN_WIDTH] == 0){
-                            screen[cp+GAME_SCREEN_WIDTH].r = outlineR;
-                            screen[cp+GAME_SCREEN_WIDTH].g = outlineG;
-                            screen[cp+GAME_SCREEN_WIDTH].b = outlineB;
+                            screen[cp+GAME_SCREEN_WIDTH].r = screen[cp].r*outline;
+                            screen[cp+GAME_SCREEN_WIDTH].g = screen[cp].g*outline;
+                            screen[cp+GAME_SCREEN_WIDTH].b = screen[cp].b*outline;
                         }
                     }
                 }
@@ -279,6 +277,9 @@ void RenderObject(VoxelObject *obj){
                 ry = y;
                 rz = z;
             }
+            rx = roundf(rx);
+            ry = roundf(ry);
+            rz = roundf(rz);
             //Clipping do objeto quando fora da faixa de 0 a 255
             zp = rz + roundf(obj->position.z+cameraPosition.z);
             if(zp<0 || zp>255) continue;
@@ -611,7 +612,9 @@ void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
                         cy = ry + halfDimY;
                         cz = rz + halfDimZ;
                     }
-
+                    cx = roundf(cx);
+                    cy = roundf(cy);
+                    cz = roundf(cz);
 
                     if(cx>-1 && cx<shadowCaster->maxDimension && cy>-1 && cy<shadowCaster->maxDimension && cz>-1 && cz<shadowCaster->maxDimension){
                         o = (cx + cz * shadowCaster->maxDimension + cy * shadowCaster->maxDimension * shadowCaster->maxDimension);

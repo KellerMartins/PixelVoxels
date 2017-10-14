@@ -24,7 +24,7 @@ int GAME_SCREEN_HEIGHT = 360;
 int SCREEN_WIDTH = 1280;
 int SCREEN_HEIGHT = 720;
 
-int SCREEN_SCALE = 2;
+int SCREEN_SCALE = 1;
 
 char *fpscounter;
 

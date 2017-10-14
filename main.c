@@ -8,6 +8,7 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include "SDL_FontCache.h"
 
 #include "utils.h"
 #include "voxelLoader.h"
@@ -27,6 +28,8 @@ int SCREEN_HEIGHT = 720;
 int SCREEN_SCALE = 2;
 
 char *fpscounter;
+
+FC_Font* font = NULL;
 
 //Tempo entre frames, calculado ao fim do loop principal
 double deltaTime = 0;
@@ -49,7 +52,7 @@ int main(int argc, char *argv[]){
 	int SDLIMGFailed = 0;
 	int ErrorOcurred = 0;
 	unsigned int frameTicks;
-	unsigned int mstime;
+	unsigned int mstime = 0;
 
 	SDL_Renderer * renderer = NULL;
 	SDL_Texture * render = NULL;
@@ -113,6 +116,12 @@ int main(int argc, char *argv[]){
 	InitFPS();
 	Uint64 NOW = SDL_GetPerformanceCounter();
 	Uint64 LAST = 0;
+
+	//Inicializa fonte
+	font = FC_CreateFont();  
+	if(FC_LoadFont(font, renderer, "Interface/Fonts/Visitor.ttf",18, FC_MakeColor(255,255,255,255), TTF_STYLE_NORMAL)){
+		printf("Font: Error loading font!");
+	}
 	
 	//Carrega o mapa
 	if(LoadMap("Maps/Test.txt")<0){
@@ -184,14 +193,14 @@ int main(int argc, char *argv[]){
 
 		SDL_RenderCopy(renderer, topUITex, &topUIRect, &topUIDest);
 		SDL_RenderCopy(renderer, topUITex, &topUIHealthBarRect, &topUIHealthBarDest);
+		
+		FC_DrawAlign(font, renderer, GAME_SCREEN_WIDTH,0,FC_ALIGN_RIGHT, "%4.2f :FPS\n%3d : MS\n%5.4lf : DT", GetFPS(), mstime, deltaTime); 
 
 		SDL_RenderPresent(renderer);
 
 		//Conta MS e FPS gastos e coloca como título da tela
 		mstime = SDL_GetTicks()-frameTicks;
 		ProcessFPS();
-		sprintf(fpscounter, "Vopix Engine || FPS: %0.2f |Render MS: %d |DeltaTime: %7.6lf", GetFPS(), mstime, deltaTime);
-		SDL_SetWindowTitle(window,fpscounter);
 		
 		while( SDL_GetTicks()-frameTicks <  (1000/FRAMES_PER_SECOND) ){ }
 	}
@@ -204,6 +213,9 @@ int main(int argc, char *argv[]){
 	FreeInput();
 	FreeScene();
 	FreePool();
+
+	if(font!=NULL)
+		FC_FreeFont(font);
 
 	free(SceneShadowCasters);
 	free(EnemiesAndBullets);

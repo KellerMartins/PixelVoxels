@@ -32,7 +32,7 @@ Pixel *cube;
 Uint8 *cubeDepth;
 int cubeWidth = 0;
 int cubeHeight = 0;
-Vector3 cameraPosition = {-49.1,-52.1,0};
+Vector3 cameraPosition;
 
 void MoveCamera(float x, float y, float z){
     cameraPosition.x +=x*deltaTime;
@@ -152,6 +152,9 @@ void InitRenderer(Uint16 *dpth){
         printf("\nError initializing renderer!\n");
         system("pause");
     }
+
+    cameraPosition = (Vector3){-GAME_SCREEN_WIDTH/2,-GAME_SCREEN_HEIGHT/2,0};
+
     SDL_Surface *cubeimg = IMG_Load("Textures/cube.png");
     SDL_Surface *cubeDepthimg = IMG_Load("Textures/cubeDepth.png");
 

@@ -57,7 +57,7 @@ void ClearScreen(){
 void PostProcess(){
     int y,x,cp = 0;
     int useOutline = 1;
-    float outline = 0.64;
+    float outline = 0.54;
 
     for(y=0;y<GAME_SCREEN_HEIGHT;y++){
         for(x=0;x<GAME_SCREEN_WIDTH;x++){

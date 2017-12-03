@@ -119,7 +119,7 @@ int main(int argc, char *argv[]){
 
 	//Inicializa fonte
 	font = FC_CreateFont();  
-	if(FC_LoadFont(font, renderer, "Interface/Fonts/Visitor.ttf",18, FC_MakeColor(255,255,255,255), TTF_STYLE_NORMAL)){
+	if(!FC_LoadFont(font, renderer, "Interface/Fonts/Visitor.ttf",18, FC_MakeColor(255,255,255,255), TTF_STYLE_NORMAL)){
 		printf("Font: Error loading font!");
 	}
 	

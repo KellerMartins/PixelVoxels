@@ -7,7 +7,14 @@
 #include <SDL2/SDL.h>
 
 #define PI_OVER_180 0.01745329251
+#define PI 3.14159265359
 #define ONE_OVER_256 0.00390625
+#define VECTOR3_ZERO (Vector3){0.0f,0.0f,0.0f}
+#define VECTOR3_FORWARD (Vector3){1.0f,0.0f,0.0f}
+#define VECTOR3_UP (Vector3){0.0f,0.0f,1.0f}
+#define VECTOR3_DOWN (Vector3){0.0f,0.0f,-1.0f}
+#define VECTOR3_LEFT (Vector3){0.0f,1.0f,0.0f}
+
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
@@ -25,8 +32,8 @@
 
 #define cross(u,v)   (Vector3){ (u).y * (v).z - (u).z * (v).y , (u).z * (v).x - (u).x * (v).z, (u).x * (v).y - (u).y * (v).x}
 #define dot(u,v)   ( (u).x * (v).x + (u).y * (v).y + (u).z * (v).z )
-#define norm(v)     sqrt(dot(v,v))     // norm = length of  vector
-#define d(u,v)      norm(u-v)          // distance = norm of difference
+#define norm(v)     sqrt(Dot(v,v))     // norm = length of  vector
+#define distance(u,v)      Norm(Subtract(u,v))          // distance = norm of difference
 
 typedef struct Vector3{
 	float x;
@@ -38,9 +45,13 @@ void InitFPS();
 void ProcessFPS();
 float GetFPS();
 
-void NormalizeVector(Vector3* v);
-void NormalizeAVector(float* v);
+Vector3 NormalizeVector(Vector3 v);
+Vector3 Add(Vector3 a, Vector3 b);
+Vector3 Subtract(Vector3 a, Vector3 b);
 Vector3 Reflection(Vector3 *v1,Vector3 *v2);
+Vector3 RotatePoint(Vector3 p, float rx, float ry, float rz, float pivotX, float pivotY, float pivotZ);
 int Step(float edge, float x );
 float Smoothstep(float edge0, float edge1, float x);
+int Modulus(int a, int b);
+float fModulus(float a, float b);
 #endif

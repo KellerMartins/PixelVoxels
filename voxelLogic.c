@@ -1,11 +1,18 @@
 #include "voxelLogic.h"
 
 extern int ExitGame;
+extern double deltaTime;
+
+extern const int SCREEN_WIDTH;
+extern const int SCREEN_HEIGHT;
+extern const int GAME_SCREEN_WIDTH;
+extern const int GAME_SCREEN_HEIGHT;
+
 extern VoxelObject **scene;
 extern int sceneObjectCount;
 extern PoolObject Pool[POOLSIZE];
-extern double deltaTime;
-extern float val1,val2,val3;
+extern Vector3 cameraPosition;
+
 //Array com o estado do teclado (atual e do frame anterior)
 const Uint8 *keyboard_current = NULL;
 Uint8 *keyboard_last;
@@ -18,7 +25,7 @@ void GameStart(){
 
     //Carrega modelo da nave do player
 	
-	voxelFile = fopen("Models/Spaceship.vox","rb");
+	voxelFile = fopen("Models/spaceship.vox","rb");
 	model = FromMagica(voxelFile);
 	model.position = (Vector3){0,30,20};
 	fclose(voxelFile);
@@ -29,75 +36,124 @@ void GameStart(){
 	fclose(voxelFile);
 	//Define o número de instâncias disponíveis
 	Pool[0].numberOfInstances = 60;
-	Pool[0].type = BULLET;
-
-	//Carrega modelo da nave inimiga no pool
-	voxelFile = fopen("Models/SpaceshipEnemy.vox","rb");
+    Pool[0].type = BULLET;
+    
+    voxelFile = fopen("Models/Bullet.vox","rb");
 	Pool[1].baseObj = FromMagica(voxelFile);
 	fclose(voxelFile);
 	//Define o número de instâncias disponíveis
-	Pool[1].numberOfInstances = 5;
-	Pool[1].type = ENEMY;
+	Pool[1].numberOfInstances = 1;
+	Pool[1].type = BULLET;
 	
 	//Inicializa o pool
 	InitializePool(Pool);
 }
-
+float lastRot = 0;
 void GameUpdate(){
+    Vector3 moveDir = VECTOR3_ZERO;
+    Vector3 rotVal = VECTOR3_ZERO;
+    int moved = 0;
 
+    //Cria um vetor do mouse centrado no centro do player, para definir o angulo a rodar o objeto para olhar para o mouse
+    float screenPosX, screenPosY;
+    screenPosY = (int)((model.position.x+model.position.y) -roundf(model.position.z+cameraPosition.z)*2 + roundf(-cameraPosition.y));
+    screenPosX = (int)((model.position.x-model.position.y)*2 + roundf(-cameraPosition.x));
+
+    screenPosY = ((screenPosY/(float)GAME_SCREEN_HEIGHT)-0.5f)*2;
+    screenPosX = ((screenPosX/(float)GAME_SCREEN_WIDTH)-0.5f)*2;
+
+    int mx,my;
+    SDL_GetMouseState(&mx,&my);
+    Vector3 mouseVec = {((mx/(float)SCREEN_WIDTH)-0.5f)*2 - screenPosX,((my/(float)SCREEN_HEIGHT)-0.5f)*2 - screenPosY,0};
+    
+    mouseVec = NormalizeVector(mouseVec);
+
+    Vector3 diag = {1/sqrt(2), 1/sqrt(2), 0};
+    float dp = dot(mouseVec,diag);
+    diag.x = -diag.x;
+    float angle = acos(dp)*180/PI;
+    float dir = dot(mouseVec,diag);
+    if (dir < 0) angle = -angle;
+
+    model.rotation.z = angle;
     //Movimento da nave
-    if (GetKey(SDL_SCANCODE_UP))
+    if (GetKey(SDL_SCANCODE_W))
     {
-        MoveObject(&model,0,-100,0,0,0,0,&(*scene),sceneObjectCount,5,2);
+        moveDir.x += -1;
+        moveDir.y += -1;
+        moved=1;
     }
-    else if (GetKey(SDL_SCANCODE_DOWN))
+    else if (GetKey(SDL_SCANCODE_S))
     {
-        MoveObject(&model,0,100,0,0,0,0,&(*scene),sceneObjectCount,5,2);
-    }
-
-    if (GetKey(SDL_SCANCODE_RIGHT))
-    {
-        MoveObject(&model,100,0,0,0,0,0,&(*scene),sceneObjectCount,5,2);
-    }
-    else if (GetKey(SDL_SCANCODE_LEFT))
-    {
-        MoveObject(&model,-100,0,0,0,0,0,&(*scene),sceneObjectCount,5,2);
+        moveDir.x += 1;
+        moveDir.y += 1;
+        moved=1;
     }
 
-    if (GetKey(SDL_SCANCODE_RSHIFT))
+    if (GetKey(SDL_SCANCODE_D))
     {
-        MoveObject(&model,0,0,100,0,0,0,&(*scene),sceneObjectCount,5,2);
+        moveDir.x += 1;
+        moveDir.y += -1;
+        moved=1;
     }
-    else if (GetKey(SDL_SCANCODE_RCTRL))
+    else if (GetKey(SDL_SCANCODE_A))
     {
-        MoveObject(&model,0,0,-100,0,0,0,&(*scene),sceneObjectCount,5,2);
+        moveDir.x += -1;
+        moveDir.y += 1;
+        moved=1;
+    }
+
+    if (GetKey(SDL_SCANCODE_E))
+    {
+        moveDir.z += 1;
+        moved=1;
+    }
+    else if (GetKey(SDL_SCANCODE_Q))
+    {
+        moveDir.z += -1;
+        moved=1;
     }
 
     if (GetKey(SDL_SCANCODE_KP_7))
     {
-        MoveObject(&model,0,0,0,100,0,0,&(*scene),sceneObjectCount,5,2);
+        rotVal.x+= 100;
+        moved=1;
     }
     else if (GetKey(SDL_SCANCODE_KP_8))
     {
-        MoveObject(&model,0,0,0,-100,0,0,&(*scene),sceneObjectCount,5,2);
+        rotVal.x+= -100;
+        moved=1;
     }
     if (GetKey(SDL_SCANCODE_KP_4))
     {
-        MoveObject(&model,0,0,0,0,100,0,&(*scene),sceneObjectCount,5,2);
+        rotVal.y+= 100;
+        moved=1;
     }
     else if (GetKey(SDL_SCANCODE_KP_5))
     {
-        MoveObject(&model,0,0,0,0,-100,0,&(*scene),sceneObjectCount,5,2);
+        rotVal.y+= -100;
+        moved=1;
     }
     if (GetKey(SDL_SCANCODE_KP_1))
     {
-        MoveObject(&model,0,0,0,0,0,100,&(*scene),sceneObjectCount,5,2);
+        rotVal.z+= 100;
+        moved=1;
     }
     else if (GetKey(SDL_SCANCODE_KP_2))
     {
-        MoveObject(&model,0,0,0,0,0,-100,&(*scene),sceneObjectCount,5,2);
+        rotVal.z+= -100;
+        moved=1;
     }
-   
+    if(moved){
+        if(moveDir.x!=0.0f || moveDir.y!=0.0f || moveDir.z!=0.0f){
+            moveDir = NormalizeVector(moveDir);
+            moveDir.x *= 80;
+            moveDir.y *= 80;
+            moveDir.z *= 20;
+        }
+
+        MoveObject(&model,moveDir,rotVal,&(*scene),sceneObjectCount,5,2);
+    }
     //Tiro da nave
     if (GetKeyDown(SDL_SCANCODE_SPACE))
     {
@@ -125,27 +181,27 @@ void GameUpdate(){
     }
     
     //Movimento da camera
-    if (GetKey(SDL_SCANCODE_W))
+    if (GetKey(SDL_SCANCODE_UP))
     {
         MoveCamera(0,-150,0);
     }
-    else if (GetKey(SDL_SCANCODE_S))
+    else if (GetKey(SDL_SCANCODE_DOWN))
     {
         MoveCamera(0,150,0);
     }
-    if (GetKey(SDL_SCANCODE_D))
+    if (GetKey(SDL_SCANCODE_RIGHT))
     {
         MoveCamera(150,0,0);
     }
-    else if (GetKey(SDL_SCANCODE_A))
+    else if (GetKey(SDL_SCANCODE_LEFT))
     {
         MoveCamera(-150,0,0);
     }
-    if (GetKey(SDL_SCANCODE_E))
+    if (GetKey(SDL_SCANCODE_RSHIFT))
     {
         MoveCamera(0,0,50);
     }
-    else if (GetKey(SDL_SCANCODE_Q))
+    else if (GetKey(SDL_SCANCODE_RCTRL))
     {
         MoveCamera(0,0,-50);
     }
@@ -211,7 +267,10 @@ void PoolUpdate(){
                         Vector3 dir = {1,0,0};
                         Vector3 rot = Pool[p].objs[o]->rotation;
                         dir = RotatePoint(dir,rot.z,rot.y,rot.z,0,0,0);
-                        MoveObject(Pool[p].objs[o],dir.x*250,dir.y*250,dir.z*250,0,0,0,&(*scene),sceneObjectCount,4,8);
+                        dir.x *=250;
+                        dir.y *=250;
+                        dir.z *=250;
+                        MoveObject(Pool[p].objs[o],dir,VECTOR3_ZERO,&(*scene),sceneObjectCount,4,8);
                     }
                 }
             }
@@ -296,7 +355,7 @@ void Spawn(unsigned int index,float x, float y, float z, float rx, float ry, flo
 
 //------------------------------------------------------------------ Física e movimento -----------------------------------------------------
 
-void MoveObject(VoxelObject *obj,float mx, float my, float mz,float rx, float ry, float rz,	VoxelObject **col,const int numCol,int damageColRadius,int damageObjRadius){
+void MoveObject(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObject **col,const int numCol,int damageColRadius,int damageObjRadius){
     //printf("%0.0f Per cent\n",100*(obj->voxelsRemaining/(float)obj->voxelCount));
     int o,i,iz,nv,x,y,z,index = 0,allowMovement = 1,useRot = 0;
     int halfDimX = obj->dimension[0]/2.0, halfDimY = obj->dimension[1]/2.0,halfDimZ = obj->dimension[2]/2.0;
@@ -309,14 +368,14 @@ void MoveObject(VoxelObject *obj,float mx, float my, float mz,float rx, float ry
 
     if(obj->rotation.x != 0.0f || obj->rotation.y != 0.0f || obj->rotation.z != 0.0f){
         useRot = 1;
-        sinx = sin(obj->rotation.x * PI_OVER_180);
-        cosx = cos(obj->rotation.x * PI_OVER_180);
+        sinx = sin((obj->rotation.x + rotation.x*moveDelta) * PI_OVER_180);
+        cosx = cos((obj->rotation.x + rotation.x*moveDelta) * PI_OVER_180);
 
-        siny = sin(obj->rotation.y * PI_OVER_180);
-        cosy = cos(obj->rotation.y * PI_OVER_180);
+        siny = sin((obj->rotation.y + rotation.y*moveDelta) * PI_OVER_180);
+        cosy = cos((obj->rotation.y + rotation.y*moveDelta) * PI_OVER_180);
         
-        sinz = sin(obj->rotation.z * PI_OVER_180);
-        cosz = cos(obj->rotation.z * PI_OVER_180);
+        sinz = sin((obj->rotation.z + rotation.z*moveDelta) * PI_OVER_180);
+        cosz = cos((obj->rotation.z + rotation.z*moveDelta) * PI_OVER_180);
     }
 
     if(col!=NULL){
@@ -337,14 +396,14 @@ void MoveObject(VoxelObject *obj,float mx, float my, float mz,float rx, float ry
                     roty = x*cosy*sinz + z*(cosx*siny*sinz - cosz*sinx) + y*(cosx*cosz + sinx*siny*sinz);
                     rotz = z*cosx*cosy + y*sinx*cosy - x*siny;
 
-                    x = rotx + (obj->position.x+(mx*moveDelta)) + halfDimX;
-                    y = roty + (obj->position.y+(my*moveDelta)) + halfDimY;
-                    z = rotz + (obj->position.z+(mz*moveDelta)) + halfDimZ;
+                    x = rotx + (obj->position.x+(movement.x*moveDelta)) + halfDimX;
+                    y = roty + (obj->position.y+(movement.y*moveDelta)) + halfDimY;
+                    z = rotz + (obj->position.z+(movement.z*moveDelta)) + halfDimZ;
 
                 }else{
-                    x = ((obj->render[iz][i] & 127)+(obj->position.x+(mx*moveDelta)));
-                    y = (((obj->render[iz][i]>>7) & 127)+(obj->position.y+(my*moveDelta)));
-                    z = iz+(obj->position.z+(mz*moveDelta));
+                    x = ((obj->render[iz][i] & 127)+(obj->position.x+(movement.x*moveDelta)));
+                    y = (((obj->render[iz][i]>>7) & 127)+(obj->position.y+(movement.y*moveDelta)));
+                    z = iz+(obj->position.z+(movement.z*moveDelta));
                 }
 
                 for(o=0; o<numCol; o++){
@@ -363,13 +422,13 @@ void MoveObject(VoxelObject *obj,float mx, float my, float mz,float rx, float ry
         }
     }
     if(allowMovement){
-        obj->position.x +=(mx*moveDelta);
-        obj->position.y +=(my*moveDelta);
-        obj->position.z +=(mz*moveDelta);
+        obj->position.x +=(movement.x*moveDelta);
+        obj->position.y +=(movement.y*moveDelta);
+        obj->position.z +=(movement.z*moveDelta);
 
-        obj->rotation.x +=(rx*moveDelta);
-        obj->rotation.y +=(ry*moveDelta);
-        obj->rotation.z +=(rz*moveDelta);
+        obj->rotation.x =fmod( obj->rotation.x +rotation.x*moveDelta,360);
+        obj->rotation.y =fmod(obj->rotation.y +rotation.y*moveDelta,360);
+        obj->rotation.z =fmod(obj->rotation.z +rotation.z*moveDelta,360);
     }
 }
 
@@ -436,38 +495,6 @@ void ExplodeAtPoint(VoxelObject *obj,int x, int y, int z,int radius){
 
         obj->modificationStartY = obj->modificationStartY <0? starty:obj->modificationStartY<starty?obj->modificationStartY:starty;
         obj->modificationEndY = obj->modificationEndY <0? endy-1:obj->modificationEndY>endy-1?obj->modificationEndY:endy-1;
-}
-
-Vector3 RotatePoint(Vector3 p, float rx, float ry, float rz, float pivotX, float pivotY, float pivotZ){
-
-    float rotx,roty,rotz,x,y,z;
-
-    float sinx = sin(rx* PI_OVER_180);
-    float cosx = cos(rx* PI_OVER_180);
-
-    float siny = sin(ry * PI_OVER_180);
-    float cosy = cos(ry * PI_OVER_180);
-        
-    float sinz = sin(rz * PI_OVER_180);
-    float cosz = cos(rz * PI_OVER_180);
-
-    x = p.x - pivotX;
-    y = p.y - pivotY;
-    z = p.z - pivotZ;
-
-    rotx = x*cosy*cosz + y*(cosz*sinx*siny - cosx*sinz) + z*(cosx*cosz*siny + sinx*sinz);
-    roty = x*cosy*sinz + z*(cosx*siny*sinz - cosz*sinx) + y*(cosx*cosz + sinx*siny*sinz);
-    rotz = z*cosx*cosy + y*sinx*cosy - x*siny;
-
-    x = rotx + pivotX;
-    y = roty + pivotY;
-    z = rotz + pivotZ;
-
-    p.x = x;
-    p.y = y;
-    p.z = z;
-    return p;
-
 }
 
 

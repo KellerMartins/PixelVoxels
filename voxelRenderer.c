@@ -248,7 +248,7 @@ void RenderObject(VoxelObject *obj){
     //    return;
     //}
     
-    for(z=startz; z!=0; z--){
+    for(z=startz; z>=0; z--){
         heightVal = clamp(((1.0+(((z+obj->position.z+cameraPosition.z)*0.5))/128)),0,1.4);
 
         nv = obj->render[z][0];
@@ -280,9 +280,10 @@ void RenderObject(VoxelObject *obj){
                 ry = y;
                 rz = z;
             }
-            rx = roundf(rx);
-            ry = roundf(ry);
-            rz = roundf(rz);
+            //rx = roundf(rx);
+            //ry = roundf(ry);
+            //rz = roundf(rz);
+
             //Clipping do objeto quando fora da faixa de 0 a 255
             zp = rz + roundf(obj->position.z+cameraPosition.z);
             if(zp<0 || zp>255) continue;
@@ -351,6 +352,12 @@ void RenderObject(VoxelObject *obj){
             }
         }
     }
+    //Debug visualization of the object center
+    /*int centerOfObj = (int)((int)(((obj->position.x)+(obj->position.y)) -(roundf(obj->position.z+cameraPosition.z)*2) + roundf(-cameraPosition.y))*GAME_SCREEN_WIDTH + (((obj->position.x-obj->position.y))*2 + roundf(-cameraPosition.x)));
+    if(centerOfObj<0 || centerOfObj>GAME_SCREEN_HEIGHT*GAME_SCREEN_WIDTH) return;
+    screen[centerOfObj] = (Pixel){0,0,255,0};
+    depth[centerOfObj] = 1023;
+    */
 }
 
 void CalculateRendered(VoxelObject *obj){
@@ -615,9 +622,9 @@ void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
                         cy = ry + halfDimY;
                         cz = rz + halfDimZ;
                     }
-                    cx = roundf(cx);
-                    cy = roundf(cy);
-                    cz = roundf(cz);
+                    //cx = roundf(cx);
+                    //cy = roundf(cy);
+                    //cz = roundf(cz);
 
                     if(cx>-1 && cx<shadowCaster->maxDimension && cy>-1 && cy<shadowCaster->maxDimension && cz>-1 && cz<shadowCaster->maxDimension){
                         o = (cx + cz * shadowCaster->maxDimension + cy * shadowCaster->maxDimension * shadowCaster->maxDimension);

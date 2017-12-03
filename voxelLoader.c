@@ -18,7 +18,6 @@ int LoadMap(char mapPath[]){
     printf("Number of objects: %d\n\n",sceneObjectCount);
     scene = (VoxelObject **)calloc(sceneObjectCount,sizeof(VoxelObject*));
 
-    FILE *voxelFile;
     int x,y,z;
     char *modelString = (char *)calloc(100,sizeof(char));
 
@@ -36,9 +35,7 @@ int LoadMap(char mapPath[]){
         modelString = strtok(tempString,"\n");
 
         printf("Opening: %s\n",modelString);
-        voxelFile = fopen(modelString,"rb");
-        *scene[i] = FromMagica(voxelFile);
-        fclose(voxelFile);
+        *scene[i] = FromMagica(modelString);
 
         scene[i]->position = (Vector3){x,y,z};
 
@@ -86,10 +83,11 @@ Voxel newVoxel(FILE * file,unsigned int sizey)
 /// <param name="stream">An open BinaryReader stream that is the .vox file.</param>
 /// <param name="overrideColors">Optional color lookup table for converting RGB values into my internal engine color format.</param>
 /// <returns>The voxel chunk data for the MagicaVoxel .vox file.</returns>
-VoxelObject FromMagica(FILE* file)
+VoxelObject FromMagica(char modelPath[])
 {
     // check out http://voxel.codeplex.com/wikipage?title=VOX%20Format&referringTitle=Home for the file format used below
     // we're going to return a voxel chunk worth of data
+    FILE* file = fopen(modelPath,"rb");
 
     if(file == NULL){
         printf("Failed to open file!\n");
@@ -267,6 +265,8 @@ VoxelObject FromMagica(FILE* file)
     obj.modificationEndZ = -1;
 
     obj.enabled = 1;
+
+    fclose(file);
 
     printf(">DONE!\n\n");
     return obj;

@@ -8,7 +8,7 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
-//#include <SDL2/SDL_opengl.h>
+#include "SDL_FontCache.h"
 
 #include "utils.h"
 #include "voxelLoader.h"
@@ -18,30 +18,25 @@
 #define FRAMES_PER_SECOND 60
 
 //Resolução interna, utilizada na renderização
-const int GAME_SCREEN_WIDTH = 640;
-const int GAME_SCREEN_HEIGHT = 360;
+int GAME_SCREEN_WIDTH = 640;
+int GAME_SCREEN_HEIGHT = 360;
 
 //Resolução da janela do jogo
-const int SCREEN_WIDTH = 1280;
-const int SCREEN_HEIGHT = 720;
+int SCREEN_WIDTH = 1280;
+int SCREEN_HEIGHT = 720;
 
-//Variáveis do contador de FPS
-//Número de frames armazenados
-#define FRAME_VALUES 10
-Uint32 frameTimes[FRAME_VALUES];
-Uint32 frameTicksLast;
-Uint32 frameCount;
-float framesPerSecond;
-char *fpscounter;
-void InitFPS();
-void ProcessFPS();
+int SCREEN_SCALE = 2;
 
-//Sound engine variable
-Soloud *soloud;
+SDL_Renderer * renderer = NULL;
+SDL_Texture * render = NULL;
+SDL_Window* window = NULL;	
 
 //Tempo entre frames, calculado ao fim do loop principal
 double deltaTime = 0;
 int ExitGame = 0;
+
+char *fpscounter;
+FC_Font* font = NULL;
 
 //Array de ponteiros com os objetos
 VoxelObject **SceneShadowCasters;
@@ -54,41 +49,25 @@ int sceneObjectCount;
 //Pool de objetos
 PoolObject Pool[POOLSIZE];
 
-
-extern const Uint8 *keyboard_current;
-extern Uint8 *keyboard_last;
-extern 	SDL_Event event;
 extern VoxelObject model;
 
 int main(int argc, char *argv[]){
 	int SDLIMGFailed = 0;
 	int ErrorOcurred = 0;
 	unsigned int frameTicks;
-	unsigned int mstime;
-
-	SDL_Renderer * renderer = NULL;
-	SDL_Texture * render = NULL;
-	SDL_Window* window = NULL;	
+	unsigned int mstime = 0;
 	
-	//Inicializa string para o contador de frames
-	fpscounter = (char*)calloc(50,sizeof(char));
-	//Inicializa rand
+	//Inicializações gerais
+
 	srand( (unsigned)time(NULL) );
 
-	//Carrega o mapa
-	if(LoadMap("Maps/Test.txt")<0){
-		ErrorOcurred = 1;
-		goto EndProgram;
-	}
-	
-	//Inicializa bibliotecas e a janela do jogo
+	Soloud *soloud = NULL;
 	soloud = Soloud_create();
 	if(Soloud_initEx(soloud,SOLOUD_CLIP_ROUNDOFF | SOLOUD_ENABLE_VISUALIZATION, SOLOUD_AUTO, SOLOUD_AUTO, SOLOUD_AUTO, SOLOUD_AUTO)<0){
 		printf("SoLoud could not initialize! \n");
 		ErrorOcurred = 1;
 		goto EndProgram;
 	}
-
 
 	if(IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG){
 		printf("SDL Image could not initialize! \n");
@@ -102,34 +81,55 @@ int main(int argc, char *argv[]){
 		ErrorOcurred = 1;
 		goto EndProgram;
     }
-	window = SDL_CreateWindow( "Vopix Engine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN );
+	window = SDL_CreateWindow( "Vopix Engine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
 	if(window == NULL){
 		printf("Window could not be created! SDL_Error %s\n", SDL_GetError() );
 		ErrorOcurred = 1;
 		goto EndProgram;
-	}
+	}	
+
+	//Define resolução interna do jogo
+	GAME_SCREEN_WIDTH = SCREEN_WIDTH/SCREEN_SCALE;
+	GAME_SCREEN_HEIGHT = SCREEN_HEIGHT/SCREEN_SCALE;
 
 	//Inicializa o renderizador e a textura da tela
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
 	render = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
 	SDL_RenderSetLogicalSize(renderer, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
-
-	//Define o vetor que irá receber os pixels da tela
+	
+	//Define o vetor que irá receber os pixels da tela e o que recebe os valores de profundidade
 	Pixel *pix;
-	int pitch = GAME_SCREEN_WIDTH * sizeof(unsigned int);
-
+	int pitch = GAME_SCREEN_WIDTH * sizeof(Pixel);
+	Uint16 *depth = (Uint16*) calloc(GAME_SCREEN_HEIGHT*GAME_SCREEN_WIDTH,sizeof(Uint16));
+	
 	//Define e carrega texturas da UI
 	SDL_Rect topUIRect = { 0, 0, 640, 32 };
 	SDL_Rect topUIDest = { 0, 0, 640, 32 };
 	SDL_Surface * topUISurf = IMG_Load("Interface/UIGameTop.png");
 	SDL_Texture * topUITex = SDL_CreateTextureFromSurface(renderer, topUISurf);
 
+	//Inicializa string para o contador de frames
+	fpscounter = (char*)calloc(50,sizeof(char));
+
 	//Inicializa contadores de FPS
 	InitFPS();
 	Uint64 NOW = SDL_GetPerformanceCounter();
 	Uint64 LAST = 0;
 
+	//Inicializa fonte
+	font = FC_CreateFont();  
+	if(!FC_LoadFont(font, renderer, "Interface/Fonts/Visitor.ttf",18, FC_MakeColor(255,255,255,255), TTF_STYLE_NORMAL)){
+		printf("Font: Error loading font!");
+	}
+	
+	//Carrega o mapa
+	if(LoadMap("Maps/Test.txt")<0){
+		ErrorOcurred = 1;
+		ExitGame = 1;
+	}
+
 	//Inicializações do jogo
+	InitRenderer(depth);
 	InputStart();
 	GameStart();
 
@@ -141,6 +141,19 @@ int main(int argc, char *argv[]){
 
 	EnemiesAndBullets = VoxelPointerArrayUnion(Pool[0].numberOfInstances+Pool[1].numberOfInstances,2, &(*Pool[0].objs),Pool[0].numberOfInstances, &(*Pool[1].objs),Pool[1].numberOfInstances );
 	EnemiesAndBulletsSize = Pool[0].numberOfInstances+Pool[1].numberOfInstances;
+
+	VoxelObject ob = FromMagica("Models/tests/glock.vox");
+
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
+	SDL_Texture *test = RenderIcon(&ob);
+	SDL_SetTextureBlendMode(test,SDL_BLENDMODE_BLEND);
+
+	SDL_Rect texture_rect;
+	texture_rect.x = 270;  //the x coordinate
+	texture_rect.y = 0; // the y coordinate
+	SDL_QueryTexture(test, NULL, NULL, &texture_rect.w, &texture_rect.h);
+
+	FreeObject(&ob);
 
 	//Loop do jogo
 	while (!ExitGame)
@@ -156,28 +169,28 @@ int main(int argc, char *argv[]){
 		GameUpdate();
 		PoolUpdate();
 
-		//Trava a textura da tela na memória e Inicia renderização
+		//Trava a textura da tela na memória e inicia renderização
 		SDL_LockTexture(render, NULL, (void**)&pix, &pitch);
-
-			ClearScreen(pix);
+			UpdateScreenPointer(pix);
+			ClearScreen();
 
 			pthread_t tID1;
-			RendererArguments renderArguments1 = {pix,threadObjs1,1,NULL,0};
+			RendererArguments renderArguments1 = {threadObjs1,1,NULL,0};
 			pthread_create(&tID1, NULL, &RenderThread, (void *)&renderArguments1);
 
 			pthread_t tID2;
-			RendererArguments renderArguments2 = {pix,scene,sceneObjectCount,SceneShadowCasters,SceneShadowCastersSize};
+			RendererArguments renderArguments2 = {scene,sceneObjectCount,SceneShadowCasters,SceneShadowCastersSize};
 			pthread_create(&tID2, NULL, &RenderThread, (void *)&renderArguments2);
 
 			pthread_join(tID1, NULL);
 
-			RendererArguments renderArguments3 = {pix,EnemiesAndBullets,EnemiesAndBulletsSize,NULL,0};
+			RendererArguments renderArguments3 = {EnemiesAndBullets,EnemiesAndBulletsSize,NULL,0};
 			pthread_create(&tID1, NULL, &RenderThread, (void *)&renderArguments3);
 
 			pthread_join(tID2, NULL);
+			pthread_join(tID1, NULL);
 
-			FillBackground(pix);
-			PostProcess(pix);
+			PostProcess();
 
 		SDL_UnlockTexture(render);
 
@@ -193,26 +206,31 @@ int main(int argc, char *argv[]){
 
 		SDL_RenderCopy(renderer, topUITex, &topUIRect, &topUIDest);
 		SDL_RenderCopy(renderer, topUITex, &topUIHealthBarRect, &topUIHealthBarDest);
+		
+		FC_DrawAlign(font, renderer, GAME_SCREEN_WIDTH,0,FC_ALIGN_RIGHT, "%4.2f :FPS\n%3d : MS\n%5.4lf : DT", GetFPS(), mstime, deltaTime); 
+
+		SDL_RenderCopy(renderer, test, NULL, &texture_rect);
 
 		SDL_RenderPresent(renderer);
 
 		//Conta MS e FPS gastos e coloca como título da tela
 		mstime = SDL_GetTicks()-frameTicks;
 		ProcessFPS();
-		sprintf(fpscounter, "FPS: %0.2f |Render MS: %d |DeltaTime: %7.6lf", framesPerSecond, mstime, deltaTime);
-		SDL_SetWindowTitle(window,fpscounter);
 		
-
 		while( SDL_GetTicks()-frameTicks <  (1000/FRAMES_PER_SECOND) ){ }
 	}
-	
+	SDL_DestroyTexture(test);
 	//Fim do programa, onde ocorre as dealocações
 	EndProgram:
 	free(fpscounter);
 
+	FreeRenderer();
 	FreeInput();
 	FreeScene();
 	FreePool();
+
+	if(font!=NULL)
+		FC_FreeFont(font);
 
 	free(SceneShadowCasters);
 	free(EnemiesAndBullets);
@@ -240,51 +258,4 @@ int main(int argc, char *argv[]){
 	if(ErrorOcurred)
 		system("pause");
     return 0;
-}
-
-void InitFPS() {
-	//Inicializa FPS em 0
-	memset(frameTimes, 0, sizeof(frameTimes));
-	frameCount = 0;
-	framesPerSecond = 0;
-	frameTicksLast = SDL_GetTicks();
-}
-
-void ProcessFPS() {
-	Uint32 frameTimesIndex;
-	Uint32 currentTicks;
-	Uint32 count;
-	Uint32 i;
-
-	frameTimesIndex = frameCount % FRAME_VALUES;
-
-	currentTicks = SDL_GetTicks();
-	// save the frame time value
-	frameTimes[frameTimesIndex] = currentTicks - frameTicksLast;
-
-	// save the last frame time for the next fpsthink
-	frameTicksLast = currentTicks;
-
-	// increment the frame count
-	frameCount++;
-
-	// Work out the current framerate
-	// I've included a test to see if the whole array has been written to or not. This will stop
-	// strange values on the first few (FRAME_VALUES) frames.
-	if (frameCount < FRAME_VALUES) {
-		count = frameCount;
-	} else {
-		count = FRAME_VALUES;
-	}
-
-	// add up all the values and divide to get the average frame time.
-	framesPerSecond = 0;
-	for (i = 0; i < count; i++) {
-		framesPerSecond += frameTimes[i];
-	}
-
-	framesPerSecond /= count;
-
-	// now to make it an actual frames per second value...
-	framesPerSecond = 1000.f / framesPerSecond;
 }

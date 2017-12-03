@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #include "utils.h"
 
 typedef struct Pixel{
@@ -56,7 +58,6 @@ typedef struct ObjectList{
 }ObjectList;
 
 typedef struct RendererArguments{
-	Pixel *screen;
 	VoxelObject **objs;
 	unsigned int numObjs;
 	VoxelObject **shadowCasters;
@@ -76,14 +77,20 @@ typedef struct Ray{
 
 void MoveCamera(float x, float y, float z);
 
-void ClearScreen(Pixel* screen);
-void FillBackground(Pixel* screen);
-void PostProcess(Pixel* screen);
+void ClearScreen();
+void FillBackground();
+void PostProcess();
 
+void InitRenderer(Uint16 *dpth);
+void UpdateScreenPointer(Pixel* scrn);
+void FreeRenderer();
 void *RenderThread(void *arguments);
 //void PointLight(VoxelObject *obj,int x, int y, int z,int radius);
 void CalculateRendered(VoxelObject *obj);
 void CalculateLighting(VoxelObject *obj);
 void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster);
-void RenderObject(Pixel* screen,VoxelObject *obj);
+void RenderObject(VoxelObject *obj);
+
+SDL_Texture* RenderIcon(VoxelObject *obj);
+void SaveTextureToPNG(SDL_Texture *tex, char* out);
 #endif

@@ -37,6 +37,7 @@ void PoolUpdate();
 void Spawn(unsigned int index,float x, float y, float z, float rx, float ry, float rz);
 
 void MoveObject(VoxelObject *obj, Vector3 movement, Vector3 rotation, VoxelObject **col,const int numCol,int damageColRadius,int damageObjRadius);
+void MoveObjectTo(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObject **col,const int numCol,int damageColRadius,int damageObjRadius);
 
 void ExplodeAtPoint(VoxelObject *obj,int x, int y, int z,int radius);
 VoxelObject **VoxelPointerArrayUnion(int numberOfPointers,int totalPointerSize,...);

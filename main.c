@@ -27,13 +27,16 @@ int SCREEN_HEIGHT = 720;
 
 int SCREEN_SCALE = 2;
 
-char *fpscounter;
-
-FC_Font* font = NULL;
+SDL_Renderer * renderer = NULL;
+SDL_Texture * render = NULL;
+SDL_Window* window = NULL;	
 
 //Tempo entre frames, calculado ao fim do loop principal
 double deltaTime = 0;
 int ExitGame = 0;
+
+char *fpscounter;
+FC_Font* font = NULL;
 
 //Array de ponteiros com os objetos
 VoxelObject **SceneShadowCasters;
@@ -53,10 +56,6 @@ int main(int argc, char *argv[]){
 	int ErrorOcurred = 0;
 	unsigned int frameTicks;
 	unsigned int mstime = 0;
-
-	SDL_Renderer * renderer = NULL;
-	SDL_Texture * render = NULL;
-	SDL_Window* window = NULL;	
 	
 	//Inicializações gerais
 
@@ -100,7 +99,7 @@ int main(int argc, char *argv[]){
 	
 	//Define o vetor que irá receber os pixels da tela e o que recebe os valores de profundidade
 	Pixel *pix;
-	int pitch = GAME_SCREEN_WIDTH * sizeof(unsigned int);
+	int pitch = GAME_SCREEN_WIDTH * sizeof(Pixel);
 	Uint16 *depth = (Uint16*) calloc(GAME_SCREEN_HEIGHT*GAME_SCREEN_WIDTH,sizeof(Uint16));
 	
 	//Define e carrega texturas da UI
@@ -143,6 +142,19 @@ int main(int argc, char *argv[]){
 	EnemiesAndBullets = VoxelPointerArrayUnion(Pool[0].numberOfInstances+Pool[1].numberOfInstances,2, &(*Pool[0].objs),Pool[0].numberOfInstances, &(*Pool[1].objs),Pool[1].numberOfInstances );
 	EnemiesAndBulletsSize = Pool[0].numberOfInstances+Pool[1].numberOfInstances;
 
+	VoxelObject ob = FromMagica("Models/tests/glock.vox");
+
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
+	SDL_Texture *test = RenderIcon(&ob);
+	SDL_SetTextureBlendMode(test,SDL_BLENDMODE_BLEND);
+
+	SDL_Rect texture_rect;
+	texture_rect.x = 270;  //the x coordinate
+	texture_rect.y = 0; // the y coordinate
+	SDL_QueryTexture(test, NULL, NULL, &texture_rect.w, &texture_rect.h);
+
+	FreeObject(&ob);
+
 	//Loop do jogo
 	while (!ExitGame)
 	{
@@ -176,6 +188,7 @@ int main(int argc, char *argv[]){
 			pthread_create(&tID1, NULL, &RenderThread, (void *)&renderArguments3);
 
 			pthread_join(tID2, NULL);
+			pthread_join(tID1, NULL);
 
 			PostProcess();
 
@@ -196,6 +209,8 @@ int main(int argc, char *argv[]){
 		
 		FC_DrawAlign(font, renderer, GAME_SCREEN_WIDTH,0,FC_ALIGN_RIGHT, "%4.2f :FPS\n%3d : MS\n%5.4lf : DT", GetFPS(), mstime, deltaTime); 
 
+		SDL_RenderCopy(renderer, test, NULL, &texture_rect);
+
 		SDL_RenderPresent(renderer);
 
 		//Conta MS e FPS gastos e coloca como título da tela
@@ -204,7 +219,7 @@ int main(int argc, char *argv[]){
 		
 		while( SDL_GetTicks()-frameTicks <  (1000/FRAMES_PER_SECOND) ){ }
 	}
-	
+	SDL_DestroyTexture(test);
 	//Fim do programa, onde ocorre as dealocações
 	EndProgram:
 	free(fpscounter);

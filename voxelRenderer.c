@@ -20,7 +20,7 @@ unsigned int voxColors[256] = {
 };
 
 
-
+extern SDL_Renderer * renderer;
 extern const int GAME_SCREEN_WIDTH;
 extern const int GAME_SCREEN_HEIGHT;
 extern double deltaTime;
@@ -95,6 +95,10 @@ void PostProcess(){
                     }
                 }
             }
+
+            //screen[cp].r = clamp(depth[cp]/4,0,255);
+            //screen[cp].g = clamp(depth[cp]/4,0,255);
+            //screen[cp].b = clamp(depth[cp]/4,0,255);
             cp++;
         }
     }
@@ -644,4 +648,155 @@ void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
             }
         }
     }
+}
+
+SDL_Texture* RenderIcon(VoxelObject *obj){
+
+    int iconWidth = obj->dimension[0];
+    int iconHeight = obj->dimension[2];
+    printf("\n%d %d %d\n",obj->dimension[0],obj->dimension[1],obj->dimension[2]);
+
+    SDL_Texture *icon = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, iconWidth, iconHeight);
+    
+    Pixel *iconPixels;
+	int pitch = iconWidth * sizeof(Pixel);
+    Uint16 *iconDepth = (Uint16*) calloc(GAME_SCREEN_HEIGHT*GAME_SCREEN_WIDTH,sizeof(Uint16));
+
+    SDL_LockTexture(icon, NULL, (void**)&iconPixels, &pitch);
+
+    unsigned int color = 0;
+
+    int x,y,z,i,px,py,startz,nv,cp = 0,colorIndex;
+    Uint16 voxeld;
+    int r,g,b;
+
+    for(i=0;i<iconWidth*iconHeight;i++){
+        iconDepth[i] = 0;
+        iconPixels[i] = (Pixel){0,0,0,0};
+    }
+
+    startz = (obj->dimension[2]-1);
+    
+    for(z=startz; z>=0; z--){
+
+        nv = obj->render[z][0];
+        for(i = 1; i <= nv ; i++){
+            
+            x = (obj->render[z][i] & 127);
+            y = ((obj->render[z][i]>>7) & 127);
+
+            colorIndex = (x) + ((z)) * obj->maxDimension + (y) * obj->maxDimension * obj->maxDimension;
+            color = voxColors[obj->model[colorIndex]];
+
+            //Transforma a cor de um Int16 para cada um dos componentes RGB
+            voxeld = (y*2 +obj->dimension[1])*2;
+            r = clamp((color & 255),0,255);
+            color = (color>>8);
+            g = clamp((color & 255),0,255);
+            color = (color>>8);
+            b = clamp((color & 255),0,255);
+
+            //Projeção das posições de 3 dimensões para duas na tela
+            py = startz - z;
+            px = x;
+
+            cp = py*iconWidth + px;
+
+            if(voxeld > iconDepth[cp]){                  
+                iconPixels[cp].r = r;
+                iconPixels[cp].g = g;
+                iconPixels[cp].b = b;
+                iconPixels[cp].a = 255;
+                iconDepth[cp] = voxeld;
+            }
+        }
+    }
+    const float shadow = 0.75;
+    const float edge = 1.2;
+    const float occlusion = 0.75;
+
+    int j;
+    for(j=0;j<iconWidth;j++){
+        int occluded = 0;
+        int valOcludee = 0;
+        for(i=1;i<iconHeight;i++){
+            if(occluded){
+                occluded = valOcludee <= iconDepth[i*iconWidth + j] ? 0:1;
+                if(!occluded){
+                    valOcludee = iconDepth[i*iconWidth + j];
+                }else{
+                    //Long shadow
+                    iconPixels[i*iconWidth + j].r *= shadow;
+                    iconPixels[i*iconWidth + j].g *= shadow;
+                    iconPixels[i*iconWidth + j].b *= shadow;
+                }
+            }else{
+                occluded = iconDepth[(i-1)*iconWidth + j] > iconDepth[i*iconWidth + j] ? 1:0;
+                if(occluded){
+                    //Long shadow
+                    iconPixels[i*iconWidth + j].r *= shadow;
+                    iconPixels[i*iconWidth + j].g *= shadow;
+                    iconPixels[i*iconWidth + j].b *= shadow;
+                    valOcludee = iconDepth[(i-1)*iconWidth + j];
+                }else{
+                    //Edge light
+                    if(iconDepth[(i-1)*iconWidth + j] != iconDepth[i*iconWidth + j]){
+                        iconPixels[i*iconWidth + j].r = clamp(iconPixels[i*iconWidth + j].r*edge,0,255);
+                        iconPixels[i*iconWidth + j].g = clamp(iconPixels[i*iconWidth + j].g*edge,0,255);
+                        iconPixels[i*iconWidth + j].b = clamp(iconPixels[i*iconWidth + j].b*edge,0,255);
+                    }
+                }
+            }
+            if(occluded){
+                //Occlusion
+                if(j!=0 && iconDepth[i*iconWidth + j-1] > iconDepth[i*iconWidth + j]){
+                    iconPixels[i*iconWidth + j].r *= occlusion;
+                    iconPixels[i*iconWidth + j].g *= occlusion;
+                    iconPixels[i*iconWidth + j].b *= occlusion;
+                }
+                if(j!=iconWidth-1 && iconDepth[i*iconWidth + j+1] > iconDepth[i*iconWidth + j]){
+                    iconPixels[i*iconWidth + j].r *= occlusion;
+                    iconPixels[i*iconWidth + j].g *= occlusion;
+                    iconPixels[i*iconWidth + j].b *= occlusion;
+                }
+                if(i!=iconHeight-1 && iconDepth[(i+1)*iconWidth + j] > iconDepth[i*iconWidth + j]){
+                    iconPixels[i*iconWidth + j].r *= occlusion;
+                    iconPixels[i*iconWidth + j].g *= occlusion;
+                    iconPixels[i*iconWidth + j].b *= occlusion;
+                }
+            }
+        }
+    }
+
+    SDL_UnlockTexture(icon);
+
+    free(iconDepth);
+    return icon;
+}
+
+void SaveTextureToPNG(SDL_Texture *tex, char* out){
+    //Get texture dimensions
+    int w, h;
+    SDL_QueryTexture(tex, NULL, NULL, &w, &h);
+
+    SDL_Surface *sshot = SDL_CreateRGBSurface(0, w, h, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000);
+    SDL_Texture *target = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, w, h);
+
+    //Copy texture to render target
+    SDL_SetRenderTarget(renderer, target);
+    SDL_Rect rect = {0,0,w,h};
+    SDL_RenderCopy(renderer, tex, NULL,&rect);
+
+    //Transfer render target pixels to surface
+    SDL_RenderReadPixels(renderer, NULL, SDL_PIXELFORMAT_ARGB8888, sshot->pixels, sshot->pitch);
+    //Save surface to PNG
+    IMG_SavePNG(sshot, out);
+
+    //Return render target to default
+    SDL_SetRenderTarget(renderer, NULL);
+    
+    //Free allocated surface and texture
+    SDL_FreeSurface(sshot);
+    SDL_DestroyTexture(target);
+
 }

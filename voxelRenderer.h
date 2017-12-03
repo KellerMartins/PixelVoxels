@@ -90,4 +90,7 @@ void CalculateRendered(VoxelObject *obj);
 void CalculateLighting(VoxelObject *obj);
 void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster);
 void RenderObject(VoxelObject *obj);
+
+SDL_Texture* RenderIcon(VoxelObject *obj);
+void SaveTextureToPNG(SDL_Texture *tex, char* out);
 #endif

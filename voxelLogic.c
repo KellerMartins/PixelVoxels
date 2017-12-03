@@ -20,27 +20,19 @@ SDL_Event event;
 VoxelObject model;
 
 void GameStart(){
-    
-    FILE *voxelFile;
 
     //Carrega modelo da nave do player
 	
-	voxelFile = fopen("Models/spaceship.vox","rb");
-	model = FromMagica(voxelFile);
+	model = FromMagica("Models/spaceship.vox");
 	model.position = (Vector3){0,30,20};
-	fclose(voxelFile);
 
     //Carrega modelo da bala no pool
-	voxelFile = fopen("Models/Bullet.vox","rb");
-	Pool[0].baseObj = FromMagica(voxelFile);
-	fclose(voxelFile);
+	Pool[0].baseObj = FromMagica("Models/Bullet.vox");
 	//Define o número de instâncias disponíveis
 	Pool[0].numberOfInstances = 60;
     Pool[0].type = BULLET;
     
-    voxelFile = fopen("Models/Bullet.vox","rb");
-	Pool[1].baseObj = FromMagica(voxelFile);
-	fclose(voxelFile);
+	Pool[1].baseObj = FromMagica("Models/Bullet.vox");
 	//Define o número de instâncias disponíveis
 	Pool[1].numberOfInstances = 1;
 	Pool[1].type = BULLET;
@@ -74,8 +66,6 @@ void GameUpdate(){
     float angle = acos(dp)*180/PI;
     float dir = dot(mouseVec,diag);
     if (dir < 0) angle = -angle;
-
-    model.rotation.z = angle;
     //Movimento da nave
     if (GetKey(SDL_SCANCODE_W))
     {
@@ -144,6 +134,7 @@ void GameUpdate(){
         rotVal.z+= -100;
         moved=1;
     }
+    MoveObjectTo(&model,model.position,(Vector3){model.rotation.x,model.rotation.y,angle},&(*scene),sceneObjectCount,0,0);
     if(moved){
         if(moveDir.x!=0.0f || moveDir.y!=0.0f || moveDir.z!=0.0f){
             moveDir = NormalizeVector(moveDir);
@@ -429,6 +420,83 @@ void MoveObject(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObjec
         obj->rotation.x =fmod( obj->rotation.x +rotation.x*moveDelta,360);
         obj->rotation.y =fmod(obj->rotation.y +rotation.y*moveDelta,360);
         obj->rotation.z =fmod(obj->rotation.z +rotation.z*moveDelta,360);
+    }
+}
+
+void MoveObjectTo(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObject **col,const int numCol,int damageColRadius,int damageObjRadius){
+    //printf("%0.0f Per cent\n",100*(obj->voxelsRemaining/(float)obj->voxelCount));
+    int o,i,iz,nv,x,y,z,index = 0,allowMovement = 1,useRot = 0;
+    int halfDimX = obj->dimension[0]/2.0, halfDimY = obj->dimension[1]/2.0,halfDimZ = obj->dimension[2]/2.0;
+
+    float rotx,roty,rotz;
+    float sinx = 1,cosx = 0;
+    float siny = 1,cosy = 0;
+    float sinz = 1,cosz = 0;
+
+    if(rotation.x != 0.0f || rotation.y != 0.0f || rotation.z != 0.0f){
+        useRot = 1;
+        sinx = sin((rotation.x) * PI_OVER_180);
+        cosx = cos((rotation.x) * PI_OVER_180);
+
+        siny = sin((rotation.y) * PI_OVER_180);
+        cosy = cos((rotation.y) * PI_OVER_180);
+        
+        sinz = sin((rotation.z) * PI_OVER_180);
+        cosz = cos((rotation.z) * PI_OVER_180);
+    }
+
+    if(col!=NULL){
+        for(iz=obj->maxDimension-1;iz>=0;iz--){
+            nv = obj->render[iz][0];
+            for(i = nv; i > 0  ; i--){
+                if(allowMovement == 0){
+                    break;
+                }
+
+                if(useRot){
+
+                    x = (obj->render[iz][i] & 127) - halfDimX;
+                    y = ((obj->render[iz][i]>>7) & 127) - halfDimY;
+                    z = iz - halfDimZ;
+
+                    rotx = x*cosy*cosz + y*(cosz*sinx*siny - cosx*sinz) + z*(cosx*cosz*siny + sinx*sinz);
+                    roty = x*cosy*sinz + z*(cosx*siny*sinz - cosz*sinx) + y*(cosx*cosz + sinx*siny*sinz);
+                    rotz = z*cosx*cosy + y*sinx*cosy - x*siny;
+
+                    x = rotx + (movement.x) + halfDimX;
+                    y = roty + (movement.y) + halfDimY;
+                    z = rotz + (movement.z) + halfDimZ;
+
+                }else{
+                    x = ((obj->render[iz][i] & 127)+(movement.x));
+                    y = (((obj->render[iz][i]>>7) & 127)+(movement.y));
+                    z = iz+(movement.z);
+                }
+
+                for(o=0; o<numCol; o++){
+                    
+                    if((x-col[o]->position.x)<col[o]->maxDimension && (x-col[o]->position.x)>-1 && (z-col[o]->position.z)<col[o]->maxDimension && (z-col[o]->position.z)>-1 && (y+col[o]->position.y)<col[o]->maxDimension && (y+col[o]->position.y)>-1){
+                        index = (x-col[o]->position.x) + (z-col[o]->position.z) * col[o]->maxDimension + (y-col[o]->position.y) * col[o]->maxDimension * col[o]->maxDimension;
+                        if(col[o]->model[index]!=0){
+                            ExplodeAtPoint(col[o],x,y,z,damageColRadius);
+                            ExplodeAtPoint(obj,x,y,z,damageObjRadius);
+                            allowMovement = 0;
+                            printf("Colliding");
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    if(allowMovement){
+        obj->position.x =(movement.x);
+        obj->position.y =(movement.y);
+        obj->position.z =(movement.z);
+
+        obj->rotation.x =fmod(rotation.x,360);
+        obj->rotation.y =fmod(rotation.y,360);
+        obj->rotation.z =fmod(rotation.z,360);
     }
 }
 

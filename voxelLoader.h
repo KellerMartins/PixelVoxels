@@ -18,7 +18,7 @@ int LoadMap(char mapPath[]);
 void FreeScene();
 
 Voxel newVoxel(FILE * file,unsigned int sizey);
-VoxelObject FromMagica(FILE* file);
+VoxelObject FromMagica(char modelPath[]);
 void FreeObject(VoxelObject *obj);
 
 /* --- PRINTF_BYTE_TO_BINARY macro's --- */

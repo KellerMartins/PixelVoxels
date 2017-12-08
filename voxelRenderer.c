@@ -26,6 +26,10 @@ const GLchar *vShaderSource =
 "    uniform float pHeight;"
 "    varying vec2 f_texcoord;"
 
+"    uniform float vignettePower;"
+"    uniform float redShiftPower;"
+"    uniform float redShiftSpread;"
+
 "    void main(void) {"
 "       gl_Position = vec4(v_coord, 0.0, 1.0);"
 "       f_texcoord = (v_coord + 1.0)/2.0;"
@@ -38,6 +42,10 @@ const GLchar *fShaderSource =
 "    uniform float pHeight;"
 "    varying vec2 f_texcoord;"
 
+"    uniform float vignettePower;"
+"    uniform float redShiftPower;"
+"    uniform float redShiftSpread;"
+
 "    vec4 when_gt(vec4 x, vec4 y) {"
 "       return max(sign(x - y), 0.0);"
 "    }"
@@ -48,17 +56,25 @@ const GLchar *fShaderSource =
 
 "       vec4 neighbor = texture2D(fbo_texture, vec2(f_texcoord.x + pWidth,f_texcoord.y));"
 "       outlineColor = (neighbor.a - curDepth) > 0.01? neighbor.rgb*0.54:outlineColor;"
-
 "       neighbor = texture2D(fbo_texture, vec2(f_texcoord.x - pWidth,f_texcoord.y));"
 "       outlineColor = (neighbor.a - curDepth) > 0.01? neighbor.rgb*0.54:outlineColor;"
-
 "       neighbor = texture2D(fbo_texture, vec2(f_texcoord.x,f_texcoord.y + pHeight));"
 "       outlineColor = (neighbor.a - curDepth) > 0.01? neighbor.rgb*0.54:outlineColor;"
-
 "       neighbor = texture2D(fbo_texture, vec2(f_texcoord.x,f_texcoord.y - pHeight));"
 "       outlineColor = (neighbor.a - curDepth) > 0.01? neighbor.rgb*0.54:outlineColor;"
 
-"       gl_FragColor = vec4(outlineColor,1);"
+"       vec3 dist = vec3((f_texcoord.x - 0.5f) * 1.25f,"
+"                        (f_texcoord.y - 0.5f) * 1.25f,0);"
+
+"       float vignette = clamp(1 - dot(dist, dist)*vignettePower,0,1);"
+
+"       float redShift;"
+"       if(redShiftSpread>0){"
+"           float aberrationMask = clamp(dot(dist, dist)*redShiftPower,0,1)*redShiftSpread;"
+"           redShift = texture2D(fbo_texture, vec2(f_texcoord.x - aberrationMask*pWidth,f_texcoord.y));"
+"       }else{ redShift =  outlineColor.r; }"
+
+"       gl_FragColor = vec4(vec3(redShift,outlineColor.gb)*vignette,1);"
 "    }"
 ;
 
@@ -173,12 +189,15 @@ void RenderToScreen(){
     glUseProgram(program);
     GLdouble loc = glGetUniformLocation(program, "pWidth");
     if (loc != -1) glUniform1f(loc, 1.0/(float)GAME_SCREEN_WIDTH);
-    //else printf("QWERQRQWEQWE");
-
     loc = glGetUniformLocation(program, "pHeight");
     if (loc != -1) glUniform1f(loc, 1.0/(float)GAME_SCREEN_HEIGHT);
-    //else printf("ADASDASDASD");
 
+    loc = glGetUniformLocation(program, "vignettePower");
+    if (loc != -1) glUniform1f(loc, 0.5);
+    loc = glGetUniformLocation(program, "redShiftPower");
+    if (loc != -1) glUniform1f(loc, 2);    
+    loc = glGetUniformLocation(program, "redShiftSpread");
+    if (loc != -1) glUniform1f(loc, 0);
     
     glBindTexture(GL_TEXTURE_2D, renderedTexture);
     
@@ -315,21 +334,6 @@ void RenderObject(VoxelObject *obj){
 
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-
-    /*glBegin(GL_POINTS);
-        for(x=obj->dimension[0]-1;x>0;x--){
-            for(y=obj->dimension[1]-1;y>0;y--){
-                for(z=0;z<obj->dimension[2];z++){
-                    int index = (x + z * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);
-                    if(obj->model[index]){
-                        int py = ((x+obj->position.x)+(y+obj->position.y)) +((z+obj->position.z+roundf(cameraPosition.z))*2) + roundf(-cameraPosition.y);
-                        int px = ((x+obj->position.x)-(y+obj->position.y))*2 + roundf(-cameraPosition.x);
-                        glVertex3f(px+0.375, py+0.375, (z+obj->position.z)/10);
-                    }
-                }
-            }
-        }
-    glEnd();*/
 
     glBegin(GL_POINTS);
     for(z=startz; z>=0; z--){

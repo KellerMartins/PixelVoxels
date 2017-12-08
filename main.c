@@ -11,7 +11,6 @@
 #include <SDL2/SDL_ttf.h>
 #include <GL/glew.h>
 #include <SDL2/SDL_opengl.h>
-#include "SDL_FontCache.h"
 
 #include "utils.h"
 #include "voxelLoader.h"

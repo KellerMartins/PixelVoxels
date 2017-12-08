@@ -6,10 +6,10 @@ CC = gcc
 OBJS = main.c voxelLoader.c voxelRenderer.c  voxelLogic.c utils.c SDL_FontCache.c
 
 #INCLUDE_PATHS specifies the additional include paths we'll need
-INCLUDE_PATHS = -I $(PD)\SDL2\SDL2_MinGW_32Bits\include -I $(PD)\SoLoud\include 
+INCLUDE_PATHS = -I $(PD)\SDL2\SDL2_MinGW_32Bits\include -I $(PD)\SoLoud\include -I $(PD)\glew\include
 
 #LIBRARY_PATHS specifies the additional library paths we'll need
-LIBRARY_PATHS = -L $(PD)\SDL2\SDL2_MinGW_32Bits\lib -I $(PD)\SoLoud\lib
+LIBRARY_PATHS = -L $(PD)\SDL2\SDL2_MinGW_32Bits\lib -L $(PD)\SoLoud\lib -L $(PD)\glew\lib
 
 #COMPILER_FLAGS specifies the additional compilation options we're using
 # -w suppresses all warnings
@@ -18,8 +18,8 @@ LIBRARY_PATHS = -L $(PD)\SDL2\SDL2_MinGW_32Bits\lib -I $(PD)\SoLoud\lib
 # -fopenmp enables openmp support
 COMPILER_FLAGS = -Wall -ffast-math -O3
 
-#LINKER_FLAGS specifies the libraries we're linking against -lglew32  -mwindows
-LINKER_FLAGS = -lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lpthread $(PD)\SoLoud\lib\soloud_x86.lib
+#LINKER_FLAGS specifies the libraries we're linking against -mwindows
+LINKER_FLAGS = -lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lglew32.dll -lopengl32 -lpthread $(PD)\SoLoud\lib\soloud_x86.lib
 
 #OBJ_NAME specifies the name of our exectuable
 OBJ_NAME = Space

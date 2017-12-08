@@ -48,7 +48,7 @@ void GameUpdate(){
 
     //Cria um vetor do mouse centrado no centro do player, para definir o angulo a rodar o objeto para olhar para o mouse
     float screenPosX, screenPosY;
-    screenPosY = (int)((model.position.x+model.position.y) -roundf(model.position.z+cameraPosition.z)*2 + roundf(-cameraPosition.y));
+    screenPosY = (int)((model.position.x+model.position.y) +roundf(model.position.z+cameraPosition.z)*2 + roundf(-cameraPosition.y));
     screenPosX = (int)((model.position.x-model.position.y)*2 + roundf(-cameraPosition.x));
 
     screenPosY = ((screenPosY/(float)GAME_SCREEN_HEIGHT)-0.5f)*2;
@@ -56,7 +56,7 @@ void GameUpdate(){
 
     int mx,my;
     SDL_GetMouseState(&mx,&my);
-    Vector3 mouseVec = {((mx/(float)SCREEN_WIDTH)-0.5f)*2 - screenPosX,((my/(float)SCREEN_HEIGHT)-0.5f)*2 - screenPosY,0};
+    Vector3 mouseVec = {((mx/(float)SCREEN_WIDTH)-0.5f)*2 - screenPosX,((1-(my/(float)SCREEN_HEIGHT))-0.5f)*2 - screenPosY,0};
     
     mouseVec = NormalizeVector(mouseVec);
 
@@ -69,14 +69,14 @@ void GameUpdate(){
     //Movimento da nave
     if (GetKey(SDL_SCANCODE_W))
     {
-        moveDir.x += -1;
-        moveDir.y += -1;
+        moveDir.x += 1;
+        moveDir.y += 1;
         moved=1;
     }
     else if (GetKey(SDL_SCANCODE_S))
     {
-        moveDir.x += 1;
-        moveDir.y += 1;
+        moveDir.x += -1;
+        moveDir.y += -1;
         moved=1;
     }
 
@@ -481,7 +481,6 @@ void MoveObjectTo(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObj
                             ExplodeAtPoint(col[o],x,y,z,damageColRadius);
                             ExplodeAtPoint(obj,x,y,z,damageObjRadius);
                             allowMovement = 0;
-                            printf("Colliding");
                             break;
                         }
                     }

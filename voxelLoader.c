@@ -67,7 +67,6 @@ Voxel newVoxel(FILE * file,unsigned int sizey)
     //data.y = (byte)(subsample ? stream.ReadByte() / 2 : stream.ReadByte());
     fread(&data.y,sizeof(char),1,file);
     //data.y = (subsample? data.y/2:data.y);
-    data.y = sizey-1-data.y;
     //data.z = (byte)(subsample ? stream.ReadByte() / 2 : stream.ReadByte());
     fread(&data.z,sizeof(char),1,file);
     //data.z = (subsample? data.z/2:data.z);

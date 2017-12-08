@@ -6,6 +6,9 @@
 #include <pthread.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_ttf.h>
+#include <GL/glew.h>
+#include <SDL2/SDL_opengl.h>
 #include "utils.h"
 
 typedef struct Pixel{
@@ -90,6 +93,13 @@ void CalculateRendered(VoxelObject *obj);
 void CalculateLighting(VoxelObject *obj);
 void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster);
 void RenderObject(VoxelObject *obj);
+
+void RenderToScreen();
+void ClearRender(SDL_Color col);
+
+void RenderText(char *text, SDL_Color color, int x, int y, TTF_Font* font);
+
+int CompileAndLinkShader();
 
 SDL_Texture* RenderIcon(VoxelObject *obj);
 void SaveTextureToPNG(SDL_Texture *tex, char* out);

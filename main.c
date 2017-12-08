@@ -8,6 +8,9 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_ttf.h>
+#include <GL/glew.h>
+#include <SDL2/SDL_opengl.h>
 #include "SDL_FontCache.h"
 
 #include "utils.h"
@@ -28,15 +31,15 @@ int SCREEN_HEIGHT = 720;
 int SCREEN_SCALE = 2;
 
 SDL_Renderer * renderer = NULL;
-SDL_Texture * render = NULL;
 SDL_Window* window = NULL;	
+SDL_GLContext gGlContext;
 
 //Tempo entre frames, calculado ao fim do loop principal
 double deltaTime = 0;
 int ExitGame = 0;
 
 char *fpscounter;
-FC_Font* font = NULL;
+TTF_Font* font = NULL;
 
 //Array de ponteiros com os objetos
 VoxelObject **SceneShadowCasters;
@@ -75,18 +78,66 @@ int main(int argc, char *argv[]){
 		ErrorOcurred = 1;
 		goto EndProgram;
 	}
+
+	if(TTF_Init()==-1) {
+    	printf("TTF_Init could not initialize! %s\n", TTF_GetError());
+		ErrorOcurred = 1;
+		goto EndProgram;
+	}
+
     if(SDL_Init(SDL_INIT_EVERYTHING) < 0)
 	{
         printf("SDL could not initialize! SLD_Error: %s\n", SDL_GetError());
 		ErrorOcurred = 1;
 		goto EndProgram;
     }
-	window = SDL_CreateWindow( "Vopix Engine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+	window = SDL_CreateWindow( "Vopix Engine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
 	if(window == NULL){
 		printf("Window could not be created! SDL_Error %s\n", SDL_GetError() );
 		ErrorOcurred = 1;
 		goto EndProgram;
 	}	
+
+	//
+	//OpenGl initializations
+	//
+
+	//Setting OpenGL version
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+
+	//Creating OpenGL context
+	gGlContext = SDL_GL_CreateContext(window);
+    if (gGlContext == NULL)
+    {
+        printf("Cannot create OpenGL context with error: %s\n",SDL_GetError());
+        ErrorOcurred = 1;
+		goto EndProgram;
+    }
+
+	 //Initialize GLEW
+	glewExperimental = GL_TRUE; 
+	GLenum glewError = glewInit();
+	if( glewError != GLEW_OK )
+	{
+		printf( "Error initializing GLEW! %s\n", glewGetErrorString( glewError ) );
+		ErrorOcurred = 1;
+		goto EndProgram;
+	}
+
+	//Use Vsync
+	if( SDL_GL_SetSwapInterval( 0 ) < 0 )
+	{
+		printf( "Warning: Unable to unset VSync! SDL Error: %s\n", SDL_GetError() );
+	}
+
+	//Initialize OpenGL features
+	glShadeModel(GL_SMOOTH);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClearDepth(1.0f);
+    glEnable(GL_DEPTH_TEST);
+    glDepthFunc(GL_LEQUAL);
+    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
 	//Define resolução interna do jogo
 	GAME_SCREEN_WIDTH = SCREEN_WIDTH/SCREEN_SCALE;
@@ -94,19 +145,13 @@ int main(int argc, char *argv[]){
 
 	//Inicializa o renderizador e a textura da tela
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-	render = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
 	SDL_RenderSetLogicalSize(renderer, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
-	
-	//Define o vetor que irá receber os pixels da tela e o que recebe os valores de profundidade
-	Pixel *pix;
-	int pitch = GAME_SCREEN_WIDTH * sizeof(Pixel);
-	Uint16 *depth = (Uint16*) calloc(GAME_SCREEN_HEIGHT*GAME_SCREEN_WIDTH,sizeof(Uint16));
-	
+
 	//Define e carrega texturas da UI
-	SDL_Rect topUIRect = { 0, 0, 640, 32 };
-	SDL_Rect topUIDest = { 0, 0, 640, 32 };
-	SDL_Surface * topUISurf = IMG_Load("Interface/UIGameTop.png");
-	SDL_Texture * topUITex = SDL_CreateTextureFromSurface(renderer, topUISurf);
+	//SDL_Rect topUIRect = { 0, 0, 640, 32 };
+	//SDL_Rect topUIDest = { 0, 0, 640, 32 };
+	//SDL_Surface * topUISurf = IMG_Load("Interface/UIGameTop.png");
+	//SDL_Texture * topUITex = SDL_CreateTextureFromSurface(renderer, topUISurf);
 
 	//Inicializa string para o contador de frames
 	fpscounter = (char*)calloc(50,sizeof(char));
@@ -117,8 +162,8 @@ int main(int argc, char *argv[]){
 	Uint64 LAST = 0;
 
 	//Inicializa fonte
-	font = FC_CreateFont();  
-	if(!FC_LoadFont(font, renderer, "Interface/Fonts/Visitor.ttf",18, FC_MakeColor(255,255,255,255), TTF_STYLE_NORMAL)){
+	font = TTF_OpenFont("Interface/Fonts/Visitor.ttf",18);
+	if(!font){
 		printf("Font: Error loading font!");
 	}
 	
@@ -129,7 +174,7 @@ int main(int argc, char *argv[]){
 	}
 
 	//Inicializações do jogo
-	InitRenderer(depth);
+	InitRenderer(NULL);
 	InputStart();
 	GameStart();
 
@@ -169,54 +214,41 @@ int main(int argc, char *argv[]){
 		GameUpdate();
 		PoolUpdate();
 
-		//Trava a textura da tela na memória e inicia renderização
-		SDL_LockTexture(render, NULL, (void**)&pix, &pitch);
-			UpdateScreenPointer(pix);
-			ClearScreen();
+		SDL_Color bgColor = {0,38,75,0};
+		ClearRender(bgColor);
 
-			pthread_t tID1;
-			RendererArguments renderArguments1 = {threadObjs1,1,NULL,0};
-			pthread_create(&tID1, NULL, &RenderThread, (void *)&renderArguments1);
+		RendererArguments renderArguments1 = {threadObjs1,1,NULL,0};
+		RenderThread((void *)&renderArguments1);
 
-			pthread_t tID2;
-			RendererArguments renderArguments2 = {scene,sceneObjectCount,SceneShadowCasters,SceneShadowCastersSize};
-			pthread_create(&tID2, NULL, &RenderThread, (void *)&renderArguments2);
+		RendererArguments renderArguments2 = {scene,sceneObjectCount,SceneShadowCasters,SceneShadowCastersSize};
+		RenderThread((void *)&renderArguments2);
 
-			pthread_join(tID1, NULL);
+		RendererArguments renderArguments3 = {EnemiesAndBullets,EnemiesAndBulletsSize,NULL,0};
+		RenderThread((void *)&renderArguments3);
 
-			RendererArguments renderArguments3 = {EnemiesAndBullets,EnemiesAndBulletsSize,NULL,0};
-			pthread_create(&tID1, NULL, &RenderThread, (void *)&renderArguments3);
-
-			pthread_join(tID2, NULL);
-			pthread_join(tID1, NULL);
-
-			PostProcess();
-
-		SDL_UnlockTexture(render);
-
-		//Limpa a tela e "Blita" a tela renderizada
-		SDL_RenderClear(renderer);
-		SDL_RenderCopy(renderer, render, NULL, NULL);
+		RenderToScreen();
 
 		//Renderiza UI
 				
-		float barMultiplier = (model.voxelsRemaining-(model.voxelCount/2.0f))/(model.voxelCount/2.0f);
-		SDL_Rect topUIHealthBarRect = { 108, 32, 153*barMultiplier, 32 };
-		SDL_Rect topUIHealthBarDest = { 108, 0, 153*barMultiplier, 32 };
+		//float barMultiplier = (model.voxelsRemaining-(model.voxelCount/2.0f))/(model.voxelCount/2.0f);
+		//SDL_Rect topUIHealthBarRect = { 108, 32, 153*barMultiplier, 32 };
+		//SDL_Rect topUIHealthBarDest = { 108, 0, 153*barMultiplier, 32 };
 
-		SDL_RenderCopy(renderer, topUITex, &topUIRect, &topUIDest);
-		SDL_RenderCopy(renderer, topUITex, &topUIHealthBarRect, &topUIHealthBarDest);
-		
-		FC_DrawAlign(font, renderer, GAME_SCREEN_WIDTH,0,FC_ALIGN_RIGHT, "%4.2f :FPS\n%3d : MS\n%5.4lf : DT", GetFPS(), mstime, deltaTime); 
+		//SDL_RenderCopy(renderer, topUITex, &topUIRect, &topUIDest);
+		//SDL_RenderCopy(renderer, topUITex, &topUIHealthBarRect, &topUIHealthBarDest);
+		static char perfInfo[100];
+		sprintf(perfInfo,"%4.2f  :FPS\n  %3d : MS\n%5.4lf : DT", GetFPS(), mstime, deltaTime);
+		//FC_DrawAlign(font, renderer, GAME_SCREEN_WIDTH,0,FC_ALIGN_RIGHT, "%4.2f :FPS\n%3d : MS\n%5.4lf : DT", GetFPS(), mstime, deltaTime); 
+		SDL_Color fontColor = {255,255,255,255};
+		RenderText(perfInfo, fontColor, SCREEN_WIDTH-100, SCREEN_HEIGHT-50, font);
+		//SDL_RenderCopy(renderer, test, NULL, &texture_rect);
 
-		SDL_RenderCopy(renderer, test, NULL, &texture_rect);
-
-		SDL_RenderPresent(renderer);
+		SDL_GL_SwapWindow(window);
 
 		//Conta MS e FPS gastos e coloca como título da tela
 		mstime = SDL_GetTicks()-frameTicks;
 		ProcessFPS();
-		
+
 		while( SDL_GetTicks()-frameTicks <  (1000/FRAMES_PER_SECOND) ){ }
 	}
 	SDL_DestroyTexture(test);
@@ -230,7 +262,7 @@ int main(int argc, char *argv[]){
 	FreePool();
 
 	if(font!=NULL)
-		FC_FreeFont(font);
+		TTF_CloseFont(font);
 
 	free(SceneShadowCasters);
 	free(EnemiesAndBullets);
@@ -240,8 +272,8 @@ int main(int argc, char *argv[]){
 		Soloud_destroy(soloud);
 	}
 	
-	if(render!=NULL)
-		SDL_DestroyTexture(render);
+	//if(render!=NULL)
+		//SDL_DestroyTexture(render);
 			
 	if(renderer!=NULL)
 		SDL_DestroyRenderer(renderer);
@@ -251,6 +283,9 @@ int main(int argc, char *argv[]){
 
 	if(SDLIMGFailed)
 		IMG_Quit();
+
+	if(TTF_WasInit())
+		TTF_Quit();
 
 	if(SDL_WasInit(SDL_INIT_EVERYTHING)!=0)
     	SDL_Quit();

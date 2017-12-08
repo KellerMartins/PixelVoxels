@@ -19,20 +19,65 @@ unsigned int voxColors[256] = {
 	0xff880000, 0xff770000, 0xff550000, 0xff440000, 0xff220000, 0xff110000, 0xffeeeeee, 0xffdddddd, 0xffbbbbbb, 0xffaaaaaa, 0xff888888, 0xff777777, 0xff555555, 0xff444444, 0xff222222, 0xff111111
 };
 
+const GLchar *vShaderSource = 
+"    attribute vec2 v_coord;"
+"    uniform sampler2D fbo_texture;"
+"    uniform float pWidth;"
+"    uniform float pHeight;"
+"    varying vec2 f_texcoord;"
+
+"    void main(void) {"
+"       gl_Position = vec4(v_coord, 0.0, 1.0);"
+"       f_texcoord = (v_coord + 1.0)/2.0;"
+"    }"
+;
+
+const GLchar *fShaderSource = 
+"    uniform sampler2D fbo_texture;"
+"    uniform float pWidth;"
+"    uniform float pHeight;"
+"    varying vec2 f_texcoord;"
+
+"    vec4 when_gt(vec4 x, vec4 y) {"
+"       return max(sign(x - y), 0.0);"
+"    }"
+
+"    void main(void) {"
+"       float curDepth = texture2D(fbo_texture, f_texcoord).a;"
+"       vec3 outlineColor = texture2D(fbo_texture, f_texcoord).rgb;"
+
+"       vec4 neighbor = texture2D(fbo_texture, vec2(f_texcoord.x + pWidth,f_texcoord.y));"
+"       outlineColor = (neighbor.a - curDepth) > 0.01? neighbor.rgb*0.54:outlineColor;"
+
+"       neighbor = texture2D(fbo_texture, vec2(f_texcoord.x - pWidth,f_texcoord.y));"
+"       outlineColor = (neighbor.a - curDepth) > 0.01? neighbor.rgb*0.54:outlineColor;"
+
+"       neighbor = texture2D(fbo_texture, vec2(f_texcoord.x,f_texcoord.y + pHeight));"
+"       outlineColor = (neighbor.a - curDepth) > 0.01? neighbor.rgb*0.54:outlineColor;"
+
+"       neighbor = texture2D(fbo_texture, vec2(f_texcoord.x,f_texcoord.y - pHeight));"
+"       outlineColor = (neighbor.a - curDepth) > 0.01? neighbor.rgb*0.54:outlineColor;"
+
+"       gl_FragColor = vec4(outlineColor,1);"
+"    }"
+;
 
 extern SDL_Renderer * renderer;
-extern const int GAME_SCREEN_WIDTH;
-extern const int GAME_SCREEN_HEIGHT;
+extern int GAME_SCREEN_WIDTH;
+extern int GAME_SCREEN_HEIGHT;
+
+extern int SCREEN_WIDTH;
+extern int SCREEN_HEIGHT;
 extern double deltaTime;
 
-Pixel *screen = NULL;
-Uint16 *depth = NULL;
-
-Pixel *cube;
-Uint8 *cubeDepth;
-int cubeWidth = 0;
-int cubeHeight = 0;
 Vector3 cameraPosition;
+
+GLuint CubeID;
+GLuint FramebufferName = 0;
+GLuint renderedTexture = 0;
+GLuint depthrenderbuffer = 0;
+
+GLuint program = 0;
 
 void MoveCamera(float x, float y, float z){
     cameraPosition.x +=x*deltaTime;
@@ -41,68 +86,115 @@ void MoveCamera(float x, float y, float z){
     //printf("CamPos: |%2.1f|%2.1f|%2.1f|\n",cameraPosition.x,cameraPosition.y,cameraPosition.z);
 }
 
-void ClearScreen(){
-    int y,x,cp = 0;
-    for(y=0;y<GAME_SCREEN_HEIGHT;y++){
-        for(x=0;x<GAME_SCREEN_WIDTH;x++){
-            screen[cp].r = 0;
-            screen[cp].g = 38;
-            screen[cp].b = 75;
-            depth[cp] = 0;
-            cp++;
-        }
+void InitRenderer(Uint16 *dpth){
+    cameraPosition = (Vector3){-GAME_SCREEN_WIDTH/2,0,0};
+
+    //Framebuffer
+    glGenFramebuffers(1, &FramebufferName);
+    glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+
+    //Render Texture
+    glGenTextures(1, &renderedTexture);
+    glBindTexture(GL_TEXTURE_2D, renderedTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT, 0,GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+    glGenRenderbuffers(1, &depthrenderbuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
+
+    // Set "renderedTexture" as our colour attachement #0
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture, 0);
+
+    // Set the list of draw buffers.
+    GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+    glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
+
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) return;
+
+    glBindFramebuffer(GL_FRAMEBUFFER,0);
+
+    //Load surface into a OpenGL texture
+    SDL_Surface *cubeimg = IMG_Load("Textures/cube.png");
+    if(!cubeimg){ printf("Failed to load!\n"); return; }
+
+    
+    glGenTextures(1, &CubeID);
+    glBindTexture(GL_TEXTURE_2D, CubeID);
+    
+    int Mode = GL_RGB;
+    
+    if(cubeimg->format->BytesPerPixel == 4) {
+        Mode = GL_RGBA;
     }
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, Mode, cubeimg->w, cubeimg->h, 0, Mode, GL_UNSIGNED_BYTE, cubeimg->pixels);
+    
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    SDL_FreeSurface(cubeimg);
+
+    //Compile shader
+    if(!CompileAndLinkShader()) printf(">Failed to compile/link shader! Description above\n\n");
+    else printf(">Compiled/linked shader sucessfully!\n\n");
 }
 
-void PostProcess(){
-    int y,x,cp = 0;
-    int useOutline = 1;
-    float outline = 0.54;
-
-    for(y=0;y<GAME_SCREEN_HEIGHT;y++){
-        for(x=0;x<GAME_SCREEN_WIDTH;x++){
-
-            if(useOutline){
-                //Outline effect
-                if(depth[cp]!=0 && cp%GAME_SCREEN_WIDTH !=0 && cp%GAME_SCREEN_WIDTH !=GAME_SCREEN_WIDTH-1){
-                    if(cp-1>0){
-                        if((depth[cp-1]-depth[cp])<-10 || depth[cp-1] == 0){
-                            screen[cp-1].r = screen[cp].r*outline;
-                            screen[cp-1].g = screen[cp].g*outline;
-                            screen[cp-1].b = screen[cp].b*outline;
-                        }
-                    }
-                    if(cp+1<GAME_SCREEN_HEIGHT*GAME_SCREEN_WIDTH){
-                        if((depth[cp+1]-depth[cp])<-10 || depth[cp+1] == 0){
-                            screen[cp+1].r = screen[cp].r*outline;
-                            screen[cp+1].g = screen[cp].g*outline;
-                            screen[cp+1].b = screen[cp].b*outline;
-                        }
-                    }
-                    if(cp-GAME_SCREEN_WIDTH>0){
-                        if((depth[cp-GAME_SCREEN_WIDTH]-depth[cp])<-10 || depth[cp-GAME_SCREEN_WIDTH] == 0){
-                            screen[cp-GAME_SCREEN_WIDTH].r = screen[cp].r*outline;
-                            screen[cp-GAME_SCREEN_WIDTH].g = screen[cp].g*outline;
-                            screen[cp-GAME_SCREEN_WIDTH].b = screen[cp].b*outline;
-                        }
-                    }
-                    if(cp+GAME_SCREEN_WIDTH<GAME_SCREEN_HEIGHT*GAME_SCREEN_WIDTH){
-                        if((depth[cp+GAME_SCREEN_WIDTH]-depth[cp])<-10 || depth[cp+GAME_SCREEN_WIDTH] == 0){
-                            screen[cp+GAME_SCREEN_WIDTH].r = screen[cp].r*outline;
-                            screen[cp+GAME_SCREEN_WIDTH].g = screen[cp].g*outline;
-                            screen[cp+GAME_SCREEN_WIDTH].b = screen[cp].b*outline;
-                        }
-                    }
-                }
-            }
-
-            //screen[cp].r = clamp(depth[cp]/4,0,255);
-            //screen[cp].g = clamp(depth[cp]/4,0,255);
-            //screen[cp].b = clamp(depth[cp]/4,0,255);
-            cp++;
-        }
-    }
+void UpdateScreenPointer(Pixel* scrn){
+    //screen = scrn;
 }
+
+void FreeRenderer(){
+    //glDeleteTextures(0,&CubeID​);
+ }
+
+ void ClearRender(SDL_Color col){
+    glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+    //glViewport(0,0,GAME_SCREEN_WIDTH,GAME_SCREEN_HEIGHT);
+
+    glClearColor(col.r/255.0, col.g/255.0, col.b/255.0,0.0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    //glViewport(0,0,SCREEN_WIDTH,SCREEN_HEIGHT);
+}
+
+void RenderToScreen(){
+
+    glEnable(GL_TEXTURE_2D);
+
+    glViewport(0,0,SCREEN_WIDTH,SCREEN_HEIGHT);
+    
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glUseProgram(program);
+    GLdouble loc = glGetUniformLocation(program, "pWidth");
+    if (loc != -1) glUniform1f(loc, 1.0/(float)GAME_SCREEN_WIDTH);
+    //else printf("QWERQRQWEQWE");
+
+    loc = glGetUniformLocation(program, "pHeight");
+    if (loc != -1) glUniform1f(loc, 1.0/(float)GAME_SCREEN_HEIGHT);
+    //else printf("ADASDASDASD");
+
+    
+    glBindTexture(GL_TEXTURE_2D, renderedTexture);
+    
+    glBegin(GL_QUADS);
+    {
+        glTexCoord2f(0,1); glVertex2f(-SCREEN_WIDTH/2,  SCREEN_HEIGHT/2);
+        glTexCoord2f(1,1); glVertex2f( SCREEN_WIDTH/2,  SCREEN_HEIGHT/2);
+        glTexCoord2f(1,0); glVertex2f( SCREEN_WIDTH/2, -SCREEN_HEIGHT/2);
+        glTexCoord2f(0,0); glVertex2f(-SCREEN_WIDTH/2, -SCREEN_HEIGHT/2);
+    }
+    glEnd();
+
+    glDisable( GL_TEXTURE_2D );
+    glUseProgram(0);
+}
+
 void *RenderThread(void *arguments){
     RendererArguments *args = arguments;
 
@@ -149,61 +241,11 @@ void *RenderThread(void *arguments){
     return NULL;
 }
 
-void InitRenderer(Uint16 *dpth){
-    depth = dpth;
-
-    if(depth == NULL){
-        printf("\nError initializing renderer!\n");
-        system("pause");
-    }
-
-    cameraPosition = (Vector3){-GAME_SCREEN_WIDTH/2,-GAME_SCREEN_HEIGHT/2,0};
-
-    SDL_Surface *cubeimg = IMG_Load("Textures/cube.png");
-    SDL_Surface *cubeDepthimg = IMG_Load("Textures/cubeDepth.png");
-
-    int bpp = cubeimg->format->BytesPerPixel;
-    cubeWidth = cubeimg->w;
-    cubeHeight = cubeimg->h;
-
-    cube = (Pixel*)calloc(cubeimg->w*cubeimg->h,sizeof(Pixel));
-    cubeDepth = (Uint8 *)calloc(cubeimg->w*cubeimg->h,sizeof(Uint8));
-
-    int i;
-    for(i=0;i<cubeimg->w*cubeimg->h;i++){
-        
-        Uint8* p = (Uint8*) cubeimg->pixels + i * bpp;
-        Uint32 pixelColor = *(Uint32*)p;
-
-        SDL_GetRGBA(pixelColor,cubeimg->format,&cube[i].r,&cube[i].g,&cube[i].b,&cube[i].a);
-
-        Uint8* d = (Uint8*) cubeDepthimg->pixels + i * bpp;
-        Uint32 depthColor = *(Uint32*)d;
-        Uint8 discart;
-        Uint8 depth;
-        SDL_GetRGBA(depthColor,cubeDepthimg->format,&depth,&discart,&discart,&discart);
-
-        cubeDepth[i] = depth/32;
-    }
-}
-
-void UpdateScreenPointer(Pixel* scrn){
-    screen = scrn;
-}
-
-void FreeRenderer(){
-    free(depth);
-    free(cube);
-    free(cubeDepth);
- }
-
 void RenderObject(VoxelObject *obj){
 
-    unsigned int color = 0;
+    //unsigned int color = 0;
 
-    int x,y,z,i,px,py,zp,startz,aux,nv,cp = 0,colorIndex,edgeIndx,lightIndx,useRot = 0;
-    Uint16 voxeld,pixeld;
-    Pixel pixel;
+    int x,y,z,i,px,py,zp,startz,nv,colorIndex,edgeIndx,lightIndx,useRot = 0;
     int halfDimX = obj->dimension[0]/2.0, halfDimY = obj->dimension[1]/2.0,halfDimZ = obj->dimension[2]/2.0;
     float rx,ry,rz;
     float sinx = 1,cosx = 0;
@@ -240,7 +282,6 @@ void RenderObject(VoxelObject *obj){
     float lightVal,edgeVal,heightVal;
     float r,g,b;
     startz = (obj->dimension[2]-1);
-    
 
     //Checagem se fora da tela
     //> Desabilitada por enquanto, não utilizo elementos fora da tela ainda
@@ -252,17 +293,56 @@ void RenderObject(VoxelObject *obj){
     //    return;
     //}
     
+    //Configure OpenGL parameters to render point sprites
+
+    glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+    glViewport(0,0,GAME_SCREEN_WIDTH,GAME_SCREEN_HEIGHT);
+
+    glBindTexture(GL_TEXTURE_2D, CubeID);
+    glEnable(GL_TEXTURE_2D);
+
+    glEnable(GL_DEPTH_TEST);
+    glAlphaFunc (GL_NOTEQUAL, 0.0f);
+    glEnable(GL_ALPHA_TEST);
+    glPointSize(5);
+    glEnable(GL_POINT_SPRITE);
+    glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
+
+    //Define projection matrices
+	glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    glOrtho(0,GAME_SCREEN_WIDTH, 0,GAME_SCREEN_HEIGHT, -500,500);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+
+    /*glBegin(GL_POINTS);
+        for(x=obj->dimension[0]-1;x>0;x--){
+            for(y=obj->dimension[1]-1;y>0;y--){
+                for(z=0;z<obj->dimension[2];z++){
+                    int index = (x + z * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);
+                    if(obj->model[index]){
+                        int py = ((x+obj->position.x)+(y+obj->position.y)) +((z+obj->position.z+roundf(cameraPosition.z))*2) + roundf(-cameraPosition.y);
+                        int px = ((x+obj->position.x)-(y+obj->position.y))*2 + roundf(-cameraPosition.x);
+                        glVertex3f(px+0.375, py+0.375, (z+obj->position.z)/10);
+                    }
+                }
+            }
+        }
+    glEnd();*/
+
+    glBegin(GL_POINTS);
     for(z=startz; z>=0; z--){
         heightVal = clamp(((1.0+(((z+obj->position.z+cameraPosition.z)*0.5))/128)),0,1.4);
 
         nv = obj->render[z][0];
-        for(i = 1; i <= nv ; i++){
+        for(i = nv; i >0 ; i--){
             
             x = (obj->render[z][i] & 127);
             y = ((obj->render[z][i]>>7) & 127);
 
             colorIndex = (x) + ((z)) * obj->maxDimension + (y) * obj->maxDimension * obj->maxDimension;
-            color = voxColors[obj->model[colorIndex]];
+            unsigned color = voxColors[obj->model[colorIndex]];
 
             //Aplica rotação na posição do voxel
             if(useRot){
@@ -307,7 +387,6 @@ void RenderObject(VoxelObject *obj){
             illuminFrac = lightVal * edgeVal * heightVal * ONE_OVER_256;
 
             //Transforma a cor de um Int16 para cada um dos componentes RGB
-            voxeld = zp*8;
             r = clamp((color & 255)*illuminFrac,0,1);
             color = (color>>8);
             g = clamp((color & 255)*illuminFrac,0,1);
@@ -315,53 +394,20 @@ void RenderObject(VoxelObject *obj){
             b = clamp((color & 255)*illuminFrac,0,1);
 
             //Projeção das posições de 3 dimensões para duas na tela
-            py = ((rx+obj->position.x)+(ry+obj->position.y)) -(zp*2) + roundf(-cameraPosition.y);
+            py = ((rx+obj->position.x)+(ry+obj->position.y)) +(zp*2) + roundf(-cameraPosition.y);
             px = ((rx+obj->position.x)-(ry+obj->position.y))*2 + roundf(-cameraPosition.x);
 
-            //Pula os voxels que estiverem fora da tela
-            if(py+cubeHeight<0 || py>GAME_SCREEN_HEIGHT) continue;
-            if(px+cubeWidth<0  || py>GAME_SCREEN_WIDTH ) continue;
-
-            //Renderização do sprite do voxel
-            int cx,cy;
-            for(cy=0;cy<cubeHeight;cy++){
-                for(cx=0;cx<cubeWidth;cx++){
-                    //Obtém cor da posição atual no sprite
-                    pixel = cube[cx+cy*cubeWidth];
-                    //Descarta pixels transparentes
-                    if(pixel.a==0) continue;
-
-                    //Pula os pixels que estiverem fora da tela
-                    cp = py+cy;
-                    cp = cp>=GAME_SCREEN_HEIGHT? -1: (cp<0? -1:cp*GAME_SCREEN_WIDTH);
-                    if(cp <0){
-                        continue;
-                    }
-                    aux = px+cx;
-                    cp = (aux)>=GAME_SCREEN_WIDTH? -1: ((aux)<0? -1:cp + (aux));
-                    if(cp <0){
-                        continue;
-                    }
-
-                    //Escreve pixels na tela e no depth se estiver na frente do atual
-                    pixeld = voxeld+cubeDepth[cx+cy*cubeWidth];
-                    if(pixeld > depth[cp]){
-                                          
-                        screen[cp].r = pixel.r*r;
-                        screen[cp].g = pixel.g*g;
-                        screen[cp].b = pixel.b*b;
-                        depth[cp] = pixeld;
-                    }
-                }
-            }
+            glColor4f(r, g, b, (rz + obj->position.z)/256.0);
+            glVertex3f(px+0.375, py+0.375, (rz-(ry+rx)/126 + obj->position.z));
         }
     }
-    //Debug visualization of the object center
-    /*int centerOfObj = (int)((int)(((obj->position.x)+(obj->position.y)) -(roundf(obj->position.z+cameraPosition.z)*2) + roundf(-cameraPosition.y))*GAME_SCREEN_WIDTH + (((obj->position.x-obj->position.y))*2 + roundf(-cameraPosition.x)));
-    if(centerOfObj<0 || centerOfObj>GAME_SCREEN_HEIGHT*GAME_SCREEN_WIDTH) return;
-    screen[centerOfObj] = (Pixel){0,0,255,0};
-    depth[centerOfObj] = 1023;
-    */
+    glColor3f(1.0f, 1.0f, 1.0f);
+    glEnd();
+
+    glDisable(GL_POINT_SPRITE);
+
+    glDisable( GL_TEXTURE_2D );
+    
 }
 
 void CalculateRendered(VoxelObject *obj){
@@ -799,4 +845,164 @@ void SaveTextureToPNG(SDL_Texture *tex, char* out){
     SDL_FreeSurface(sshot);
     SDL_DestroyTexture(target);
 
+}
+
+void RenderText(char *text, SDL_Color color, int x, int y, TTF_Font* font) 
+{
+
+    SDL_Surface * sFont = TTF_RenderText_Blended_Wrapped(font, text, color,500);
+    if(!sFont){printf("Failed to render text!\n"); return;}
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    glOrtho(0, SCREEN_WIDTH,0,SCREEN_HEIGHT,-1,1); 
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+
+    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_TEXTURE_2D);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, sFont->w, sFont->h, 0, GL_BGRA, 
+                    GL_UNSIGNED_BYTE, sFont->pixels);
+
+    
+    glBegin(GL_QUADS);
+    {
+        glTexCoord2f(0,1); glVertex2f(x, y);
+        glTexCoord2f(1,1); glVertex2f(x + sFont->w, y);
+        glTexCoord2f(1,0); glVertex2f(x + sFont->w, y + sFont->h);
+        glTexCoord2f(0,0); glVertex2f(x, y + sFont->h);
+    }
+    glEnd();
+    glDisable(GL_BLEND);
+    glDisable(GL_TEXTURE_2D);
+    glEnable(GL_DEPTH_TEST);
+
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    
+    glDeleteTextures(1, &texture);
+    SDL_FreeSurface(sFont);
+}
+
+int CompileAndLinkShader(){
+    //Create an empty vertex shader handle
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+
+    //Send the vertex shader source code to GL
+    glShaderSource(vertexShader, 1, &vShaderSource, 0);
+
+    //Compile the vertex shader
+    glCompileShader(vertexShader);
+
+    GLint isCompiled = 0;
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &isCompiled);
+    if(isCompiled == GL_FALSE)
+    {
+        GLint maxLength = 0;
+        glGetShaderiv(vertexShader, GL_INFO_LOG_LENGTH, &maxLength);
+
+        //The maxLength includes the NULL character
+        GLchar *infoLog = (GLchar *) malloc(maxLength * sizeof(GLchar));
+        glGetShaderInfoLog(vertexShader, maxLength, &maxLength, &infoLog[0]);
+        
+        //We don't need the shader anymore.
+        glDeleteShader(vertexShader);
+
+        printf("Vertex Shader Info Log:\n%s\n",infoLog);
+        
+        free(infoLog);
+        
+        //In this simple program, we'll just leave
+        return 0;
+    }
+
+    //Create an empty fragment shader handle
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+
+    //Send the fragment shader source code to GL
+    glShaderSource(fragmentShader, 1, &fShaderSource, 0);
+
+    //Compile the fragment shader
+    glCompileShader(fragmentShader);
+
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &isCompiled);
+    if(isCompiled == GL_FALSE)
+    {
+        GLint maxLength = 0;
+        glGetShaderiv(fragmentShader, GL_INFO_LOG_LENGTH, &maxLength);
+
+        //The maxLength includes the NULL character
+        GLchar *infoLog = (GLchar *) malloc(maxLength * sizeof(GLchar));
+        glGetShaderInfoLog(fragmentShader, maxLength, &maxLength, &infoLog[0]);
+        
+        //We don't need the shader anymore.
+        glDeleteShader(fragmentShader);
+        //Either of them. Don't leak shaders.
+        glDeleteShader(vertexShader);
+
+        printf("Fragment Shader Info Log:\n%s\n",infoLog);
+        
+        free(infoLog);
+        
+        //In this simple program, we'll just leave
+        return 0;
+    }
+
+    //Vertex and fragment shaders are successfully compiled.
+    //Now time to link them together into a program.
+    //Get a program object.
+    program = glCreateProgram();
+
+    //Attach our shaders to our program
+    glAttachShader(program, vertexShader);
+    glAttachShader(program, fragmentShader);
+
+    //Link our program
+    glLinkProgram(program);
+
+    //Note the different functions here: glGetProgram* instead of glGetShader*.
+    GLint isLinked = 0;
+    glGetProgramiv(program, GL_LINK_STATUS, (int *)&isLinked);
+    if(isLinked == GL_FALSE)
+    {
+        GLint maxLength = 0;
+        glGetProgramiv(program, GL_INFO_LOG_LENGTH, &maxLength);
+
+        //The maxLength includes the NULL character
+        GLchar *infoLog = (GLchar *) malloc(maxLength * sizeof(GLchar));
+        glGetProgramInfoLog(program, maxLength, &maxLength, &infoLog[0]);
+        
+        //We don't need the program anymore.
+        glDeleteProgram(program);
+        //Don't leak shaders either.
+        glDeleteShader(vertexShader);
+        glDeleteShader(fragmentShader);
+
+        printf("Shader linkage Info Log:\n%s\n",infoLog);
+        
+        free(infoLog);
+        //In this simple program, we'll just leave
+        return 0;
+    }
+
+    //Always detach shaders after a successful link.
+    glDetachShader(program, vertexShader);
+    glDetachShader(program, fragmentShader);
+
+    return 1;
 }

@@ -17,11 +17,10 @@
 typedef enum ObjectType{PLAYER,BULLET,ENEMY}ObjectType;
 
 typedef struct PoolObject{
-    int numberOfInstances;
     int avaliableInstances;
     ObjectType type;
     VoxelObject baseObj;
-    VoxelObject **objs;
+    VoxelObjectList objs;
     
 }PoolObject;
 void InputStart();

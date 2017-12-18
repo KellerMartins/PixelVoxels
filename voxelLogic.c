@@ -8,8 +8,7 @@ extern const int SCREEN_HEIGHT;
 extern const int GAME_SCREEN_WIDTH;
 extern const int GAME_SCREEN_HEIGHT;
 
-extern VoxelObject **scene;
-extern int sceneObjectCount;
+extern VoxelObjectList Scene;
 extern PoolObject Pool[POOLSIZE];
 extern Vector3 cameraPosition;
 
@@ -23,18 +22,18 @@ void GameStart(){
 
     //Carrega modelo da nave do player
 	
-	model = FromMagica("Models/spaceship.vox");
+	model = LoadVoxelModel("Models/spaceship.vox");
 	model.position = (Vector3){0,30,20};
 
     //Carrega modelo da bala no pool
-	Pool[0].baseObj = FromMagica("Models/Bullet.vox");
+	Pool[0].baseObj = LoadVoxelModel("Models/Bullet.vox");
 	//Define o número de instâncias disponíveis
-	Pool[0].numberOfInstances = 60;
+	Pool[0].objs.numberOfObjects = 60;
     Pool[0].type = BULLET;
     
-	Pool[1].baseObj = FromMagica("Models/Bullet.vox");
+	Pool[1].baseObj = LoadVoxelModel("Models/Bullet.vox");
 	//Define o número de instâncias disponíveis
-	Pool[1].numberOfInstances = 1;
+	Pool[1].objs.numberOfObjects = 1;
 	Pool[1].type = BULLET;
 	
 	//Inicializa o pool
@@ -48,8 +47,8 @@ void GameUpdate(){
 
     //Cria um vetor do mouse centrado no centro do player, para definir o angulo a rodar o objeto para olhar para o mouse
     float screenPosX, screenPosY;
-    screenPosY = (int)((model.position.x+model.position.y) +roundf(model.position.z+cameraPosition.z)*2 + roundf(-cameraPosition.y));
-    screenPosX = (int)((model.position.x-model.position.y)*2 + roundf(-cameraPosition.x));
+    screenPosY = (int)((model.position.x+model.position.y+model.center.x+model.center.y) +roundf(model.position.z+model.center.z+cameraPosition.z)*2 + roundf(-cameraPosition.y));
+    screenPosX = (int)(((model.position.x+model.center.x)-(model.position.y+model.center.y))*2 + roundf(-cameraPosition.x));
 
     screenPosY = ((screenPosY/(float)GAME_SCREEN_HEIGHT)-0.5f)*2;
     screenPosX = ((screenPosX/(float)GAME_SCREEN_WIDTH)-0.5f)*2;
@@ -134,7 +133,7 @@ void GameUpdate(){
         rotVal.z+= -100;
         moved=1;
     }
-    MoveObjectTo(&model,model.position,(Vector3){model.rotation.x,model.rotation.y,angle},&(*scene),sceneObjectCount,0,0);
+    MoveObjectTo(&model,model.position,(Vector3){model.rotation.x,model.rotation.y,angle},&(*Scene.list),Scene.numberOfObjects,0,0);
     if(moved){
         if(moveDir.x!=0.0f || moveDir.y!=0.0f || moveDir.z!=0.0f){
             moveDir = NormalizeVector(moveDir);
@@ -143,7 +142,7 @@ void GameUpdate(){
             moveDir.z *= 20;
         }
 
-        MoveObject(&model,moveDir,rotVal,&(*scene),sceneObjectCount,5,2);
+        MoveObject(&model,moveDir,rotVal,&(*Scene.list),Scene.numberOfObjects,5,2);
     }
     //Tiro da nave
     if (GetKeyDown(SDL_SCANCODE_SPACE))
@@ -235,33 +234,33 @@ void PoolUpdate(){
     int maxSize,maxXY;
     for(int p=0;p<POOLSIZE;p++){
 
-        maxSize = pow(Pool[p].baseObj.maxDimension,3);
-        maxXY = pow(Pool[p].baseObj.maxDimension,2);
+        maxSize = Pool[p].baseObj.dimension[0]*Pool[p].baseObj.dimension[1]*Pool[p].baseObj.dimension[2];
+        maxXY = Pool[p].baseObj.dimension[0]*Pool[p].baseObj.dimension[1];
 
-        for(int o=0;o<Pool[p].numberOfInstances;o++){
+        for(int o=0;o<Pool[p].objs.numberOfObjects;o++){
 
-            if(Pool[p].objs[o]->enabled){
+            if(Pool[p].objs.list[o]->enabled){
                 if(Pool[p].type == BULLET){
-                    if(Pool[p].objs[o]->timeOfActivation+2000 <= SDL_GetTicks()){
+                    if(Pool[p].objs.list[o]->timeOfActivation+2000 <= SDL_GetTicks()){
 
-                        Pool[p].objs[o]->enabled = 0;
+                        Pool[p].objs.list[o]->enabled = 0;
                         
-                        memcpy(Pool[p].objs[o]->model,Pool[p].baseObj.model,maxSize*sizeof(unsigned char));
-                        memcpy(Pool[p].objs[o]->lighting,Pool[p].baseObj.lighting, maxSize*sizeof(unsigned char ));
+                        memcpy(Pool[p].objs.list[o]->model,Pool[p].baseObj.model,maxSize*sizeof(unsigned char));
+                        memcpy(Pool[p].objs.list[o]->lighting,Pool[p].baseObj.lighting, maxSize*sizeof(unsigned char ));
 
-                    for(int j=0;j<Pool[p].baseObj.maxDimension;j++){
-                            memcpy(Pool[p].objs[o]->render[j],Pool[p].baseObj.render[j],maxXY*sizeof(unsigned short int ));
-                        }
+                    for(int j=0;j<Pool[p].baseObj.dimension[2];j++){
+                            memcpy(Pool[p].objs.list[o]->render[j],Pool[p].baseObj.render[j],maxXY*sizeof(unsigned short int ));
+                    }
 
-                        Pool[p].avaliableInstances++;  
+                    Pool[p].avaliableInstances++;  
                     }else{
                         Vector3 dir = {1,0,0};
-                        Vector3 rot = Pool[p].objs[o]->rotation;
+                        Vector3 rot = Pool[p].objs.list[o]->rotation;
                         dir = RotatePoint(dir,rot.z,rot.y,rot.z,0,0,0);
                         dir.x *=250;
                         dir.y *=250;
                         dir.z *=250;
-                        MoveObject(Pool[p].objs[o],dir,VECTOR3_ZERO,&(*scene),sceneObjectCount,4,8);
+                        MoveObject(Pool[p].objs.list[o],dir,VECTOR3_ZERO,&(*Scene.list),Scene.numberOfObjects,4,8);
                     }
                 }
             }
@@ -269,41 +268,46 @@ void PoolUpdate(){
     }
 }
 
+
 void InitializePool(){
+    printf("Initializing Pool\n");
     int maxSize,maxXY;
-    for(int p=0; p<POOLSIZE; p++){
+    int p;
+    for(p=0; p<POOLSIZE; p++){
 
-        Pool[p].avaliableInstances = Pool[p].numberOfInstances;
+        Pool[p].avaliableInstances = Pool[p].objs.numberOfObjects;
 
-        //Alocando memória para o array de instâncias
-        Pool[p].objs = (VoxelObject**)calloc(Pool[p].numberOfInstances,sizeof(VoxelObject*));
+        //Allocate memory to the vector containing the objects
+        //The way it is doing this breaks the list interface, but its faster
+        Pool[p].objs.list = calloc(Pool[p].objs.numberOfObjects,sizeof(VoxelObject*));
 
-        maxSize = pow(Pool[p].baseObj.maxDimension,3);
-        maxXY = pow(Pool[p].baseObj.maxDimension,2);
-
-        for(int i=0; i<Pool[p].numberOfInstances; i++){
+        maxSize = Pool[p].baseObj.dimension[0]*Pool[p].baseObj.dimension[1]*Pool[p].baseObj.dimension[2];
+        maxXY = Pool[p].baseObj.dimension[0]*Pool[p].baseObj.dimension[1];
+        
+        for(int i=0; i<Pool[p].objs.numberOfObjects; i++){
             //Alocando memória do ponteiro da instância
-            Pool[p].objs[i] = (VoxelObject*)calloc(1,sizeof(VoxelObject));
+            Pool[p].objs.list[i] = malloc(sizeof(VoxelObject));
             //Copiando os valores básicos do objeto base
-            *Pool[p].objs[i] = Pool[p].baseObj;
+            *Pool[p].objs.list[i] = Pool[p].baseObj;
 
             //Alocando memória para os ponteiros do objeto instanciado
-            Pool[p].objs[i]->model = (unsigned char *)calloc(maxSize, sizeof(unsigned char));
-            Pool[p].objs[i]->lighting = (unsigned char *)calloc(maxSize, sizeof(unsigned char));
-            Pool[p].objs[i]->render = (unsigned short int **)calloc(Pool[p].baseObj.maxDimension, sizeof(unsigned short int*));
+            Pool[p].objs.list[i]->model = calloc(maxSize, sizeof(unsigned char));
+            Pool[p].objs.list[i]->lighting = calloc(maxSize, sizeof(unsigned char));
+            Pool[p].objs.list[i]->render = calloc(Pool[p].baseObj.dimension[2], sizeof(unsigned short int*));
             
             //Termina a alocação dos ponteiros e inicia a cópia dos valores do objeto base para as instâncias
-            for(int j=0;j<Pool[p].baseObj.maxDimension;j++){
-                Pool[p].objs[i]->render[j] = (unsigned short int *)calloc(maxXY,sizeof(unsigned short int));
+            
+            for(int j=0;j<Pool[p].baseObj.dimension[2];j++){
+                Pool[p].objs.list[i]->render[j] = calloc(1+maxXY,sizeof(unsigned short int));
                 for(int k=0;k<maxXY;k++){
-                    Pool[p].objs[i]->render[j][k] = Pool[p].baseObj.render[j][k];
+                    Pool[p].objs.list[i]->render[j][k] = Pool[p].baseObj.render[j][k];
                 }
             }
-            memcpy(Pool[p].objs[i]->model, Pool[p].baseObj.model, maxSize*sizeof(unsigned char));
-            memcpy(Pool[p].objs[i]->lighting, Pool[p].baseObj.lighting, maxSize*sizeof(unsigned char ));
-
+            memcpy(Pool[p].objs.list[i]->model, Pool[p].baseObj.model, maxSize*sizeof(unsigned char));
+            memcpy(Pool[p].objs.list[i]->lighting, Pool[p].baseObj.lighting, maxSize*sizeof(unsigned char ));
+            
             //Desabilita-as para serem spawnadas durante o jogo;
-            Pool[p].objs[i]->enabled = 0;
+            Pool[p].objs.list[i]->enabled = 0;
         }
     }
     printf(">Pool Sucessfully initialized.\n\n");
@@ -311,11 +315,7 @@ void InitializePool(){
 
 void FreePool(){
     for(int p=0;p<POOLSIZE;p++){
-        for(int i=0; i<Pool[p].numberOfInstances; i++){
-            FreeObject(Pool[p].objs[i]);
-            free(Pool[p].objs[i]);
-        }
-        free(Pool[p].objs);
+        FreeObjectList(&Pool[p].objs);
         FreeObject(&Pool[p].baseObj);
     }
 }
@@ -325,19 +325,19 @@ void Spawn(unsigned int index,float x, float y, float z, float rx, float ry, flo
         printf("Pool limit reached on object %d !\n",index);
         return;
     }
-    for(int i=0;i<Pool[index].numberOfInstances;i++){
-        if(!Pool[index].objs[i]->enabled){
-            Pool[index].objs[i]->enabled = 1;
-            Pool[index].objs[i]->timeOfActivation = SDL_GetTicks();
+    for(int i=0;i<Pool[index].objs.numberOfObjects;i++){
+        if(!Pool[index].objs.list[i]->enabled){
+            Pool[index].objs.list[i]->enabled = 1;
+            Pool[index].objs.list[i]->timeOfActivation = SDL_GetTicks();
             Pool[index].avaliableInstances--;
 
-            Pool[index].objs[i]->position.x = x;
-            Pool[index].objs[i]->position.y = y;
-            Pool[index].objs[i]->position.z = z;
+            Pool[index].objs.list[i]->position.x = x;
+            Pool[index].objs.list[i]->position.y = y;
+            Pool[index].objs.list[i]->position.z = z;
 
-            Pool[index].objs[i]->rotation.x = rx;
-            Pool[index].objs[i]->rotation.y = ry;
-            Pool[index].objs[i]->rotation.z = rz;
+            Pool[index].objs.list[i]->rotation.x = rx;
+            Pool[index].objs.list[i]->rotation.y = ry;
+            Pool[index].objs.list[i]->rotation.z = rz;
 
             return;
         }
@@ -349,7 +349,6 @@ void Spawn(unsigned int index,float x, float y, float z, float rx, float ry, flo
 void MoveObject(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObject **col,const int numCol,int damageColRadius,int damageObjRadius){
     //printf("%0.0f Per cent\n",100*(obj->voxelsRemaining/(float)obj->voxelCount));
     int o,i,iz,nv,x,y,z,index = 0,allowMovement = 1,useRot = 0;
-    int halfDimX = obj->dimension[0]/2.0, halfDimY = obj->dimension[1]/2.0,halfDimZ = obj->dimension[2]/2.0;
     double moveDelta = deltaTime>0.02? 0.02:deltaTime;
 
     float rotx,roty,rotz;
@@ -370,7 +369,7 @@ void MoveObject(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObjec
     }
 
     if(col!=NULL){
-        for(iz=obj->maxDimension-1;iz>=0;iz--){
+        for(iz=obj->dimension[2]-1;iz>=0;iz--){
             nv = obj->render[iz][0];
             for(i = nv; i > 0  ; i--){
                 if(allowMovement == 0){
@@ -379,17 +378,17 @@ void MoveObject(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObjec
 
                 if(useRot){
 
-                    x = (obj->render[iz][i] & 127) - halfDimX;
-                    y = ((obj->render[iz][i]>>7) & 127) - halfDimY;
-                    z = iz - halfDimZ;
+                    x = (obj->render[iz][i] & 127) - obj->center.x;
+                    y = ((obj->render[iz][i]>>7) & 127) - obj->center.y;
+                    z = iz - obj->center.z;
 
                     rotx = x*cosy*cosz + y*(cosz*sinx*siny - cosx*sinz) + z*(cosx*cosz*siny + sinx*sinz);
                     roty = x*cosy*sinz + z*(cosx*siny*sinz - cosz*sinx) + y*(cosx*cosz + sinx*siny*sinz);
                     rotz = z*cosx*cosy + y*sinx*cosy - x*siny;
 
-                    x = rotx + (obj->position.x+(movement.x*moveDelta)) + halfDimX;
-                    y = roty + (obj->position.y+(movement.y*moveDelta)) + halfDimY;
-                    z = rotz + (obj->position.z+(movement.z*moveDelta)) + halfDimZ;
+                    x = rotx + (obj->position.x+(movement.x*moveDelta)) + obj->center.x;
+                    y = roty + (obj->position.y+(movement.y*moveDelta)) + obj->center.y;
+                    z = rotz + (obj->position.z+(movement.z*moveDelta)) + obj->center.z;
 
                 }else{
                     x = ((obj->render[iz][i] & 127)+(obj->position.x+(movement.x*moveDelta)));
@@ -399,8 +398,8 @@ void MoveObject(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObjec
 
                 for(o=0; o<numCol; o++){
                     
-                    if((x-col[o]->position.x)<col[o]->maxDimension && (x-col[o]->position.x)>-1 && (z-col[o]->position.z)<col[o]->maxDimension && (z-col[o]->position.z)>-1 && (y+col[o]->position.y)<col[o]->maxDimension && (y+col[o]->position.y)>-1){
-                        index = (x-col[o]->position.x) + (z-col[o]->position.z) * col[o]->maxDimension + (y-col[o]->position.y) * col[o]->maxDimension * col[o]->maxDimension;
+                    if((x-col[o]->position.x)<col[o]->dimension[0] && (x-col[o]->position.x)>-1 && (z-col[o]->position.z)<col[o]->dimension[2] && (z-col[o]->position.z)>-1 && (y+col[o]->position.y)<col[o]->dimension[1] && (y+col[o]->position.y)>-1){
+                        index = (x-col[o]->position.x) + (z-col[o]->position.z) * col[o]->dimension[0] + (y-col[o]->position.y) * col[o]->dimension[0] * col[o]->dimension[2];
                         if(col[o]->model[index]!=0){
                             ExplodeAtPoint(col[o],x,y,z,damageColRadius);
                             ExplodeAtPoint(obj,x,y,z,damageObjRadius);
@@ -426,7 +425,6 @@ void MoveObject(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObjec
 void MoveObjectTo(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObject **col,const int numCol,int damageColRadius,int damageObjRadius){
     //printf("%0.0f Per cent\n",100*(obj->voxelsRemaining/(float)obj->voxelCount));
     int o,i,iz,nv,x,y,z,index = 0,allowMovement = 1,useRot = 0;
-    int halfDimX = obj->dimension[0]/2.0, halfDimY = obj->dimension[1]/2.0,halfDimZ = obj->dimension[2]/2.0;
 
     float rotx,roty,rotz;
     float sinx = 1,cosx = 0;
@@ -446,7 +444,7 @@ void MoveObjectTo(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObj
     }
 
     if(col!=NULL){
-        for(iz=obj->maxDimension-1;iz>=0;iz--){
+        for(iz=obj->dimension[2]-1;iz>=0;iz--){
             nv = obj->render[iz][0];
             for(i = nv; i > 0  ; i--){
                 if(allowMovement == 0){
@@ -455,17 +453,17 @@ void MoveObjectTo(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObj
 
                 if(useRot){
 
-                    x = (obj->render[iz][i] & 127) - halfDimX;
-                    y = ((obj->render[iz][i]>>7) & 127) - halfDimY;
-                    z = iz - halfDimZ;
+                    x = (obj->render[iz][i] & 127) - obj->center.x;
+                    y = ((obj->render[iz][i]>>7) & 127) - obj->center.y;
+                    z = iz - obj->center.z;
 
                     rotx = x*cosy*cosz + y*(cosz*sinx*siny - cosx*sinz) + z*(cosx*cosz*siny + sinx*sinz);
                     roty = x*cosy*sinz + z*(cosx*siny*sinz - cosz*sinx) + y*(cosx*cosz + sinx*siny*sinz);
                     rotz = z*cosx*cosy + y*sinx*cosy - x*siny;
 
-                    x = rotx + (movement.x) + halfDimX;
-                    y = roty + (movement.y) + halfDimY;
-                    z = rotz + (movement.z) + halfDimZ;
+                    x = rotx + (movement.x) + obj->center.x;
+                    y = roty + (movement.y) + obj->center.y;
+                    z = rotz + (movement.z) + obj->center.z;
 
                 }else{
                     x = ((obj->render[iz][i] & 127)+(movement.x));
@@ -475,8 +473,8 @@ void MoveObjectTo(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObj
 
                 for(o=0; o<numCol; o++){
                     
-                    if((x-col[o]->position.x)<col[o]->maxDimension && (x-col[o]->position.x)>-1 && (z-col[o]->position.z)<col[o]->maxDimension && (z-col[o]->position.z)>-1 && (y+col[o]->position.y)<col[o]->maxDimension && (y+col[o]->position.y)>-1){
-                        index = (x-col[o]->position.x) + (z-col[o]->position.z) * col[o]->maxDimension + (y-col[o]->position.y) * col[o]->maxDimension * col[o]->maxDimension;
+                    if((x-col[o]->position.x)<col[o]->dimension[0] && (x-col[o]->position.x)>-1 && (z-col[o]->position.z)<col[o]->dimension[2] && (z-col[o]->position.z)>-1 && (y+col[o]->position.y)<col[o]->dimension[1] && (y+col[o]->position.y)>-1){
+                        index = (x-col[o]->position.x) + (z-col[o]->position.z) * col[o]->dimension[0] + (y-col[o]->position.y) * col[o]->dimension[0] * col[o]->dimension[2];
                         if(col[o]->model[index]!=0){
                             ExplodeAtPoint(col[o],x,y,z,damageColRadius);
                             ExplodeAtPoint(obj,x,y,z,damageObjRadius);
@@ -500,7 +498,6 @@ void MoveObjectTo(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObj
 }
 
 void ExplodeAtPoint(VoxelObject *obj,int x, int y, int z,int radius){
-    int halfDimX = obj->dimension[0]/2.0, halfDimY = obj->dimension[1]/2.0;
     int px,py,pz;
     if(abs(-obj->rotation.z)> 0.1 ){
         float sinz = sin((-obj->rotation.z) * PI_OVER_180);
@@ -509,8 +506,8 @@ void ExplodeAtPoint(VoxelObject *obj,int x, int y, int z,int radius){
         px = x - obj->position.x;
         py = y - obj->position.y;
 
-        float rotx = ( ((px-halfDimX) *cosz - (py-halfDimY) *sinz) + halfDimX);
-        float roty = ( ((px-halfDimX) *sinz + (py-halfDimY) *cosz) + halfDimY);
+        float rotx = ( ((px-obj->center.x) *cosz - (py-obj->center.y) *sinz) + obj->center.x);
+        float roty = ( ((px-obj->center.x) *sinz + (py-obj->center.y) *cosz) + obj->center.y);
 
         px = rotx;
         py = roty;
@@ -527,16 +524,16 @@ void ExplodeAtPoint(VoxelObject *obj,int x, int y, int z,int radius){
         starty = py-radius <0? 0:py-radius;
         startz = pz-radius <0? 0:pz-radius;
 
-        endx = px+radius>obj->maxDimension? obj->maxDimension : px+radius;
-        endy = py+radius>obj->maxDimension? obj->maxDimension : py+radius;
-        endz = pz+radius>obj->maxDimension? obj->maxDimension : pz+radius;
+        endx = px+radius>obj->dimension[0]? obj->dimension[0] : px+radius;
+        endy = py+radius>obj->dimension[1]? obj->dimension[1] : py+radius;
+        endz = pz+radius>obj->dimension[2]? obj->dimension[2] : pz+radius;
 
         for(ix = startx;ix<endx;ix++){
             for(iy = starty;iy<endy;iy++){
                 for(iz = startz;iz<endz;iz++){
                     int randRadius = radius+(rand() % 3);
                     if( ((ix-px)*(ix-px))+((iy-py)*(iy-py))+((iz-pz)*(iz-pz)) <= (randRadius*randRadius)){
-                        index = (ix) + (iz) * obj->maxDimension + (iy) * obj->maxDimension * obj->maxDimension;
+                        index = (ix) + (iz) * obj->dimension[0] + (iy) * obj->dimension[0] * obj->dimension[2];
                         if(obj->model[index] != 0){
                             obj->model[index] = 0;
                             obj->voxelsRemaining--;
@@ -545,14 +542,14 @@ void ExplodeAtPoint(VoxelObject *obj,int x, int y, int z,int radius){
                 }
             }   
         }
-        startz = startz-1 >= 0? startz-1:0;
-        endz = endz+1<obj->maxDimension? endz+1:obj->maxDimension-1;
+        startz = startz >= 0? startz:0;
+        endz = endz+1<obj->dimension[2]? endz+1:obj->dimension[2];
 
-        startx = startx-1 >= 0? startx-1:0;
-        endx = endx+1<obj->maxDimension? endx+1:obj->maxDimension-1;
+        startx = startx >= 0? startx:0;
+        endx = endx+1<obj->dimension[0]? endx+1:obj->dimension[0];
 
-        starty = starty-1 >= 0? starty-1:0;
-        endy = endy+1<obj->maxDimension? endy+1:obj->maxDimension-1;
+        starty = starty >= 0? starty:0;
+        endy = endy+1<obj->dimension[1]? endy+1:obj->dimension[1];
 
         obj->modificationStartZ = obj->modificationStartZ <0? startz:obj->modificationStartZ<startz?obj->modificationStartZ:startz;
         obj->modificationEndZ = obj->modificationEndZ <0? endz-1:obj->modificationEndZ>endz-1?obj->modificationEndZ:endz-1;
@@ -571,7 +568,7 @@ VoxelObject **VoxelPointerArrayUnion(int totalPointerSize,int numberOfPointers,.
 	//Inicializa os argumentos variáveis (total =  numberOfPointers)
 	va_start(args,numberOfPointers);
     printf("Number of pointers to join: %d\n",numberOfPointers);
-	VoxelObject **p = (VoxelObject **)calloc(totalPointerSize,sizeof(VoxelObject *));
+	VoxelObject **p = calloc(totalPointerSize,sizeof(VoxelObject *));
 	
 	int pos = 0;
 	for(int i=0; i<numberOfPointers; i++){

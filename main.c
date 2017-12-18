@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <pthread.h>
 #include <time.h>
 
+#ifndef __unix__
 #include "soloud_c.h"
+#endif
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -41,12 +42,9 @@ char *fpscounter;
 TTF_Font* font = NULL;
 
 //Array de ponteiros com os objetos
-VoxelObject **SceneShadowCasters;
-int SceneShadowCastersSize;
-VoxelObject **EnemiesAndBullets;
-int EnemiesAndBulletsSize;
-VoxelObject **scene;
-int sceneObjectCount;
+VoxelObjectList SceneShadowCasters;
+VoxelObjectList EnemiesAndBullets;
+VoxelObjectList Scene;
 
 //Pool de objetos
 PoolObject Pool[POOLSIZE];
@@ -62,7 +60,8 @@ int main(int argc, char *argv[]){
 	//Inicializações gerais
 
 	srand( (unsigned)time(NULL) );
-
+	
+	#ifndef __unix__
 	Soloud *soloud = NULL;
 	soloud = Soloud_create();
 	if(Soloud_initEx(soloud,SOLOUD_CLIP_ROUNDOFF | SOLOUD_ENABLE_VISUALIZATION, SOLOUD_AUTO, SOLOUD_AUTO, SOLOUD_AUTO, SOLOUD_AUTO)<0){
@@ -70,6 +69,7 @@ int main(int argc, char *argv[]){
 		ErrorOcurred = 1;
 		goto EndProgram;
 	}
+	#endif
 
 	if(IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG){
 		printf("SDL Image could not initialize! \n");
@@ -173,20 +173,21 @@ int main(int argc, char *argv[]){
 	}
 
 	//Inicializações do jogo
-	InitRenderer(NULL);
+	InitRenderer();
 	InputStart();
 	GameStart();
 
-	VoxelObject *threadObjs1[1] = {&model};
+	VoxelObjectList Players =  InitializeObjectList();
+	AddObjectInList(&Players,&model);
 
 	//Cria as listas de ponteiros de objetos a renderizar
-	SceneShadowCasters = VoxelPointerArrayUnion(Pool[0].numberOfInstances+Pool[1].numberOfInstances+1,3, &(*threadObjs1),1, &(*Pool[0].objs),Pool[0].numberOfInstances,&(*Pool[1].objs),Pool[1].numberOfInstances );
-	SceneShadowCastersSize = Pool[0].numberOfInstances+1+Pool[1].numberOfInstances;
+	SceneShadowCasters = InitializeObjectList();
+	EnemiesAndBullets = InitializeObjectList();
+	CombineObjectLists(&SceneShadowCasters,3,Players,Pool[0].objs,Pool[1].objs);
+	CombineObjectLists(&EnemiesAndBullets,2,Pool[0].objs,Pool[1].objs);
 
-	EnemiesAndBullets = VoxelPointerArrayUnion(Pool[0].numberOfInstances+Pool[1].numberOfInstances,2, &(*Pool[0].objs),Pool[0].numberOfInstances, &(*Pool[1].objs),Pool[1].numberOfInstances );
-	EnemiesAndBulletsSize = Pool[0].numberOfInstances+Pool[1].numberOfInstances;
-
-	VoxelObject ob = FromMagica("Models/tests/glock.vox");
+	VoxelObject ob = LoadVoxelModel("Models/Tests/glock.vox");
+	MultiVoxelObject mob = LoadMultiVoxelModel("Models/test.vox");
 
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 	SDL_Texture *test = RenderIcon(&ob);
@@ -202,6 +203,7 @@ int main(int argc, char *argv[]){
 	//Loop do jogo
 	while (!ExitGame)
 	{
+		
 		//Tick atual do loop (ms)
 		frameTicks = SDL_GetTicks();
 		LAST = NOW;
@@ -216,14 +218,10 @@ int main(int argc, char *argv[]){
 		SDL_Color bgColor = {0,38,75,0};
 		ClearRender(bgColor);
 
-		RendererArguments renderArguments1 = {threadObjs1,1,NULL,0};
-		RenderThread((void *)&renderArguments1);
-
-		RendererArguments renderArguments2 = {scene,sceneObjectCount,SceneShadowCasters,SceneShadowCastersSize};
-		RenderThread((void *)&renderArguments2);
-
-		RendererArguments renderArguments3 = {EnemiesAndBullets,EnemiesAndBulletsSize,NULL,0};
-		RenderThread((void *)&renderArguments3);
+		RenderObjectList(Players, (VoxelObjectList){NULL,0});
+		RenderObjectList(Scene, SceneShadowCasters);
+		RenderObjectList(EnemiesAndBullets, (VoxelObjectList){NULL,0});
+		RenderObjectList(mob.objects, (VoxelObjectList){NULL,0});
 
 		RenderToScreen();
 
@@ -263,13 +261,15 @@ int main(int argc, char *argv[]){
 	if(font!=NULL)
 		TTF_CloseFont(font);
 
-	free(SceneShadowCasters);
-	free(EnemiesAndBullets);
+	FreeObjectList(&SceneShadowCasters);
+	FreeObjectList(&EnemiesAndBullets);
 
+	#ifndef __unix__
 	if(soloud!=NULL){
 		Soloud_deinit(soloud);
 		Soloud_destroy(soloud);
 	}
+	#endif
 	
 	//if(render!=NULL)
 		//SDL_DestroyTexture(render);

@@ -1,25 +1,16 @@
 #ifndef VOXELLOADER_H
 #define VOXELLOADER_H
-#include <string.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "voxelRenderer.h"
 #include "utils.h"
-
-typedef struct Voxel
-{
-    char x;
-    char y;
-    char z;
-    char color;
-}Voxel;
 
 int LoadMap(char mapPath[]);
 void FreeScene();
 
-Voxel newVoxel(FILE * file,unsigned int sizey);
-VoxelObject FromMagica(char modelPath[]);
-void FreeObject(VoxelObject *obj);
+VoxelObject LoadVoxelModel(char modelPath[]);
+MultiVoxelObject LoadMultiVoxelModel(char modelPath[]);
 
 /* --- PRINTF_BYTE_TO_BINARY macro's --- */
 #define PRINTF_BINARY_PATTERN_INT8 "%c%c%c%c%c%c%c%c"

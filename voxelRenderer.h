@@ -3,7 +3,6 @@
 #include <math.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <pthread.h>
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
@@ -46,26 +45,29 @@ typedef struct VoxelObject{
 	AnchorPoint *points;
 
 	unsigned int dimension[3];
-	unsigned int maxDimension;
 
     unsigned int voxelCount;
 	unsigned int voxelsRemaining;
 
 	Vector3 position;
 	Vector3 rotation;
+	Vector3 center;
 }VoxelObject;
 
-typedef struct ObjectList{
-	VoxelObject *list;
+typedef struct VoxelObjectList{
+	VoxelObject **list;
 	unsigned int numberOfObjects;
-}ObjectList;
+}VoxelObjectList;
 
-typedef struct RendererArguments{
-	VoxelObject **objs;
-	unsigned int numObjs;
-	VoxelObject **shadowCasters;
-	unsigned int numCasters;
-}RendererArguments;
+typedef struct MultiVoxelObject{
+	int enabled;
+	VoxelObjectList objects;
+
+	Vector3 position;
+	Vector3 rotation;
+	Vector3 center;
+
+}MultiVoxelObject;
 
 typedef struct LightingArguments{
 	VoxelObject *obj;
@@ -84,23 +86,32 @@ void ClearScreen();
 void FillBackground();
 void PostProcess();
 
-void InitRenderer(Uint16 *dpth);
-void UpdateScreenPointer(Pixel* scrn);
+void InitRenderer();
 void FreeRenderer();
-void *RenderThread(void *arguments);
-//void PointLight(VoxelObject *obj,int x, int y, int z,int radius);
-void CalculateRendered(VoxelObject *obj);
-void CalculateLighting(VoxelObject *obj);
-void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster);
-void RenderObject(VoxelObject *obj);
 
 void RenderToScreen();
 void ClearRender(SDL_Color col);
+void RenderObject(VoxelObject *obj);
+
+void FreeObject(VoxelObject *obj);
+
+VoxelObjectList InitializeObjectList();
+void FreeObjectList(VoxelObjectList *list);
+void AddObjectInList(VoxelObjectList *dest, VoxelObject *obj);
+void RenderObjectList(VoxelObjectList objs, VoxelObjectList shadowCasters);
+void CombineObjectLists(VoxelObjectList *dest,  int numberOfSources,...);
+
+
+void CalculateRendered(VoxelObject *obj);
+void CalculateLighting(VoxelObject *obj);
+void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster);
+//void PointLight(VoxelObject *obj,int x, int y, int z,int radius);
 
 void RenderText(char *text, SDL_Color color, int x, int y, TTF_Font* font);
+SDL_Texture* RenderIcon(VoxelObject *obj);
+
+void SaveTextureToPNG(SDL_Texture *tex, char* out);
 
 int CompileAndLinkShader();
-
-SDL_Texture* RenderIcon(VoxelObject *obj);
-void SaveTextureToPNG(SDL_Texture *tex, char* out);
+void LoadPalette(char path[]);
 #endif

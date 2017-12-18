@@ -1,23 +1,6 @@
 #include "voxelRenderer.h"
 
-unsigned int voxColors[256] = {
-    0x00000000, 0xffffffff, 0xffccffff, 0xff99ffff, 0xff66ffff, 0xff33ffff, 0xff00ffff, 0xffffccff, 0xffccccff, 0xff99ccff, 0xff66ccff, 0xff33ccff, 0xff00ccff, 0xffff99ff, 0xffcc99ff, 0xff9999ff,
-	0xff6699ff, 0xff3399ff, 0xff0099ff, 0xffff66ff, 0xffcc66ff, 0xff9966ff, 0xff6666ff, 0xff3366ff, 0xff0066ff, 0xffff33ff, 0xffcc33ff, 0xff9933ff, 0xff6633ff, 0xff3333ff, 0xff0033ff, 0xffff00ff,
-	0xffcc00ff, 0xff9900ff, 0xff6600ff, 0xff3300ff, 0xff0000ff, 0xffffffcc, 0xffccffcc, 0xff99ffcc, 0xff66ffcc, 0xff33ffcc, 0xff00ffcc, 0xffffcccc, 0xffcccccc, 0xff99cccc, 0xff66cccc, 0xff33cccc,
-	0xff00cccc, 0xffff99cc, 0xffcc99cc, 0xff9999cc, 0xff6699cc, 0xff3399cc, 0xff0099cc, 0xffff66cc, 0xffcc66cc, 0xff9966cc, 0xff6666cc, 0xff3366cc, 0xff0066cc, 0xffff33cc, 0xffcc33cc, 0xff9933cc,
-	0xff6633cc, 0xff3333cc, 0xff0033cc, 0xffff00cc, 0xffcc00cc, 0xff9900cc, 0xff6600cc, 0xff3300cc, 0xff0000cc, 0xffffff99, 0xffccff99, 0xff99ff99, 0xff66ff99, 0xff33ff99, 0xff00ff99, 0xffffcc99,
-	0xffcccc99, 0xff99cc99, 0xff66cc99, 0xff33cc99, 0xff00cc99, 0xffff9999, 0xffcc9999, 0xff999999, 0xff669999, 0xff339999, 0xff009999, 0xffff6699, 0xffcc6699, 0xff996699, 0xff666699, 0xff336699,
-	0xff006699, 0xffff3399, 0xffcc3399, 0xff993399, 0xff663399, 0xff333399, 0xff003399, 0xffff0099, 0xffcc0099, 0xff990099, 0xff660099, 0xff330099, 0xff000099, 0xffffff66, 0xffccff66, 0xff99ff66,
-	0xff66ff66, 0xff33ff66, 0xff00ff66, 0xffffcc66, 0xffcccc66, 0xff99cc66, 0xff66cc66, 0xff33cc66, 0xff00cc66, 0xffff9966, 0xffcc9966, 0xff999966, 0xff669966, 0xff339966, 0xff009966, 0xffff6666,
-	0xffcc6666, 0xff996666, 0xff666666, 0xff336666, 0xff006666, 0xffff3366, 0xffcc3366, 0xff993366, 0xff663366, 0xff333366, 0xff003366, 0xffff0066, 0xffcc0066, 0xff990066, 0xff660066, 0xff330066,
-	0xff000066, 0xffffff33, 0xffccff33, 0xff99ff33, 0xff66ff33, 0xff33ff33, 0xff00ff33, 0xffffcc33, 0xffcccc33, 0xff99cc33, 0xff66cc33, 0xff33cc33, 0xff00cc33, 0xffff9933, 0xffcc9933, 0xff999933,
-	0xff669933, 0xff339933, 0xff009933, 0xffff6633, 0xffcc6633, 0xff996633, 0xff666633, 0xff336633, 0xff006633, 0xffff3333, 0xffcc3333, 0xff993333, 0xff663333, 0xff333333, 0xff003333, 0xffff0033,
-	0xffcc0033, 0xff990033, 0xff660033, 0xff330033, 0xff000033, 0xffffff00, 0xffccff00, 0xff99ff00, 0xff66ff00, 0xff33ff00, 0xff00ff00, 0xffffcc00, 0xffcccc00, 0xff99cc00, 0xff66cc00, 0xff33cc00,
-	0xff00cc00, 0xffff9900, 0xffcc9900, 0xff999900, 0xff669900, 0xff339900, 0xff009900, 0xffff6600, 0xffcc6600, 0xff996600, 0xff666600, 0xff336600, 0xff006600, 0xffff3300, 0xffcc3300, 0xff993300,
-	0xff663300, 0xff333300, 0xff003300, 0xffff0000, 0xffcc0000, 0xff990000, 0xff660000, 0xff330000, 0xff0000ee, 0xff0000dd, 0xff0000bb, 0xff0000aa, 0xff000088, 0xff000077, 0xff000055, 0xff000044,
-	0xff000022, 0xff000011, 0xff00ee00, 0xff00dd00, 0xff00bb00, 0xff00aa00, 0xff008800, 0xff007700, 0xff005500, 0xff004400, 0xff002200, 0xff001100, 0xffee0000, 0xffdd0000, 0xffbb0000, 0xffaa0000,
-	0xff880000, 0xff770000, 0xff550000, 0xff440000, 0xff220000, 0xff110000, 0xffeeeeee, 0xffdddddd, 0xffbbbbbb, 0xffaaaaaa, 0xff888888, 0xff777777, 0xff555555, 0xff444444, 0xff222222, 0xff111111
-};
+Pixel voxColors[256];
 
 const GLchar *vShaderSource = 
 "    attribute vec2 v_coord;"
@@ -102,7 +85,7 @@ void MoveCamera(float x, float y, float z){
     //printf("CamPos: |%2.1f|%2.1f|%2.1f|\n",cameraPosition.x,cameraPosition.y,cameraPosition.z);
 }
 
-void InitRenderer(Uint16 *dpth){
+void InitRenderer(){
     cameraPosition = (Vector3){-GAME_SCREEN_WIDTH/2,0,0};
 
     //Framebuffer
@@ -155,10 +138,8 @@ void InitRenderer(Uint16 *dpth){
     //Compile shader
     if(!CompileAndLinkShader()) printf(">Failed to compile/link shader! Description above\n\n");
     else printf(">Compiled/linked shader sucessfully!\n\n");
-}
 
-void UpdateScreenPointer(Pixel* scrn){
-    //screen = scrn;
+    LoadPalette("Textures/magicaPalette.png");
 }
 
 void FreeRenderer(){
@@ -193,7 +174,7 @@ void RenderToScreen(){
     if (loc != -1) glUniform1f(loc, 1.0/(float)GAME_SCREEN_HEIGHT);
 
     loc = glGetUniformLocation(program, "vignettePower");
-    if (loc != -1) glUniform1f(loc, 0.5);
+    if (loc != -1) glUniform1f(loc, 0.25);
     loc = glGetUniformLocation(program, "redShiftPower");
     if (loc != -1) glUniform1f(loc, 2);    
     loc = glGetUniformLocation(program, "redShiftSpread");
@@ -214,50 +195,34 @@ void RenderToScreen(){
     glUseProgram(0);
 }
 
-void *RenderThread(void *arguments){
-    RendererArguments *args = arguments;
+void RenderObjectList(VoxelObjectList objs, VoxelObjectList shadowCasters){
 
-	VoxelObject **objs = args->objs;
-	unsigned int numObjs = args->numObjs;
-	VoxelObject **shadowCasters = args->shadowCasters;
-	unsigned int numCasters = args->numCasters;
-    int i,endLoop = 0;
-    pthread_t tID;
+    int i;
+    for(i=0; i<objs.numberOfObjects; i++){
+        if(objs.list[i]->enabled){
 
-    for(i=0; i<numObjs; i++){
-        if(objs[i]->enabled){
-            if(objs[i]->maxDimension >= 100 && numObjs-(i+1)>0){
-				RendererArguments renderArguments = {objs+(i+1),numObjs-(i+1),shadowCasters,numCasters};
-				pthread_create(&tID, NULL, &RenderThread, (void *)&renderArguments);
-                endLoop = 1;
-            }
-            if(objs[i]->modificationStartZ >=0){
-                CalculateRendered(objs[i]);
-                CalculateLighting(objs[i]);
+            if(objs.list[i]->modificationStartZ >=0){
+                CalculateRendered(objs.list[i]);
+                CalculateLighting(objs.list[i]);
 
-                objs[i]->modificationStartX = -1;
-                objs[i]->modificationEndX = -1;
+                objs.list[i]->modificationStartX = -1;
+                objs.list[i]->modificationEndX = -1;
 
-                objs[i]->modificationStartY = -1;
-                objs[i]->modificationEndY = -1;
+                objs.list[i]->modificationStartY = -1;
+                objs.list[i]->modificationEndY = -1;
 
-                objs[i]->modificationStartZ = -1;
-                objs[i]->modificationEndZ = -1;
+                objs.list[i]->modificationStartZ = -1;
+                objs.list[i]->modificationEndZ = -1;
 
             }
-            RenderObject(objs[i]);
-            if(shadowCasters!=NULL){
-                for(int j=0;j<numCasters;j++){
-                    CalculateShadow(objs[i],shadowCasters[j]);
+            RenderObject(objs.list[i]);
+            if(shadowCasters.list!=NULL){
+                for(int j=0;j<shadowCasters.numberOfObjects;j++){
+                    CalculateShadow(objs.list[i],shadowCasters.list[j]);
                 }
-            }
-            if(endLoop){
-                pthread_join(tID, NULL);
-                break;
             }
         }
     }
-    return NULL;
 }
 
 void RenderObject(VoxelObject *obj){
@@ -265,7 +230,6 @@ void RenderObject(VoxelObject *obj){
     //unsigned int color = 0;
 
     int x,y,z,i,px,py,zp,startz,nv,colorIndex,edgeIndx,lightIndx,useRot = 0;
-    int halfDimX = obj->dimension[0]/2.0, halfDimY = obj->dimension[1]/2.0,halfDimZ = obj->dimension[2]/2.0;
     float rx,ry,rz;
     float sinx = 1,cosx = 0;
     float siny = 1,cosy = 0;
@@ -345,24 +309,24 @@ void RenderObject(VoxelObject *obj){
             x = (obj->render[z][i] & 127);
             y = ((obj->render[z][i]>>7) & 127);
 
-            colorIndex = (x) + ((z)) * obj->maxDimension + (y) * obj->maxDimension * obj->maxDimension;
-            unsigned color = voxColors[obj->model[colorIndex]];
+            colorIndex = (x) + ((z)) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
+            Pixel color = voxColors[obj->model[colorIndex]];
 
             //Aplica rotação na posição do voxel
             if(useRot){
-                x -= halfDimX;
-                y -= halfDimY;
-                z -= halfDimZ;
+                x -= obj->center.x;
+                y -= obj->center.y;
+                z -= obj->center.z;
 
                 rx = x*rxt1 + y*rxt2 + z*rxt3;
                 ry = x*ryt1 + z*ryt2 + y*ryt3;
                 rz = z*rzt1 + y*rzt2 - x*siny;
 
-                rx += halfDimX;
-                ry += halfDimY;
-                rz += halfDimZ;
+                rx += obj->center.x;
+                ry += obj->center.y;
+                rz += obj->center.z;
 
-                z += halfDimZ;
+                z += obj->center.z;
             }else{
                 rx = x;
                 ry = y;
@@ -391,11 +355,9 @@ void RenderObject(VoxelObject *obj){
             illuminFrac = lightVal * edgeVal * heightVal * ONE_OVER_256;
 
             //Transforma a cor de um Int16 para cada um dos componentes RGB
-            r = clamp((color & 255)*illuminFrac,0,1);
-            color = (color>>8);
-            g = clamp((color & 255)*illuminFrac,0,1);
-            color = (color>>8);
-            b = clamp((color & 255)*illuminFrac,0,1);
+            r = clamp(color.r * illuminFrac,0,1);
+            g = clamp(color.g * illuminFrac,0,1);
+            b = clamp(color.b * illuminFrac,0,1);
 
             //Projeção das posições de 3 dimensões para duas na tela
             py = ((rx+obj->position.x)+(ry+obj->position.y)) +(zp*2) + roundf(-cameraPosition.y);
@@ -428,38 +390,40 @@ void CalculateRendered(VoxelObject *obj){
                 occLeft = 0;
                 occDown = 0;
 
-                index = (x + z * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);
+                index = (x + z * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);
+                
                 if(obj->model[index]!=0){
-                    if(x!=0 && x<obj->maxDimension-1 && y!=0 && y<obj->maxDimension-1 && z!=0 && z<obj->maxDimension-1){
-                        dir = (x + (z+1) * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);//0 0 1
+                    
+                    if(x!=0 && x<obj->dimension[0]-1 && y!=0 && y<obj->dimension[1]-1 && z!=0 && z<obj->dimension[2]-1){
+                        dir = (x + (z+1) * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);//0 0 1
                         if(obj->model[dir]!=0){
                             occ++; 
                             occUp=1;
                         }
-                        dir = (x + (z-1) * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);//0 0 -1
+                        dir = (x + (z-1) * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);//0 0 -1
                         if(obj->model[dir]!=0){
                             occ++;
                             occDown = 1;
                         }
-                        dir = (x + z * obj->maxDimension + (y+1) * obj->maxDimension * obj->maxDimension);//0 1 0
+                        dir = (x + z * obj->dimension[0] + (y+1) * obj->dimension[0] * obj->dimension[2]);//0 1 0
                         if(obj->model[dir]!=0){
                             occ++;
                         }
-                        dir = (x + z * obj->maxDimension + (y-1) * obj->maxDimension * obj->maxDimension);//0 -1 0 
+                        dir = (x + z * obj->dimension[0] + (y-1) * obj->dimension[0] * obj->dimension[2]);//0 -1 0 
                         if(obj->model[dir]!=0){
                             occ++;
                         }
-                        dir = ( (x+1) + z * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);//1 0 0
+                        dir = ( (x+1) + z * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);//1 0 0
                         if(obj->model[dir]!=0){
                             occ++;
                         }
-                        dir = ( (x-1) + z * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);//1 0 0 
+                        dir = ( (x-1) + z * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);//1 0 0 
                         if(obj->model[dir]!=0){
                             occ++;
                             occLeft = 1;
                         }
                     }
-                    if(occ!=6){
+                    //if(occ!=6){
                         if((occLeft && occDown && occUp) || y == obj->dimension[1]-1){
                             occPixel = 0;
                         }else{
@@ -478,7 +442,7 @@ void CalculateRendered(VoxelObject *obj){
                         }
                         obj->render[z][0]++;
                         obj->render[z][(int)obj->render[z][0]] = (unsigned short int)((occPixel<<14) | ( y << 7) | x);
-                    }
+                    //}
                 }
             }
         }
@@ -493,20 +457,20 @@ void CalculateLighting(VoxelObject *obj){
 
     int zstart = obj->dimension[2]-1;
     int lightFinal;
-    for(y=obj->modificationStartY; y<obj->modificationEndY; y++){
-        for(x=obj->modificationStartX; x<obj->modificationEndX; x++){
+    for(y=obj->modificationStartY; y<=obj->modificationEndY; y++){
+        for(x=obj->modificationStartX; x<=obj->modificationEndX; x++){
 
             //Define a luz no topo do objeto, que é transportado para baixo a cada iteração em z
             lightAir = 1;
             lightBlock = 1;
 
-            for(z=zstart; z!=0; z--){
+            for(z=zstart; z>=0; z--){
                 occlusion = 0;
-                index = (x + z * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);
+                index = (x + z * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);
                 
                 if(obj->model[index]!=0){
                     if(z<obj->dimension[2]-1){ //Up
-                        dir = (x + (z+1) * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);
+                        dir = (x + (z+1) * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);
                         occlusion += obj->model[dir]==0? 0:1;
                         //Ilumina o bloco caso o bloco acima seja vazio (com luz ou sombra), se não, mantém a cor
                         lightBlock = obj->model[dir]==0? lightAir*2:1;
@@ -515,39 +479,39 @@ void CalculateLighting(VoxelObject *obj){
                         occlusion = 3;
                     }
                     if(z>0){ //Down
-                        dir = (x + (z-1) * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);
+                        dir = (x + (z-1) * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);
                         occlusion += obj->model[dir]==0?  0:1;
                     }else{
                         occlusion = 3;
                     }
                     if(x>0){ //Left
-                        dir = ((x-1) + z * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);
+                        dir = ((x-1) + z * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);
                         occlusion += obj->model[dir]==0? 0:1;
                     }else{
                         occlusion = 2;
                     }
                     if(x<obj->dimension[0]-1){ //Right
-                        dir = ((x+1) + z * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);
+                        dir = ((x+1) + z * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);
                         occlusion += obj->model[dir]==0?  0:1;
                     }else{
                         occlusion = 3;
                     }
                     if(y<obj->dimension[1]-1){ //Front
-                        dir = (x + z * obj->maxDimension + (y+1) * obj->maxDimension * obj->maxDimension);
+                        dir = (x + z * obj->dimension[0] + (y+1) * obj->dimension[0] * obj->dimension[2]);
                         occlusion += obj->model[dir]==0?  0:1;
                     }else{
                         occlusion = 3;
                     }
                     if(y>0){ //Back
-                        dir = (x + z * obj->maxDimension + (y-1) * obj->maxDimension * obj->maxDimension);
+                        dir = (x + z * obj->dimension[0] + (y-1) * obj->dimension[0] * obj->dimension[2]);
                         occlusion += obj->model[dir]==0?  0:1;
                     }else{
                         occlusion = 3;
                     }
                     lightFinal = lightBlock;
                 }else{
-                    if(z+1<obj->maxDimension){
-                        dir = (x + (z+1) * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);
+                    if(z+1<obj->dimension[2]){
+                        dir = (x + (z+1) * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);
                         if(obj->model[dir]!=0){
                             lightAir = 0;
                         }
@@ -610,7 +574,6 @@ void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
 
     int y,x,z,o,index,dir,cx,cy,cz,useRot = 0;
 
-    int halfDimX = shadowCaster->dimension[0]/2.0, halfDimY = shadowCaster->dimension[1]/2.0,halfDimZ = shadowCaster->dimension[2]/2.0;
     float rx,ry,rz;
     float sinx = 1,cosx = 0;
     float siny = 1,cosy = 0;
@@ -643,7 +606,7 @@ void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
     starty = starty <0? 0:starty;
     startz = startz <0? 0:startz;
 
-    startz = startz >obj->maxDimension? obj->maxDimension:startz;
+    startz = startz >obj->dimension[2]? obj->dimension[2]:startz;
     endx = endx>obj->dimension[0]? obj->dimension[0] : endx;
     endy = endy>obj->dimension[1]? obj->dimension[1] : endy;
         
@@ -654,7 +617,7 @@ void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
             shadowVal = 1;
 
             for(z=startz; z!=0; z--){
-                index = (x + z * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);
+                index = (x + z * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);
                 if(obj->model[index]==0){
                     if(shadowCaster->enabled == 0){
                         continue;
@@ -664,24 +627,24 @@ void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
                     cz = z-shadowCaster->position.z+obj->position.z;
 
                     if(useRot==1){
-                        cx -= halfDimX;
-                        cy -= halfDimY;
-                        cz -= halfDimZ;
+                        cx -= shadowCaster->center.x;
+                        cy -= shadowCaster->center.y;
+                        cz -= shadowCaster->center.z;
         
                         rx = cx*cosy*cosz + cy*(cosz*sinx*siny - cosx*sinz) + cz*(cosx*cosz*siny + sinx*sinz);
                         ry = cx*cosy*sinz + cz*(cosx*siny*sinz - cosz*sinx) + cy*(cosx*cosz + sinx*siny*sinz);
                         rz = cz*cosx*cosy + cy*sinx*cosy - cx*siny;                      
                         
-                        cx = rx + halfDimX;
-                        cy = ry + halfDimY;
-                        cz = rz + halfDimZ;
+                        cx = rx + shadowCaster->center.x;
+                        cy = ry + shadowCaster->center.y;
+                        cz = rz + shadowCaster->center.z;
                     }
                     //cx = roundf(cx);
                     //cy = roundf(cy);
                     //cz = roundf(cz);
 
-                    if(cx>-1 && cx<shadowCaster->maxDimension && cy>-1 && cy<shadowCaster->maxDimension && cz>-1 && cz<shadowCaster->maxDimension){
-                        o = (cx + cz * shadowCaster->maxDimension + cy * shadowCaster->maxDimension * shadowCaster->maxDimension);
+                    if(cx>-1 && cx<shadowCaster->dimension[0] && cy>-1 && cy<shadowCaster->dimension[1] && cz>-1 && cz<shadowCaster->dimension[2]){
+                        o = (cx + cz * shadowCaster->dimension[0] + cy * shadowCaster->dimension[0] * shadowCaster->dimension[2]);
                         if(shadowCaster->model[o]!=0){
                             shadowVal = 0;
                         }
@@ -689,7 +652,7 @@ void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
                     finalShadow = shadowVal;
                 }else{
                     if(z<obj->dimension[2]-1){ //Up
-                        dir = (x + (z+1) * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);
+                        dir = (x + (z+1) * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);
                         finalShadow = obj->model[dir]==0? shadowVal:1;
                     }
                 }
@@ -714,7 +677,7 @@ SDL_Texture* RenderIcon(VoxelObject *obj){
 
     SDL_LockTexture(icon, NULL, (void**)&iconPixels, &pitch);
 
-    unsigned int color = 0;
+    Pixel color;
 
     int x,y,z,i,px,py,startz,nv,cp = 0,colorIndex;
     Uint16 voxeld;
@@ -735,16 +698,14 @@ SDL_Texture* RenderIcon(VoxelObject *obj){
             x = (obj->render[z][i] & 127);
             y = ((obj->render[z][i]>>7) & 127);
 
-            colorIndex = (x) + ((z)) * obj->maxDimension + (y) * obj->maxDimension * obj->maxDimension;
+            colorIndex = (x) + ((z)) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
             color = voxColors[obj->model[colorIndex]];
 
             //Transforma a cor de um Int16 para cada um dos componentes RGB
             voxeld = (y*2 +obj->dimension[1])*2;
-            r = clamp((color & 255),0,255);
-            color = (color>>8);
-            g = clamp((color & 255),0,255);
-            color = (color>>8);
-            b = clamp((color & 255),0,255);
+            r = clamp(color.r,0,255);
+            g = clamp(color.g,0,255);
+            b = clamp(color.b,0,255);
 
             //Projeção das posições de 3 dimensões para duas na tela
             py = startz - z;
@@ -849,6 +810,24 @@ void SaveTextureToPNG(SDL_Texture *tex, char* out){
     SDL_FreeSurface(sshot);
     SDL_DestroyTexture(target);
 
+}
+
+void LoadPalette(char path[]){
+    SDL_Surface * palSurf = IMG_Load(path);
+    if(!palSurf){ printf(">Error loading palette!\n"); return; }
+
+    int i;
+    Uint8 r,g,b,a;
+
+    for(i=0;i<256;i++){
+        Uint32 *sPix = (Uint32 *)(palSurf->pixels + i* palSurf->format->BytesPerPixel);
+
+        SDL_GetRGBA(*sPix,palSurf->format,&r,&g,&b,&a);
+        Pixel color = {clamp(b,0,255),clamp(g,0,255),clamp(r,0,255),a};
+        voxColors[i+1] = color;
+    }
+    SDL_FreeSurface(palSurf);
+    printf(">Loaded palette sucessfully!\n\n");
 }
 
 void RenderText(char *text, SDL_Color color, int x, int y, TTF_Font* font) 
@@ -1009,4 +988,99 @@ int CompileAndLinkShader(){
     glDetachShader(program, fragmentShader);
 
     return 1;
+}
+
+void FreeObject(VoxelObject *obj){
+    if(!obj->render) return;
+
+    free(obj->model);
+    free(obj->lighting);
+    int i;
+    for(i=0;i<obj->dimension[2];i++){
+        free(obj->render[i]);
+    }
+    free(obj->render);
+    obj->render = NULL;
+}
+
+VoxelObjectList InitializeObjectList(){
+    VoxelObjectList list;
+    list.list = NULL;
+    list.numberOfObjects = 0;
+    return list;
+}
+void FreeObjectList(VoxelObjectList *list){
+    if(!list){printf("Cant free list: list is empty!\n"); return;}
+
+    int i;
+    for(i=0;i<list->numberOfObjects;i++){
+       FreeObject(list->list[i]);
+    }
+    free(list->list);
+}
+
+void AddObjectInList(VoxelObjectList *dest, VoxelObject *obj){
+    if(!dest->list){
+        dest->list = malloc(sizeof(VoxelObject *));
+        dest->list[0] = obj;
+        dest->numberOfObjects = 1;
+    }else{
+        VoxelObject **newList = malloc( (dest->numberOfObjects+1) * sizeof(VoxelObject *));
+        memcpy(newList,dest->list,dest->numberOfObjects*sizeof(VoxelObject *));
+
+        free(dest->list);
+        dest->list = newList;
+        dest->list[dest->numberOfObjects++] = obj;
+    }
+}
+
+//Combine multiple ObjectLists into one
+//If dest is NULL, the resulting list contains all sources
+//If it isnt, the resulting list contains the dest and all sources, and the original list of the dest is freed
+void CombineObjectLists(VoxelObjectList *dest, int numberOfSources,...){
+
+    if(!dest){printf("Error: destination list is NULL!\n"); return;}
+
+    va_list args;
+	
+    //Counts the number of objects in the final list
+    int i,j,objectsCount = 0;
+	va_start(args,numberOfSources);
+
+        for(i=0; i<numberOfSources; i++){
+            VoxelObjectList current = va_arg(args,VoxelObjectList);
+            objectsCount += current.numberOfObjects;
+        }
+
+    va_end(args);
+
+    if(dest->list){
+        objectsCount += dest->numberOfObjects;
+    }
+    
+    //Allocate the final list
+	VoxelObject **final = calloc(objectsCount,sizeof(VoxelObject *));
+
+    //Iterate in every source list, getting the objects in their list and putting in the final
+	va_start(args,numberOfSources);
+	int pos = 0;
+
+    if(dest->list){
+        for(j=0; j<dest->numberOfObjects; j++){
+			final[pos++] = dest->list[j];
+		}
+    }
+
+	for(i=0; i<numberOfSources; i++){
+
+		VoxelObjectList current = va_arg(args,VoxelObjectList);
+
+		for(j=0; j<current.numberOfObjects; j++){
+			final[pos++] = current.list[j];
+		}
+	}
+    va_end(args);
+
+    dest->list = final;
+    dest->numberOfObjects = objectsCount;
 }

@@ -16,14 +16,20 @@ LIBRARY_PATHS = -L $(PD)\SDL2\SDL2_MinGW_32Bits\lib -L $(PD)\SoLoud\lib -L $(PD)
 # -Wl,-subsystem,windows gets rid of the console window
 # -Wl,-subsystem,windows
 # -fopenmp enables openmp support
-COMPILER_FLAGS = -Wall -ffast-math -O3
+COMPILER_FLAGS = -Wall -Wno-unused-result -ffast-math -O3
 
 #LINKER_FLAGS specifies the libraries we're linking against -mwindows
-LINKER_FLAGS = -lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lglew32.dll -lopengl32 -lpthread $(PD)\SoLoud\lib\soloud_x86.lib
+LINKER_FLAGS_W = -lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lglew32.dll -lopengl32 $(PD)\SoLoud\lib\soloud_x86.lib
+LINKER_FLAGS_L = -lSDL2 -lSDL2_image -lSDL2_ttf -lGLEW -lGL -lm
 
 #OBJ_NAME specifies the name of our exectuable
 OBJ_NAME = Space
 
 #This is the target that compiles our executable
+ifeq ($(OS),Windows_NT)
 all : $(OBJS)
-	$(CC) $(OBJS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(COMPILER_FLAGS) $(LINKER_FLAGS) -o $(OBJ_NAME)
+	$(CC) $(OBJS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(COMPILER_FLAGS) $(LINKER_FLAGS_W) -o $(OBJ_NAME)
+else
+all : $(OBJS)
+	$(CC) $(OBJS) $(COMPILER_FLAGS) $(LINKER_FLAGS_L) -o $(OBJ_NAME)
+endif

@@ -54,6 +54,9 @@ typedef struct VoxelObject{
 	Vector3 center;
 }VoxelObject;
 
+//A simpler list implementation, where each element of the list is a pointer to
+//an object. As this list is rarely changed during the game loop, I opted to keep
+//it simple instead of using the other, more general list implementation on this
 typedef struct VoxelObjectList{
 	VoxelObject **list;
 	unsigned int numberOfObjects;

@@ -98,6 +98,8 @@ void InitRenderer(){
     glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT, 0,GL_RGBA, GL_UNSIGNED_BYTE, 0);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     glGenRenderbuffers(1, &depthrenderbuffer);
     glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
@@ -332,9 +334,9 @@ void RenderObject(VoxelObject *obj){
                 ry = y;
                 rz = z;
             }
-            //rx = roundf(rx);
-            //ry = roundf(ry);
-            //rz = roundf(rz);
+            rx = roundf(rx);
+            ry = roundf(ry);
+            rz = roundf(rz);
 
             //Clipping do objeto quando fora da faixa de 0 a 255
             zp = rz + roundf(obj->position.z+cameraPosition.z);
@@ -423,7 +425,7 @@ void CalculateRendered(VoxelObject *obj){
                             occLeft = 1;
                         }
                     }
-                    //if(occ!=6){
+                    if(occ!=6){
                         if((occLeft && occDown && occUp) || y == obj->dimension[1]-1){
                             occPixel = 0;
                         }else{
@@ -442,7 +444,7 @@ void CalculateRendered(VoxelObject *obj){
                         }
                         obj->render[z][0]++;
                         obj->render[z][(int)obj->render[z][0]] = (unsigned short int)((occPixel<<14) | ( y << 7) | x);
-                    //}
+                    }
                 }
             }
         }
@@ -639,9 +641,9 @@ void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
                         cy = ry + shadowCaster->center.y;
                         cz = rz + shadowCaster->center.z;
                     }
-                    //cx = roundf(cx);
-                    //cy = roundf(cy);
-                    //cz = roundf(cz);
+                    cx = roundf(cx);
+                    cy = roundf(cy);
+                    cz = roundf(cz);
 
                     if(cx>-1 && cx<shadowCaster->dimension[0] && cy>-1 && cy<shadowCaster->dimension[1] && cz>-1 && cz<shadowCaster->dimension[2]){
                         o = (cx + cz * shadowCaster->dimension[0] + cy * shadowCaster->dimension[0] * shadowCaster->dimension[2]);

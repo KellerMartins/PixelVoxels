@@ -1,9 +1,8 @@
 #include "utils.h"
 
-//FUNCOES CONTADOR DE FPS
-//Número de frames armazenados
-#define FRAME_VALUES 10
-Uint32 frameTimes[FRAME_VALUES];
+// ----- FPS counter functions =======
+#define STORED_FRAMES 10
+Uint32 frameTimes[STORED_FRAMES];
 Uint32 frameTicksLast;
 Uint32 frameCount;
 float framesPerSecond;
@@ -13,7 +12,7 @@ float GetFPS(){
 }
 
 void InitFPS() {
-	//Inicializa FPS em 0
+	//Initialize FPS at 0
 	memset(frameTimes, 0, sizeof(frameTimes));
 	frameCount = 0;
 	framesPerSecond = 0;
@@ -26,7 +25,7 @@ void ProcessFPS() {
 	Uint32 count;
 	Uint32 i;
 
-	frameTimesIndex = frameCount % FRAME_VALUES;
+	frameTimesIndex = frameCount % STORED_FRAMES;
 
 	currentTicks = SDL_GetTicks();
 	// save the frame time value
@@ -40,11 +39,11 @@ void ProcessFPS() {
 
 	// Work out the current framerate
 	// I've included a test to see if the whole array has been written to or not. This will stop
-	// strange values on the first few (FRAME_VALUES) frames.
-	if (frameCount < FRAME_VALUES) {
+	// strange values on the first few (STORED_FRAMES) frames.
+	if (frameCount < STORED_FRAMES) {
 		count = frameCount;
 	} else {
-		count = FRAME_VALUES;
+		count = STORED_FRAMES;
 	}
 
 	// add up all the values and divide to get the average frame time.
@@ -59,7 +58,206 @@ void ProcessFPS() {
 	framesPerSecond = 1000.f / framesPerSecond;
 }
 
-//FUNCOES VETORES
+//-------- Generic List Functions -------------
+
+List InitList(unsigned size){
+	List l;
+	l.first = NULL;
+	l.last = NULL;
+	l.elementSize = size;
+	l.length = 0;
+
+	return l;
+}
+
+void FreeList(List *list){
+	int i;
+	for(i=0;i<GetLength(*list); i++){
+		RemoveListStart(list);
+	}
+}
+
+int IsListEmpty(List list){
+	return list.first == NULL? 1:0;
+}
+
+void InsertListEnd(List *list, void* e){
+	ListCell newCell;
+	newCell.previous = list->last;
+	newCell.next = NULL;
+
+	newCell.element = malloc(list->elementSize);
+	memcpy(newCell.element,e,list->elementSize);
+
+	list->last->next = &newCell;
+	list->last = &newCell;
+
+	if(!list->first)
+		list->first = &newCell;
+
+	list->length +=1;
+}
+
+void InsertListStart(List *list, void* e){
+	ListCell newCell;
+	newCell.previous = NULL;
+	newCell.next = list->first;
+
+	newCell.element = malloc(list->elementSize);
+	memcpy(newCell.element,e,list->elementSize);
+	
+	list->first->previous = &newCell;
+	list->first = &newCell;
+
+	if(!list->last)
+		list->last = &newCell;
+
+	list->length +=1;
+}
+
+void InsertListIndex(List *list, void* e, unsigned index){
+	ListCell newCell;
+	int i;
+
+	newCell.element = malloc(list->elementSize);
+	memcpy(newCell.element,e,list->elementSize);
+
+	//Get the element that will go after the element to be inserted
+	ListCellPointer current = list->first;
+	for(i=0;i<index;i++){
+		current = GetNextCell(current);
+	}
+
+	newCell.next = current;
+
+	//If the index is already ocupied
+	if(current != NULL){
+		//Connect the cells to their new parents
+		newCell.previous = current->previous;	
+		current->previous = &newCell;
+
+		//If the index is 0 (first), set newCell as first
+		if(list->first == current){
+			list->first = &newCell;
+		}
+			
+		//If the index is list length (last), set newCell as last
+		if(list->last == current){
+			list->last = &newCell;
+		}
+
+		//If the previous is not null, point his next to newCell
+		if(newCell.previous){
+			newCell.previous->next = &newCell;
+		}
+
+	}else{
+		//Index is list length or off bounds (consider as insertion in the end)
+		list->last->next = &newCell;
+		newCell.previous = list->last;
+
+		list->last = &newCell;
+
+		if(!list->first)
+			list->first = &newCell;
+	}
+
+	list->length +=1;
+}
+
+void RemoveListEnd(List *list){
+	if(list->last->previous){
+		ListCellPointer aux = list->last->previous;
+		free(list->last->element);
+		free(list->last);
+
+		aux->next = NULL;
+		list->last = aux;
+	}else{
+		free(list->last->element);
+		free(list->last);
+
+		list->last = NULL;
+		list->first = NULL;
+	}
+
+	list->length -=1;
+}
+
+void RemoveListStart(List *list){
+	if(list->first->next){
+		ListCellPointer aux = list->first->next;
+		free(list->first->element);
+		free(list->first);
+
+		aux->previous = NULL;
+		list->first = aux;
+	}else{
+		free(list->first->element);
+		free(list->first);
+
+		list->first = NULL;
+		list->last = NULL;
+	}
+
+	list->length -=1;
+}
+
+void RemoveListIndex(List *list,unsigned index){
+	int i;
+	if(index == 0) return RemoveListStart(list);
+	else if(index == list->length-1) return RemoveListEnd(list);
+
+	ListCellPointer current = list->first;
+	for(i=0;i<index;i++){
+		current = GetNextCell(current);
+	}
+
+	current->next->previous = current->previous;
+	current->previous->next = current->next;
+
+	free(current->element);
+	free(current);
+
+	list->length -=1;
+}
+
+void* GetElement(ListCell c){
+	return c.element;
+}
+
+void* GetLast(List list){
+	return list.last->element;
+}
+
+void* GetFirst(List list){
+	return list.first->element;
+}
+
+void* GetAt(List list,unsigned index){
+	int i;
+
+	ListCellPointer current = list.first;
+	for(i=0;i<index;i++){
+		current = GetNextCell(current);
+	}
+
+	return current->element;
+}
+
+ListCellPointer GetNextCell(ListCellPointer c){
+	return c->next;
+}
+
+unsigned GetElementSize(List list){
+	return list.elementSize;
+}
+
+unsigned GetLength(List list){
+	return list.length;
+}
+
+//-------- Vector Functions ---------
 
 Vector3 NormalizeVector(Vector3 v){
 	float length = 1/sqrt((v.x*v.x)+(v.y*v.y)+(v.z*v.z));
@@ -67,7 +265,6 @@ Vector3 NormalizeVector(Vector3 v){
 	v.y *=length;
 	v.z *=length;
 	return v;
-	//printf("\n|Lenght %f|| %f %f %f |",length,v->x,v->y,v->z);
 }
 
 Vector3 Add(Vector3 a, Vector3 b){
@@ -130,6 +327,8 @@ Vector3 RotatePoint(Vector3 p, float rx, float ry, float rz, float pivotX, float
 	return p;
 
 }
+
+// ----------- Misc. functions ---------------
 
 int Step(float edge, float x ) 
 {

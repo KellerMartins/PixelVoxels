@@ -301,7 +301,7 @@ MultiVoxelObject LoadMultiVoxelModel(char modelPath[])
                         propertiesListEnd->name[aux] = '\0';
                     }
                     //If the string was "_hidden", the last int is the number of
-                    //characters of the object hidden status, so read the character and ignore it for now
+                    //characters of the object hidden status, so read the character '1' or '0'
                     else if(strcmp(editorProperty,"_hidden") == 0){
                         char hid;
                         fread(&hid,sizeof(char),1,file);
@@ -442,22 +442,113 @@ MultiVoxelObject LoadMultiVoxelModel(char modelPath[])
     while(current){
         switch (current->Type){
             case nTRN:
+            //Set object transform
             printf("\n Type:%s Data: %d %d %d %d %d %d %d Name: [%s] Hidden: %d Rot: %d Pos: %.1f %.1f %.1f \n",current->Type? (current->Type == 2? "nGRP":"nSHP"):"nTRN", current->data[0], current->data[1], current->data[2], current->data[3], current->data[4], current->data[5], current->data[6], current->name? current->name:"", current->hidden,current->rotation, current->position.x, current->position.y, current->position.z);
 
-            pos = current->position;
-            rot = VECTOR3_ZERO;
             enab = !current->hidden;
+            pos = current->position;
+            //Each number is a binary encodification of a rotation. As I haven't figured
+            //how it works, i just enumerated each possible rotation and inversion (28 with identity)
+            //for now, single axis inversion is not supported, and others coincide with common rotations
+            switch(current->rotation){
+                case 40:
+                    rot = (Vector3){90,0,0};
+                break;
+                case 105:
+                    rot = (Vector3){90,90,0};
+                break;
+                case 100:
+                    rot = (Vector3){180,0,0};
+                break;
+                case 118:
+                    rot = (Vector3){180,90,0};
+                break;
+                case 65:
+                    rot = (Vector3){180,0,90};
+                break;
+                case 9:
+                    rot = (Vector3){270,270,0};
+                break;
+                case 72:
+                    rot = (Vector3){270,0,0};
+                break;
+                case 82:
+                    rot = (Vector3){270,0,90};
+                break;
+                case 70:
+                    rot = (Vector3){0,90,0};
+                break;
+                case 89:
+                    rot = (Vector3){0,90,90};
+                break;
+                case 84:
+                    rot = (Vector3){0,180,0};
+                break;
+                case 24:
+                    rot = (Vector3){270,180,0};
+                break;
+                case 113:
+                    rot = (Vector3){0,180,90};
+                break;
+                case 22:
+                    rot = (Vector3){0,270,0};
+                break;
+                case 50:
+                    rot = (Vector3){90,0,270};
+                break;
+                case 17:
+                    rot = (Vector3){0,0,90};
+                break;
+                case 57:
+                    rot = (Vector3){90,270,0};
+                break;
+                case 2:
+                    rot = (Vector3){90,0,90};
+                break;
+                case 52:
+                    rot = (Vector3){0,0,180};
+                break;
+                case 120:
+                    rot = (Vector3){90,180,0};
+                break;
+                case 38:
+                    rot = (Vector3){90,270,90};
+                break;
+                case 33:
+                    rot = (Vector3){0,0,270};
+                break;
+                case 98:
+                    rot = (Vector3){270,0,270};
+                break;
+                case 20:
+                    rot = (Vector3){0,0,0};
+                break;
+                case 36:
+                    rot = (Vector3){0,0,0};
+                break;
+                case 68:
+                    rot = (Vector3){0,0,0};
+                break;
+                default:
+                    rot = VECTOR3_ZERO;
+                break;
+            }
 
-            break;
-            case nSHP:
-            printf("\n Type:%s Data: %d %d %d %d %d\n",current->Type? (current->Type == 2? "nGRP":"nSHP"):"nTRN", current->data[0], current->data[1], current->data[2], current->data[3], current->data[4]);
+            //Get shape corresponding to the object
+            mpNode shp = propertiesListStart;
+            for(i=0;i<current->data[2];i++){
+                shp = shp->next;
+            }
 
+            if(shp->Type != nSHP){current = current->next; continue;}
+            
+            //Allocate and copy data to the final object
             obj = malloc(sizeof(VoxelObject));
 
-            obj->dimension[0] = modelsList.list[current->data[3]]->dimension[0];
-            obj->dimension[1] = modelsList.list[current->data[3]]->dimension[1];
-            obj->dimension[2] = modelsList.list[current->data[3]]->dimension[2];
-            *obj = *modelsList.list[current->data[3]];
+            obj->dimension[0] = modelsList.list[shp->data[3]]->dimension[0];
+            obj->dimension[1] = modelsList.list[shp->data[3]]->dimension[1];
+            obj->dimension[2] = modelsList.list[shp->data[3]]->dimension[2];
+            *obj = *modelsList.list[shp->data[3]];
             printf("Copied initial data\n");
 
             obj->model = calloc(obj->dimension[0]*obj->dimension[1]*obj->dimension[2], sizeof(unsigned char));
@@ -468,11 +559,11 @@ MultiVoxelObject LoadMultiVoxelModel(char modelPath[])
             }
             printf("Allocated arrays\n");
 
-            memcpy(obj->model, modelsList.list[current->data[3]]->model, obj->dimension[0]*obj->dimension[1]*obj->dimension[2] * sizeof(unsigned char) );
-            memcpy(obj->lighting, modelsList.list[current->data[3]]->lighting, obj->dimension[0]*obj->dimension[1]*obj->dimension[2] * sizeof(unsigned char) );
+            memcpy(obj->model, modelsList.list[shp->data[3]]->model, obj->dimension[0]*obj->dimension[1]*obj->dimension[2] * sizeof(unsigned char) );
+            memcpy(obj->lighting, modelsList.list[shp->data[3]]->lighting, obj->dimension[0]*obj->dimension[1]*obj->dimension[2] * sizeof(unsigned char) );
             
             for(i=0;i<obj->dimension[2];i++){
-                 memcpy(obj->render[i],modelsList.list[current->data[3]]->render[i],(1 + obj->dimension[0]*obj->dimension[1])* sizeof(unsigned short int) );
+                 memcpy(obj->render[i],modelsList.list[shp->data[3]]->render[i],(1 + obj->dimension[0]*obj->dimension[1])* sizeof(unsigned short int) );
             }
             printf("Copied Array data\n");
 
@@ -481,10 +572,16 @@ MultiVoxelObject LoadMultiVoxelModel(char modelPath[])
             obj->enabled = enab;
 
             AddObjectInList(&mobj.objects,obj);
+
+            break;
+            case nSHP:
+            //This data is used in nTRN type properties to get the shape in the list
+            printf("\n Type:%s Data: %d %d %d %d %d\n",current->Type? (current->Type == 2? "nGRP":"nSHP"):"nTRN", current->data[0], current->data[1], current->data[2], current->data[3], current->data[4]);
+
             break;
             case nGRP:
-            printf("\n Type:%s\n", current->Type? (current->Type == 2? "nGRP":"nSHP"):"nTRN");
-            //Ignore the group data, as it is not supported
+            //This group data is ignored, as it is not supported
+            printf("\n Type:%s\n", current->Type? (current->Type == 2? "nGRP":"nSHP"):"nTRN");  
             break;
         }
         current = current->next;

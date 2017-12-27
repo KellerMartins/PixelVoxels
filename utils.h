@@ -41,6 +41,49 @@ typedef struct Vector3{
 	float z;
 }Vector3;
 
+//Generic list implementation
+//In this implementation, every new element added is copied to the list, not just referenced
+//If there is the need to use this list to reference an variable, initialize the list as a pointers list
+//Untested for now
+
+typedef struct ListCell* ListCellPointer;
+typedef struct ListCell{
+  void *element;
+  ListCellPointer next;
+  ListCellPointer previous;
+}ListCell;
+
+typedef struct List{
+  unsigned elementSize;
+  ListCellPointer first;
+  ListCellPointer last;
+  unsigned length;
+}List;
+
+List InitList(unsigned size);
+void FreeList(List *list);
+
+int IsListEmpty(List list);
+
+void InsertListEnd(List *list, void* e);
+void InsertListStart(List *list, void* e);
+void InsertListIndex(List *list, void* e, unsigned index);
+
+void RemoveListEnd(List *list);
+void RemoveListStart(List *list);
+void RemoveListIndex(List *list,unsigned index);
+
+void* GetElement(ListCell c);
+void* GetLast(List list);
+void* GetFirst(List list);
+void* GetAt(List list,unsigned index);
+
+ListCellPointer GetNextCell(ListCellPointer c);
+unsigned GetElementSize(List list);
+unsigned GetLength(List list);
+
+
+
 void InitFPS();
 void ProcessFPS();
 float GetFPS();

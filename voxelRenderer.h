@@ -97,6 +97,7 @@ void ClearRender(SDL_Color col);
 void RenderObject(VoxelObject *obj);
 
 void FreeObject(VoxelObject *obj);
+void FreeMultiObject(MultiVoxelObject *obj);
 
 VoxelObjectList InitializeObjectList();
 void FreeObjectList(VoxelObjectList *list);
@@ -116,5 +117,6 @@ SDL_Texture* RenderIcon(VoxelObject *obj);
 void SaveTextureToPNG(SDL_Texture *tex, char* out);
 
 int CompileAndLinkShader();
+void ReloadShaders();
 void LoadPalette(char path[]);
 #endif

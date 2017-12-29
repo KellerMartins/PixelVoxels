@@ -44,7 +44,7 @@ TTF_Font* font = NULL;
 //Array de ponteiros com os objetos
 VoxelObjectList SceneShadowCasters;
 VoxelObjectList EnemiesAndBullets;
-VoxelObjectList Scene;
+List Rooms;
 
 //Pool de objetos
 PoolObject Pool[POOLSIZE];
@@ -167,10 +167,9 @@ int main(int argc, char *argv[]){
 	}
 	
 	//Carrega o mapa
-	if(LoadMap("Maps/Test.txt")<0){
-		ErrorOcurred = 1;
-		ExitGame = 1;
-	}
+	Rooms = InitList(sizeof(MultiVoxelObject));
+	MultiVoxelObject testRoom = LoadMultiVoxelModel("Models/test.vox");
+	InsertListStart(&Rooms,&testRoom);
 
 	//Inicializações do jogo
 	InitRenderer();
@@ -187,7 +186,6 @@ int main(int argc, char *argv[]){
 	CombineObjectLists(&EnemiesAndBullets,2,Pool[0].objs,Pool[1].objs);
 
 	VoxelObject ob = LoadVoxelModel("Models/Tests/glock.vox");
-	MultiVoxelObject mob = LoadMultiVoxelModel("Models/test.vox");
 
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 	SDL_Texture *test = RenderIcon(&ob);
@@ -219,9 +217,8 @@ int main(int argc, char *argv[]){
 		ClearRender(bgColor);
 
 		RenderObjectList(Players, (VoxelObjectList){NULL,0});
-		RenderObjectList(Scene, SceneShadowCasters);
+		RenderObjectList( ((MultiVoxelObject*) GetFirst(Rooms))->objects , SceneShadowCasters);
 		RenderObjectList(EnemiesAndBullets, (VoxelObjectList){NULL,0});
-		RenderObjectList(mob.objects, (VoxelObjectList){NULL,0});
 
 		RenderToScreen();
 
@@ -253,9 +250,11 @@ int main(int argc, char *argv[]){
 	EndProgram:
 	free(fpscounter);
 
+	//FreeMultiObject((MultiVoxelObject*) GetFirst(Rooms));
+	FreeList(&Rooms);
+
 	FreeRenderer();
 	FreeInput();
-	FreeScene();
 	FreePool();
 
 	if(font!=NULL)

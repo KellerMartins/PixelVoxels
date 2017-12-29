@@ -1,61 +1,5 @@
 #include "voxelLoader.h"
 
-extern VoxelObjectList Scene;
-
-int LoadMap(char mapPath[]){
-    printf("Loading Map: %s\n",mapPath);
-    FILE *map = fopen(mapPath,"r");
-    
-    if(map == NULL){
-        printf("> Failed to load!\n\n");
-        return -1;
-    }
-    FreeScene();
-    
-    //Get the number of objects to load
-    int numberOfObjs;
-    fscanf(map,"%d",&numberOfObjs);
-    printf("Number of objects: %d\n\n",numberOfObjs);
-    Scene = InitializeObjectList();
-
-    int x,y,z;
-    char *modelString = NULL;
-
-    for(int i=0; i<numberOfObjs; i++){
-        
-        VoxelObject *newObj = calloc(1,sizeof(VoxelObject));
-        AddObjectInList(&Scene,newObj);
-
-        fscanf(map,"%d",&x);
-        fscanf(map,"%d",&y);
-        fscanf(map,"%d",&z);
-        printf("Position: %d %d %d\n",x,y,z);
-        //Carregando modelo da cena
-        char tempString[100];
-        fgets(tempString,100,map);
-
-        #ifndef __unix__
-        modelString = strtok(tempString,"\n");
-        #else
-        modelString = strtok(tempString,"\r");
-        #endif
-
-        printf("Opening: (%s)\n",modelString);
-        *Scene.list[i] = LoadVoxelModel(modelString);
-
-        Scene.list[i]->position = (Vector3){x,y,z};
-
-    }
-    
-    printf(">Map Loaded Sucessfully!\n\n");
-    return 0;
-}
-
-void FreeScene(){
-    FreeObjectList(&Scene);
-}
-
-
 //MagicaVoxel Voxel structure, used only to load data
 typedef struct Voxel
 {
@@ -80,7 +24,7 @@ typedef struct MagicaProperties{
 
 MultiVoxelObject LoadMultiVoxelModel(char modelPath[])
 {
-    printf("\nLoading model: %s\n",modelPath);
+    printf("\nLoading multi model: %s\n",modelPath);
     FILE* file = fopen(modelPath,"rb");
 
     if(file == NULL){
@@ -443,7 +387,7 @@ MultiVoxelObject LoadMultiVoxelModel(char modelPath[])
         switch (current->Type){
             case nTRN:
             //Set object transform
-            printf("\n Type:%s Data: %d %d %d %d %d %d %d Name: [%s] Hidden: %d Rot: %d Pos: %.1f %.1f %.1f \n",current->Type? (current->Type == 2? "nGRP":"nSHP"):"nTRN", current->data[0], current->data[1], current->data[2], current->data[3], current->data[4], current->data[5], current->data[6], current->name? current->name:"", current->hidden,current->rotation, current->position.x, current->position.y, current->position.z);
+            //printf("\n Type:%s Data: %d %d %d %d %d %d %d Name: [%s] Hidden: %d Rot: %d Pos: %.1f %.1f %.1f \n",current->Type? (current->Type == 2? "nGRP":"nSHP"):"nTRN", current->data[0], current->data[1], current->data[2], current->data[3], current->data[4], current->data[5], current->data[6], current->name? current->name:"", current->hidden,current->rotation, current->position.x, current->position.y, current->position.z);
 
             enab = !current->hidden;
             pos = current->position;
@@ -549,7 +493,6 @@ MultiVoxelObject LoadMultiVoxelModel(char modelPath[])
             obj->dimension[1] = modelsList.list[shp->data[3]]->dimension[1];
             obj->dimension[2] = modelsList.list[shp->data[3]]->dimension[2];
             *obj = *modelsList.list[shp->data[3]];
-            printf("Copied initial data\n");
 
             obj->model = calloc(obj->dimension[0]*obj->dimension[1]*obj->dimension[2], sizeof(unsigned char));
             obj->lighting = calloc(obj->dimension[0]*obj->dimension[1]*obj->dimension[2], sizeof(unsigned char));
@@ -557,7 +500,6 @@ MultiVoxelObject LoadMultiVoxelModel(char modelPath[])
             for(i=0;i<obj->dimension[2];i++){
                 obj->render[i] = calloc(1+obj->dimension[1]*obj->dimension[0], sizeof(unsigned short int) );
             }
-            printf("Allocated arrays\n");
 
             memcpy(obj->model, modelsList.list[shp->data[3]]->model, obj->dimension[0]*obj->dimension[1]*obj->dimension[2] * sizeof(unsigned char) );
             memcpy(obj->lighting, modelsList.list[shp->data[3]]->lighting, obj->dimension[0]*obj->dimension[1]*obj->dimension[2] * sizeof(unsigned char) );
@@ -565,7 +507,6 @@ MultiVoxelObject LoadMultiVoxelModel(char modelPath[])
             for(i=0;i<obj->dimension[2];i++){
                  memcpy(obj->render[i],modelsList.list[shp->data[3]]->render[i],(1 + obj->dimension[0]*obj->dimension[1])* sizeof(unsigned short int) );
             }
-            printf("Copied Array data\n");
 
             obj->position = (Vector3){pos.x - (obj->dimension[0]/2),pos.y - (obj->dimension[1]/2),pos.z - (obj->dimension[2]/2)};
             obj->rotation = rot;
@@ -576,12 +517,12 @@ MultiVoxelObject LoadMultiVoxelModel(char modelPath[])
             break;
             case nSHP:
             //This data is used in nTRN type properties to get the shape in the list
-            printf("\n Type:%s Data: %d %d %d %d %d\n",current->Type? (current->Type == 2? "nGRP":"nSHP"):"nTRN", current->data[0], current->data[1], current->data[2], current->data[3], current->data[4]);
+           // printf("\n Type:%s Data: %d %d %d %d %d\n",current->Type? (current->Type == 2? "nGRP":"nSHP"):"nTRN", current->data[0], current->data[1], current->data[2], current->data[3], current->data[4]);
 
             break;
             case nGRP:
             //This group data is ignored, as it is not supported
-            printf("\n Type:%s\n", current->Type? (current->Type == 2? "nGRP":"nSHP"):"nTRN");  
+            //printf("\n Type:%s\n", current->Type? (current->Type == 2? "nGRP":"nSHP"):"nTRN");  
             break;
         }
         current = current->next;
@@ -600,7 +541,7 @@ MultiVoxelObject LoadMultiVoxelModel(char modelPath[])
 
     FreeObjectList(&modelsList);
 
-    printf(">DOONE!\n\n");
+    printf(">DONE!\n\n");
     return mobj;
 }
 

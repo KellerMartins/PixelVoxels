@@ -2,65 +2,6 @@
 
 Pixel voxColors[256];
 
-const GLchar *vShaderSource = 
-"    attribute vec2 v_coord;"
-"    uniform sampler2D fbo_texture;"
-"    uniform float pWidth;"
-"    uniform float pHeight;"
-"    varying vec2 f_texcoord;"
-
-"    uniform float vignettePower;"
-"    uniform float redShiftPower;"
-"    uniform float redShiftSpread;"
-
-"    void main(void) {"
-"       gl_Position = vec4(v_coord, 0.0, 1.0);"
-"       f_texcoord = (v_coord + 1.0)/2.0;"
-"    }"
-;
-
-const GLchar *fShaderSource = 
-"    uniform sampler2D fbo_texture;"
-"    uniform float pWidth;"
-"    uniform float pHeight;"
-"    varying vec2 f_texcoord;"
-
-"    uniform float vignettePower;"
-"    uniform float redShiftPower;"
-"    uniform float redShiftSpread;"
-
-"    vec4 when_gt(vec4 x, vec4 y) {"
-"       return max(sign(x - y), 0.0);"
-"    }"
-
-"    void main(void) {"
-"       float curDepth = texture2D(fbo_texture, f_texcoord).a;"
-"       vec3 outlineColor = texture2D(fbo_texture, f_texcoord).rgb;"
-
-"       vec4 neighbor = texture2D(fbo_texture, vec2(f_texcoord.x + pWidth,f_texcoord.y));"
-"       outlineColor = (neighbor.a - curDepth) > 0.01? neighbor.rgb*0.54:outlineColor;"
-"       neighbor = texture2D(fbo_texture, vec2(f_texcoord.x - pWidth,f_texcoord.y));"
-"       outlineColor = (neighbor.a - curDepth) > 0.01? neighbor.rgb*0.54:outlineColor;"
-"       neighbor = texture2D(fbo_texture, vec2(f_texcoord.x,f_texcoord.y + pHeight));"
-"       outlineColor = (neighbor.a - curDepth) > 0.01? neighbor.rgb*0.54:outlineColor;"
-"       neighbor = texture2D(fbo_texture, vec2(f_texcoord.x,f_texcoord.y - pHeight));"
-"       outlineColor = (neighbor.a - curDepth) > 0.01? neighbor.rgb*0.54:outlineColor;"
-
-"       vec3 dist = vec3((f_texcoord.x - 0.5f) * 1.25f,"
-"                        (f_texcoord.y - 0.5f) * 1.25f,0);"
-
-"       float vignette = clamp(1 - dot(dist, dist)*vignettePower,0,1);"
-
-"       float redShift;"
-"       if(redShiftSpread>0){"
-"           float aberrationMask = clamp(dot(dist, dist)*redShiftPower,0,1)*redShiftSpread;"
-"           redShift = texture2D(fbo_texture, vec2(f_texcoord.x - aberrationMask*pWidth,f_texcoord.y));"
-"       }else{ redShift =  outlineColor.r; }"
-
-"       gl_FragColor = vec4(vec3(redShift,outlineColor.gb)*vignette,1);"
-"    }"
-;
-
 extern SDL_Renderer * renderer;
 extern int GAME_SCREEN_WIDTH;
 extern int GAME_SCREEN_HEIGHT;
@@ -76,7 +17,7 @@ GLuint FramebufferName = 0;
 GLuint renderedTexture = 0;
 GLuint depthrenderbuffer = 0;
 
-GLuint program = 0;
+GLuint Shaders[1] = {0};
 
 void MoveCamera(float x, float y, float z){
     cameraPosition.x +=x*deltaTime;
@@ -138,10 +79,22 @@ void InitRenderer(){
     SDL_FreeSurface(cubeimg);
 
     //Compile shader
-    if(!CompileAndLinkShader()) printf(">Failed to compile/link shader! Description above\n\n");
+    if(!CompileAndLinkShader("Shaders/ScreenVert.vs","Shaders/ScreenFrag.fs",0)) printf(">Failed to compile/link shader! Description above\n\n");
     else printf(">Compiled/linked shader sucessfully!\n\n");
 
     LoadPalette("Textures/magicaPalette.png");
+}
+
+void ReloadShaders(){
+    int i;
+    for(i=0;i<sizeof(Shaders) / sizeof(Shaders[0]); i++){
+        glDeleteProgram(Shaders[i]);
+    }
+
+    if(!CompileAndLinkShader("Shaders/ScreenVert.vs","Shaders/ScreenFrag.fs",0)) 
+        printf(">Failed to compile/link shader! Description above\n\n");
+    else 
+        printf(">Compiled/linked shader sucessfully!\n\n");
 }
 
 void FreeRenderer(){
@@ -169,17 +122,17 @@ void RenderToScreen(){
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glUseProgram(program);
-    GLdouble loc = glGetUniformLocation(program, "pWidth");
+    glUseProgram(Shaders[0]);
+    GLdouble loc = glGetUniformLocation(Shaders[0], "pWidth");
     if (loc != -1) glUniform1f(loc, 1.0/(float)GAME_SCREEN_WIDTH);
-    loc = glGetUniformLocation(program, "pHeight");
+    loc = glGetUniformLocation(Shaders[0], "pHeight");
     if (loc != -1) glUniform1f(loc, 1.0/(float)GAME_SCREEN_HEIGHT);
 
-    loc = glGetUniformLocation(program, "vignettePower");
+    loc = glGetUniformLocation(Shaders[0], "vignettePower");
     if (loc != -1) glUniform1f(loc, 0.25);
-    loc = glGetUniformLocation(program, "redShiftPower");
+    loc = glGetUniformLocation(Shaders[0], "redShiftPower");
     if (loc != -1) glUniform1f(loc, 2);    
-    loc = glGetUniformLocation(program, "redShiftSpread");
+    loc = glGetUniformLocation(Shaders[0], "redShiftSpread");
     if (loc != -1) glUniform1f(loc, 0);
     
     glBindTexture(GL_TEXTURE_2D, renderedTexture);
@@ -884,9 +837,24 @@ void RenderText(char *text, SDL_Color color, int x, int y, TTF_Font* font)
     SDL_FreeSurface(sFont);
 }
 
-int CompileAndLinkShader(){
+const GLchar *LoadShaderSource(char *filename) {
+    if(!filename) return NULL;
+
+    FILE *file = fopen(filename, "r");             // open 
+    fseek(file, 0L, SEEK_END);                     // find the end
+    size_t size = ftell(file);                     // get the size in bytes
+    GLchar *shaderSource = calloc(1, size);        // allocate enough bytes
+    rewind(file);                                  // go back to file beginning
+    fread(shaderSource, size, sizeof(char), file); // read each char into ourblock
+    fclose(file);                                  // close the stream
+
+    return shaderSource;
+}
+
+int CompileAndLinkShader(char *vertPath, char *fragPath, unsigned shaderIndex){
     //Create an empty vertex shader handle
     GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    const GLchar *vShaderSource = LoadShaderSource(vertPath);
 
     //Send the vertex shader source code to GL
     glShaderSource(vertexShader, 1, &vShaderSource, 0);
@@ -907,6 +875,7 @@ int CompileAndLinkShader(){
         
         //We don't need the shader anymore.
         glDeleteShader(vertexShader);
+        free((void*)vShaderSource);
 
         printf("Vertex Shader Info Log:\n%s\n",infoLog);
         
@@ -918,6 +887,7 @@ int CompileAndLinkShader(){
 
     //Create an empty fragment shader handle
     GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    const GLchar *fShaderSource = LoadShaderSource(fragPath);
 
     //Send the fragment shader source code to GL
     glShaderSource(fragmentShader, 1, &fShaderSource, 0);
@@ -937,8 +907,10 @@ int CompileAndLinkShader(){
         
         //We don't need the shader anymore.
         glDeleteShader(fragmentShader);
+        free((void*)fShaderSource);
         //Either of them. Don't leak shaders.
         glDeleteShader(vertexShader);
+        free((void*)vShaderSource);
 
         printf("Fragment Shader Info Log:\n%s\n",infoLog);
         
@@ -951,32 +923,34 @@ int CompileAndLinkShader(){
     //Vertex and fragment shaders are successfully compiled.
     //Now time to link them together into a program.
     //Get a program object.
-    program = glCreateProgram();
+    Shaders[shaderIndex] = glCreateProgram();
 
     //Attach our shaders to our program
-    glAttachShader(program, vertexShader);
-    glAttachShader(program, fragmentShader);
+    glAttachShader(Shaders[shaderIndex], vertexShader);
+    glAttachShader(Shaders[shaderIndex], fragmentShader);
 
     //Link our program
-    glLinkProgram(program);
+    glLinkProgram(Shaders[shaderIndex]);
 
     //Note the different functions here: glGetProgram* instead of glGetShader*.
     GLint isLinked = 0;
-    glGetProgramiv(program, GL_LINK_STATUS, (int *)&isLinked);
+    glGetProgramiv(Shaders[shaderIndex], GL_LINK_STATUS, (int *)&isLinked);
     if(isLinked == GL_FALSE)
     {
         GLint maxLength = 0;
-        glGetProgramiv(program, GL_INFO_LOG_LENGTH, &maxLength);
+        glGetProgramiv(Shaders[shaderIndex], GL_INFO_LOG_LENGTH, &maxLength);
 
         //The maxLength includes the NULL character
         GLchar *infoLog = (GLchar *) malloc(maxLength * sizeof(GLchar));
-        glGetProgramInfoLog(program, maxLength, &maxLength, &infoLog[0]);
+        glGetProgramInfoLog(Shaders[shaderIndex], maxLength, &maxLength, &infoLog[0]);
         
         //We don't need the program anymore.
-        glDeleteProgram(program);
+        glDeleteProgram(Shaders[shaderIndex]);
         //Don't leak shaders either.
         glDeleteShader(vertexShader);
+        free((void*)vShaderSource);
         glDeleteShader(fragmentShader);
+        free((void*)fShaderSource);
 
         printf("Shader linkage Info Log:\n%s\n",infoLog);
         
@@ -986,8 +960,10 @@ int CompileAndLinkShader(){
     }
 
     //Always detach shaders after a successful link.
-    glDetachShader(program, vertexShader);
-    glDetachShader(program, fragmentShader);
+    glDetachShader(Shaders[shaderIndex], vertexShader);
+    glDetachShader(Shaders[shaderIndex], fragmentShader);
+    free((void*)vShaderSource);
+    free((void*)fShaderSource);
 
     return 1;
 }
@@ -1003,6 +979,10 @@ void FreeObject(VoxelObject *obj){
     }
     free(obj->render);
     obj->render = NULL;
+}
+
+void FreeMultiObject(MultiVoxelObject *obj){
+    FreeObjectList(&obj->objects);
 }
 
 VoxelObjectList InitializeObjectList(){

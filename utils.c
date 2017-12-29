@@ -82,84 +82,80 @@ int IsListEmpty(List list){
 }
 
 void InsertListEnd(List *list, void* e){
-	ListCell newCell;
-	newCell.previous = list->last;
-	newCell.next = NULL;
+	ListCellPointer newCell = malloc(sizeof(ListCell));
+	newCell->previous = list->last;
+	newCell->next = NULL;
 
-	newCell.element = malloc(list->elementSize);
-	memcpy(newCell.element,e,list->elementSize);
+	newCell->element = malloc(list->elementSize);
+	memcpy(newCell->element,e,list->elementSize);
 
-	list->last->next = &newCell;
-	list->last = &newCell;
-
-	if(!list->first)
-		list->first = &newCell;
+	if(list->last){
+		list->last->next = newCell;
+		list->last = newCell;
+	}else{
+		list->first = newCell;
+		list->last = newCell;
+	}
 
 	list->length +=1;
 }
 
 void InsertListStart(List *list, void* e){
-	ListCell newCell;
-	newCell.previous = NULL;
-	newCell.next = list->first;
+	ListCellPointer newCell = malloc(sizeof(ListCell));
+	newCell->previous = NULL;
+	newCell->next = list->first;
 
-	newCell.element = malloc(list->elementSize);
-	memcpy(newCell.element,e,list->elementSize);
-	
-	list->first->previous = &newCell;
-	list->first = &newCell;
+	newCell->element = malloc(list->elementSize);
+	memcpy(newCell->element,e,list->elementSize);
 
-	if(!list->last)
-		list->last = &newCell;
+	if(list->first){
+		list->first->previous = newCell;
+		list->first = newCell;
+	}else{
+		list->first = newCell;
+		list->last = newCell;
+	}
 
 	list->length +=1;
 }
 
 void InsertListIndex(List *list, void* e, unsigned index){
-	ListCell newCell;
 	int i;
-
-	newCell.element = malloc(list->elementSize);
-	memcpy(newCell.element,e,list->elementSize);
-
 	//Get the element that will go after the element to be inserted
 	ListCellPointer current = list->first;
 	for(i=0;i<index;i++){
 		current = GetNextCell(current);
 	}
 
-	newCell.next = current;
-
 	//If the index is already ocupied
 	if(current != NULL){
+		ListCellPointer newCell = malloc(sizeof(ListCell));
+		newCell->element = malloc(list->elementSize);
+		memcpy(newCell->element,e,list->elementSize);
+		newCell->next = current;
+
 		//Connect the cells to their new parents
-		newCell.previous = current->previous;	
-		current->previous = &newCell;
+		newCell->previous = current->previous;	
+		current->previous = newCell;
 
 		//If the index is 0 (first), set newCell as first
 		if(list->first == current){
-			list->first = &newCell;
+			list->first = newCell;
 		}
 			
 		//If the index is list length (last), set newCell as last
 		if(list->last == current){
-			list->last = &newCell;
+			list->last = newCell;
 		}
 
 		//If the previous is not null, point his next to newCell
-		if(newCell.previous){
-			newCell.previous->next = &newCell;
+		if(newCell->previous){
+			newCell->previous->next = newCell;
 		}
 
 	}else{
 		//Index is list length or off bounds (consider as insertion in the end)
-		list->last->next = &newCell;
-		newCell.previous = list->last;
-
-		list->last = &newCell;
-
-		if(!list->first)
-			list->first = &newCell;
+		InsertListEnd(list,e);
 	}
 
 	list->length +=1;
@@ -185,6 +181,8 @@ void RemoveListEnd(List *list){
 }
 
 void RemoveListStart(List *list){
+	if(IsListEmpty(*list)) return;
+
 	if(list->first->next){
 		ListCellPointer aux = list->first->next;
 		free(list->first->element);
@@ -246,6 +244,7 @@ void* GetAt(List list,unsigned index){
 }
 
 ListCellPointer GetNextCell(ListCellPointer c){
+	if(!c) return NULL;
 	return c->next;
 }
 

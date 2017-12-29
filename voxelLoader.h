@@ -6,9 +6,6 @@
 #include "voxelRenderer.h"
 #include "utils.h"
 
-int LoadMap(char mapPath[]);
-void FreeScene();
-
 VoxelObject LoadVoxelModel(char modelPath[]);
 MultiVoxelObject LoadMultiVoxelModel(char modelPath[]);
 

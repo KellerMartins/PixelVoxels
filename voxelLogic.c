@@ -8,7 +8,7 @@ extern const int SCREEN_HEIGHT;
 extern const int GAME_SCREEN_WIDTH;
 extern const int GAME_SCREEN_HEIGHT;
 
-extern VoxelObjectList Scene;
+extern List Rooms;
 extern PoolObject Pool[POOLSIZE];
 extern Vector3 cameraPosition;
 
@@ -41,6 +41,12 @@ void GameStart(){
 }
 float lastRot = 0;
 void GameUpdate(){
+
+    if (GetKeyDown(SDL_SCANCODE_R))
+    {
+        ReloadShaders();
+    }
+
     Vector3 moveDir = VECTOR3_ZERO;
     Vector3 rotVal = VECTOR3_ZERO;
     int moved = 0;
@@ -133,7 +139,7 @@ void GameUpdate(){
         rotVal.z+= -100;
         moved=1;
     }
-    MoveObjectTo(&model,model.position,(Vector3){model.rotation.x,model.rotation.y,angle},&(*Scene.list),Scene.numberOfObjects,0,0);
+    MoveObjectTo(&model,model.position,(Vector3){model.rotation.x,model.rotation.y,angle},((MultiVoxelObject*) GetFirst(Rooms))->objects.list,((MultiVoxelObject*) GetFirst(Rooms))->objects.numberOfObjects,0,0);
     if(moved){
         if(moveDir.x!=0.0f || moveDir.y!=0.0f || moveDir.z!=0.0f){
             moveDir = NormalizeVector(moveDir);
@@ -142,7 +148,7 @@ void GameUpdate(){
             moveDir.z *= 20;
         }
 
-        MoveObject(&model,moveDir,rotVal,&(*Scene.list),Scene.numberOfObjects,5,2);
+        MoveObject(&model,moveDir,rotVal,((MultiVoxelObject*) GetFirst(Rooms))->objects.list,((MultiVoxelObject*) GetFirst(Rooms))->objects.numberOfObjects,5,2);
     }
     //Tiro da nave
     if (GetKeyDown(SDL_SCANCODE_SPACE))
@@ -260,7 +266,7 @@ void PoolUpdate(){
                         dir.x *=250;
                         dir.y *=250;
                         dir.z *=250;
-                        MoveObject(Pool[p].objs.list[o],dir,VECTOR3_ZERO,&(*Scene.list),Scene.numberOfObjects,4,8);
+                        MoveObject(Pool[p].objs.list[o],dir,VECTOR3_ZERO,((MultiVoxelObject*) GetFirst(Rooms))->objects.list,((MultiVoxelObject*) GetFirst(Rooms))->objects.numberOfObjects,4,8);
                     }
                 }
             }

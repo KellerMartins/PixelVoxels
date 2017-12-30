@@ -404,7 +404,7 @@ void MoveObject(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObjec
 
                 for(o=0; o<numCol; o++){
                     
-                    if((x-col[o]->position.x)<col[o]->dimension[0] && (x-col[o]->position.x)>-1 && (z-col[o]->position.z)<col[o]->dimension[2] && (z-col[o]->position.z)>-1 && (y+col[o]->position.y)<col[o]->dimension[1] && (y+col[o]->position.y)>-1){
+                    if((x-col[o]->position.x)<col[o]->dimension[0] && (x-col[o]->position.x)>-1 && (z-col[o]->position.z)<col[o]->dimension[2] && (z-col[o]->position.z)>-1 && (y-col[o]->position.y)<col[o]->dimension[1] && (y-col[o]->position.y)>-1){
                         index = (x-col[o]->position.x) + (z-col[o]->position.z) * col[o]->dimension[0] + (y-col[o]->position.y) * col[o]->dimension[0] * col[o]->dimension[2];
                         if(col[o]->model[index]!=0){
                             ExplodeAtPoint(col[o],x,y,z,damageColRadius);
@@ -479,7 +479,7 @@ void MoveObjectTo(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObj
 
                 for(o=0; o<numCol; o++){
                     
-                    if((x-col[o]->position.x)<col[o]->dimension[0] && (x-col[o]->position.x)>-1 && (z-col[o]->position.z)<col[o]->dimension[2] && (z-col[o]->position.z)>-1 && (y+col[o]->position.y)<col[o]->dimension[1] && (y+col[o]->position.y)>-1){
+                    if((x-col[o]->position.x)<col[o]->dimension[0] && (x-col[o]->position.x)>-1 && (z-col[o]->position.z)<col[o]->dimension[2] && (z-col[o]->position.z)>-1 && (y-col[o]->position.y)<col[o]->dimension[1] && (y-col[o]->position.y)>-1){
                         index = (x-col[o]->position.x) + (z-col[o]->position.z) * col[o]->dimension[0] + (y-col[o]->position.y) * col[o]->dimension[0] * col[o]->dimension[2];
                         if(col[o]->model[index]!=0){
                             ExplodeAtPoint(col[o],x,y,z,damageColRadius);

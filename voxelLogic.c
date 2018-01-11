@@ -53,16 +53,27 @@ void GameUpdate(){
 
     //Cria um vetor do mouse centrado no centro do player, para definir o angulo a rodar o objeto para olhar para o mouse
     float screenPosX, screenPosY;
-    screenPosY = (int)((model.position.x+model.position.y+model.center.x+model.center.y) +roundf(model.position.z+model.center.z+cameraPosition.z)*2 + roundf(-cameraPosition.y));
-    screenPosX = (int)(((model.position.x+model.center.x)-(model.position.y+model.center.y))*2 + roundf(-cameraPosition.x));
+    screenPosY = (int)(((model.center.x + model.position.x) + (model.center.y + model.position.y)) + (model.center.z + model.position.z + cameraPosition.z )*2 + floorf(-cameraPosition.y)) + 0.375;
+    screenPosX = (int)(((model.center.x + model.position.x) - (model.center.y + model.position.y))*2 + floorf(-cameraPosition.x)) + 0.375;
 
-    screenPosY = ((screenPosY/(float)GAME_SCREEN_HEIGHT)-0.5f)*2;
-    screenPosX = ((screenPosX/(float)GAME_SCREEN_WIDTH)-0.5f)*2;
+    screenPosY = ((screenPosY/(float)GAME_SCREEN_HEIGHT))*2;
+    screenPosX = ((screenPosX/(float)GAME_SCREEN_WIDTH))*2;
 
     int mx,my;
     SDL_GetMouseState(&mx,&my);
     Vector3 mouseVec = {((mx/(float)SCREEN_WIDTH)-0.5f)*2 - screenPosX,((1-(my/(float)SCREEN_HEIGHT))-0.5f)*2 - screenPosY,0};
     
+    /*glPointSize(20);
+    glEnable(GL_POINT_SPRITE);
+    glBegin(GL_POINTS);
+    glColor3f(1.0f, 0.5f, 0);
+    glVertex2f(SCREEN_WIDTH/2 + screenPosX*SCREEN_WIDTH/2 + mouseVec.x*70,SCREEN_HEIGHT/2 + screenPosY*SCREEN_HEIGHT/2 +mouseVec.y*70);
+    glPointSize(10);
+    glVertex2f(SCREEN_WIDTH/2 + screenPosX*SCREEN_WIDTH/2,SCREEN_HEIGHT/2 + screenPosY*SCREEN_HEIGHT/2);
+    glColor3f(1.0f, 1.0f, 1.0f);
+    glEnd();
+    glDisable(GL_POINT_SPRITE);*/
+
     mouseVec = NormalizeVector(mouseVec);
 
     Vector3 diag = {1/sqrt(2), 1/sqrt(2), 0};
@@ -139,7 +150,10 @@ void GameUpdate(){
         rotVal.z+= -100;
         moved=1;
     }
-    MoveObjectTo(&model,model.position,(Vector3){model.rotation.x,model.rotation.y,angle},((MultiVoxelObject*) GetFirst(Rooms))->objects.list,((MultiVoxelObject*) GetFirst(Rooms))->objects.numberOfObjects,0,0);
+    if(!IsListEmpty(Rooms))
+        MoveObjectTo(&model,model.position,(Vector3){model.rotation.x,model.rotation.y,angle},((MultiVoxelObject*) GetFirst(Rooms))->objects.list,((MultiVoxelObject*) GetFirst(Rooms))->objects.numberOfObjects,0,0);
+    else
+        MoveObjectTo(&model,model.position,(Vector3){model.rotation.x,model.rotation.y,angle},0,0,0,0);
     if(moved){
         if(moveDir.x!=0.0f || moveDir.y!=0.0f || moveDir.z!=0.0f){
             moveDir = NormalizeVector(moveDir);
@@ -147,8 +161,10 @@ void GameUpdate(){
             moveDir.y *= 80;
             moveDir.z *= 20;
         }
-
-        MoveObject(&model,moveDir,rotVal,((MultiVoxelObject*) GetFirst(Rooms))->objects.list,((MultiVoxelObject*) GetFirst(Rooms))->objects.numberOfObjects,5,2);
+        if(!IsListEmpty(Rooms))
+            MoveObject(&model,moveDir,rotVal,((MultiVoxelObject*) GetFirst(Rooms))->objects.list,((MultiVoxelObject*) GetFirst(Rooms))->objects.numberOfObjects,5,2);
+        else
+            MoveObject(&model,moveDir,rotVal,0,0,5,2);
     }
     //Tiro da nave
     if (GetKeyDown(SDL_SCANCODE_SPACE))
@@ -237,11 +253,10 @@ void FreeInput(){
 //--------------------------------------------------------- Pool de objetos ----------------------------------------------------------------------------
 
 void PoolUpdate(){
-    int maxSize,maxXY;
+    int maxSize;
     for(int p=0;p<POOLSIZE;p++){
 
         maxSize = Pool[p].baseObj.dimension[0]*Pool[p].baseObj.dimension[1]*Pool[p].baseObj.dimension[2];
-        maxXY = Pool[p].baseObj.dimension[0]*Pool[p].baseObj.dimension[1];
 
         for(int o=0;o<Pool[p].objs.numberOfObjects;o++){
 
@@ -252,11 +267,10 @@ void PoolUpdate(){
                         Pool[p].objs.list[o]->enabled = 0;
                         
                         memcpy(Pool[p].objs.list[o]->model,Pool[p].baseObj.model,maxSize*sizeof(unsigned char));
-                        memcpy(Pool[p].objs.list[o]->lighting,Pool[p].baseObj.lighting, maxSize*sizeof(unsigned char ));
+                        memcpy(Pool[p].objs.list[o]->lighting,Pool[p].baseObj.lighting, maxSize*sizeof(unsigned char ));              
+                        memcpy(Pool[p].objs.list[o]->vertices,Pool[p].baseObj.vertices,Pool[p].baseObj.numberOfVertices * 3 * sizeof(GLfloat));
+                        memcpy(Pool[p].objs.list[o]->vColors,Pool[p].baseObj.vColors,Pool[p].baseObj.numberOfVertices * 3 * sizeof(GLfloat));
 
-                    for(int j=0;j<Pool[p].baseObj.dimension[2];j++){
-                            memcpy(Pool[p].objs.list[o]->render[j],Pool[p].baseObj.render[j],maxXY*sizeof(unsigned short int ));
-                    }
 
                     Pool[p].avaliableInstances++;  
                     }else{
@@ -266,7 +280,11 @@ void PoolUpdate(){
                         dir.x *=250;
                         dir.y *=250;
                         dir.z *=250;
-                        MoveObject(Pool[p].objs.list[o],dir,VECTOR3_ZERO,((MultiVoxelObject*) GetFirst(Rooms))->objects.list,((MultiVoxelObject*) GetFirst(Rooms))->objects.numberOfObjects,4,8);
+                        if(!IsListEmpty(Rooms)){
+                            MoveObject(Pool[p].objs.list[o],dir,VECTOR3_ZERO,((MultiVoxelObject*) GetFirst(Rooms))->objects.list,((MultiVoxelObject*) GetFirst(Rooms))->objects.numberOfObjects,4,8);
+                        }else{
+                            MoveObject(Pool[p].objs.list[o],dir,VECTOR3_ZERO,NULL,0,4,8);
+                        }
                     }
                 }
             }
@@ -277,7 +295,7 @@ void PoolUpdate(){
 
 void InitializePool(){
     printf("Initializing Pool\n");
-    int maxSize,maxXY;
+    int maxSize;
     int p;
     for(p=0; p<POOLSIZE; p++){
 
@@ -288,7 +306,6 @@ void InitializePool(){
         Pool[p].objs.list = calloc(Pool[p].objs.numberOfObjects,sizeof(VoxelObject*));
 
         maxSize = Pool[p].baseObj.dimension[0]*Pool[p].baseObj.dimension[1]*Pool[p].baseObj.dimension[2];
-        maxXY = Pool[p].baseObj.dimension[0]*Pool[p].baseObj.dimension[1];
         
         for(int i=0; i<Pool[p].objs.numberOfObjects; i++){
             //Alocando memória do ponteiro da instância
@@ -299,19 +316,16 @@ void InitializePool(){
             //Alocando memória para os ponteiros do objeto instanciado
             Pool[p].objs.list[i]->model = calloc(maxSize, sizeof(unsigned char));
             Pool[p].objs.list[i]->lighting = calloc(maxSize, sizeof(unsigned char));
-            Pool[p].objs.list[i]->render = calloc(Pool[p].baseObj.dimension[2], sizeof(unsigned short int*));
+            Pool[p].objs.list[i]->vertices = calloc(Pool[p].baseObj.numberOfVertices*3, sizeof(GLfloat));
+            Pool[p].objs.list[i]->vColors = calloc(Pool[p].baseObj.numberOfVertices*3, sizeof(GLfloat));
             
             //Termina a alocação dos ponteiros e inicia a cópia dos valores do objeto base para as instâncias
             
-            for(int j=0;j<Pool[p].baseObj.dimension[2];j++){
-                Pool[p].objs.list[i]->render[j] = calloc(1+maxXY,sizeof(unsigned short int));
-                for(int k=0;k<maxXY;k++){
-                    Pool[p].objs.list[i]->render[j][k] = Pool[p].baseObj.render[j][k];
-                }
-            }
             memcpy(Pool[p].objs.list[i]->model, Pool[p].baseObj.model, maxSize*sizeof(unsigned char));
             memcpy(Pool[p].objs.list[i]->lighting, Pool[p].baseObj.lighting, maxSize*sizeof(unsigned char ));
-            
+            memcpy(Pool[p].objs.list[i]->vertices,Pool[p].baseObj.vertices,Pool[p].baseObj.numberOfVertices * 3 * sizeof(GLfloat));
+            memcpy(Pool[p].objs.list[i]->vColors,Pool[p].baseObj.vColors,Pool[p].baseObj.numberOfVertices * 3 * sizeof(GLfloat));
+
             //Desabilita-as para serem spawnadas durante o jogo;
             Pool[p].objs.list[i]->enabled = 0;
         }
@@ -354,7 +368,7 @@ void Spawn(unsigned int index,float x, float y, float z, float rx, float ry, flo
 
 void MoveObject(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObject **col,const int numCol,int damageColRadius,int damageObjRadius){
     //printf("%0.0f Per cent\n",100*(obj->voxelsRemaining/(float)obj->voxelCount));
-    int o,i,iz,nv,x,y,z,index = 0,allowMovement = 1,useRot = 0;
+    int o,i,x,y,z,index = 0,allowMovement = 1,useRot = 0;
     double moveDelta = deltaTime>0.02? 0.02:deltaTime;
 
     float rotx,roty,rotz;
@@ -375,62 +389,61 @@ void MoveObject(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObjec
     }
 
     if(col!=NULL){
-        for(iz=obj->dimension[2]-1;iz>=0;iz--){
-            nv = obj->render[iz][0];
-            for(i = nv; i > 0  ; i--){
-                if(allowMovement == 0){
-                    break;
-                }
+        for(i = 0; i <obj->numberOfVertices*3  ; i+=3){
+            if(allowMovement == 0){
+                break;
+            }
 
-                if(useRot){
+            if(useRot){
 
-                    x = (obj->render[iz][i] & 127) - obj->center.x;
-                    y = ((obj->render[iz][i]>>7) & 127) - obj->center.y;
-                    z = iz - obj->center.z;
+                x = roundf(obj->vertices[i]) - obj->center.x;
+                y = roundf(obj->vertices[i+1]) - obj->center.y;
+                z = roundf(obj->vertices[i+2]) - obj->center.z;
 
-                    rotx = x*cosy*cosz + y*(cosz*sinx*siny - cosx*sinz) + z*(cosx*cosz*siny + sinx*sinz);
-                    roty = x*cosy*sinz + z*(cosx*siny*sinz - cosz*sinx) + y*(cosx*cosz + sinx*siny*sinz);
-                    rotz = z*cosx*cosy + y*sinx*cosy - x*siny;
+                rotx = x*cosy*cosz + y*(cosz*sinx*siny - cosx*sinz) + z*(cosx*cosz*siny + sinx*sinz);
+                roty = x*cosy*sinz + z*(cosx*siny*sinz - cosz*sinx) + y*(cosx*cosz + sinx*siny*sinz);
+                rotz = z*cosx*cosy + y*sinx*cosy - x*siny;
 
-                    x = rotx + (obj->position.x+(movement.x*moveDelta)) + obj->center.x;
-                    y = roty + (obj->position.y+(movement.y*moveDelta)) + obj->center.y;
-                    z = rotz + (obj->position.z+(movement.z*moveDelta)) + obj->center.z;
+                x = rotx + (obj->position.x+(movement.x*moveDelta)) + obj->center.x;
+                y = roty + (obj->position.y+(movement.y*moveDelta)) + obj->center.y;
+                z = rotz + (obj->position.z+(movement.z*moveDelta)) + obj->center.z;
 
-                }else{
-                    x = ((obj->render[iz][i] & 127)+(obj->position.x+(movement.x*moveDelta)));
-                    y = (((obj->render[iz][i]>>7) & 127)+(obj->position.y+(movement.y*moveDelta)));
-                    z = iz+(obj->position.z+(movement.z*moveDelta));
-                }
+            }else{
+                x = roundf(obj->vertices[i]) + (obj->position.x+(movement.x*moveDelta));
+                y = roundf(obj->vertices[i+1]) + (obj->position.y+(movement.y*moveDelta));
+                z = roundf(obj->vertices[i+2]) + (obj->position.z+(movement.z*moveDelta));
+            }
 
-                for(o=0; o<numCol; o++){
-                    
-                    if((x-col[o]->position.x)<col[o]->dimension[0] && (x-col[o]->position.x)>-1 && (z-col[o]->position.z)<col[o]->dimension[2] && (z-col[o]->position.z)>-1 && (y-col[o]->position.y)<col[o]->dimension[1] && (y-col[o]->position.y)>-1){
-                        index = (x-col[o]->position.x) + (z-col[o]->position.z) * col[o]->dimension[0] + (y-col[o]->position.y) * col[o]->dimension[0] * col[o]->dimension[2];
-                        if(col[o]->model[index]!=0){
+            for(o=0; o<numCol; o++){
+                
+                if((x-col[o]->position.x)<col[o]->dimension[0] && (x-col[o]->position.x)>-1 && (z-col[o]->position.z)<col[o]->dimension[2] && (z-col[o]->position.z)>-1 && (y-col[o]->position.y)<col[o]->dimension[1] && (y-col[o]->position.y)>-1){
+                    index = (x-col[o]->position.x) + (z-col[o]->position.z) * col[o]->dimension[0] + (y-col[o]->position.y) * col[o]->dimension[0] * col[o]->dimension[2];
+                    if(col[o]->model[index]!=0){
+                        if(damageColRadius>0)
                             ExplodeAtPoint(col[o],x,y,z,damageColRadius);
+                        if(damageObjRadius>0)
                             ExplodeAtPoint(obj,x,y,z,damageObjRadius);
-                            allowMovement = 0;
-                            break;
-                        }
+                        allowMovement = 0;
+                        break;
                     }
                 }
             }
         }
     }
     if(allowMovement){
-        obj->position.x +=(movement.x*moveDelta);
-        obj->position.y +=(movement.y*moveDelta);
-        obj->position.z +=(movement.z*moveDelta);
+        obj->position.x += (movement.x*moveDelta);
+        obj->position.y += (movement.y*moveDelta);
+        obj->position.z += (movement.z*moveDelta);
 
-        obj->rotation.x =fmod( obj->rotation.x +rotation.x*moveDelta,360);
-        obj->rotation.y =fmod(obj->rotation.y +rotation.y*moveDelta,360);
-        obj->rotation.z =fmod(obj->rotation.z +rotation.z*moveDelta,360);
+        obj->rotation.x = fmod(obj->rotation.x +rotation.x*moveDelta,360);
+        obj->rotation.y = fmod(obj->rotation.y +rotation.y*moveDelta,360);
+        obj->rotation.z = fmod(obj->rotation.z +rotation.z*moveDelta,360);
     }
 }
 
 void MoveObjectTo(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObject **col,const int numCol,int damageColRadius,int damageObjRadius){
     //printf("%0.0f Per cent\n",100*(obj->voxelsRemaining/(float)obj->voxelCount));
-    int o,i,iz,nv,x,y,z,index = 0,allowMovement = 1,useRot = 0;
+    int o,i,x,y,z,index = 0,allowMovement = 1,useRot = 0;
 
     float rotx,roty,rotz;
     float sinx = 1,cosx = 0;
@@ -450,43 +463,40 @@ void MoveObjectTo(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObj
     }
 
     if(col!=NULL){
-        for(iz=obj->dimension[2]-1;iz>=0;iz--){
-            nv = obj->render[iz][0];
-            for(i = nv; i > 0  ; i--){
-                if(allowMovement == 0){
-                    break;
-                }
+        for(i = 0; i <obj->numberOfVertices*3  ; i+=3){
+            if(allowMovement == 0){
+                break;
+            }
 
-                if(useRot){
+            if(useRot){
 
-                    x = (obj->render[iz][i] & 127) - obj->center.x;
-                    y = ((obj->render[iz][i]>>7) & 127) - obj->center.y;
-                    z = iz - obj->center.z;
+                x = roundf(obj->vertices[i]) - obj->center.x;
+                y = roundf(obj->vertices[i+1]) - obj->center.y;
+                z = roundf(obj->vertices[i+2]) - obj->center.z;
 
-                    rotx = x*cosy*cosz + y*(cosz*sinx*siny - cosx*sinz) + z*(cosx*cosz*siny + sinx*sinz);
-                    roty = x*cosy*sinz + z*(cosx*siny*sinz - cosz*sinx) + y*(cosx*cosz + sinx*siny*sinz);
-                    rotz = z*cosx*cosy + y*sinx*cosy - x*siny;
+                rotx = x*cosy*cosz + y*(cosz*sinx*siny - cosx*sinz) + z*(cosx*cosz*siny + sinx*sinz);
+                roty = x*cosy*sinz + z*(cosx*siny*sinz - cosz*sinx) + y*(cosx*cosz + sinx*siny*sinz);
+                rotz = z*cosx*cosy + y*sinx*cosy - x*siny;
 
-                    x = rotx + (movement.x) + obj->center.x;
-                    y = roty + (movement.y) + obj->center.y;
-                    z = rotz + (movement.z) + obj->center.z;
+                x = rotx + (movement.x) + obj->center.x;
+                y = roty + (movement.y) + obj->center.y;
+                z = rotz + (movement.z) + obj->center.z;
 
-                }else{
-                    x = ((obj->render[iz][i] & 127)+(movement.x));
-                    y = (((obj->render[iz][i]>>7) & 127)+(movement.y));
-                    z = iz+(movement.z);
-                }
+            }else{
+                x = roundf(obj->vertices[i]) + (obj->position.x+(movement.x));
+                y = roundf(obj->vertices[i+1]) + (obj->position.y+(movement.y));
+                z = roundf(obj->vertices[i+2]) + (obj->position.z+(movement.z));
+            }
 
-                for(o=0; o<numCol; o++){
-                    
-                    if((x-col[o]->position.x)<col[o]->dimension[0] && (x-col[o]->position.x)>-1 && (z-col[o]->position.z)<col[o]->dimension[2] && (z-col[o]->position.z)>-1 && (y-col[o]->position.y)<col[o]->dimension[1] && (y-col[o]->position.y)>-1){
-                        index = (x-col[o]->position.x) + (z-col[o]->position.z) * col[o]->dimension[0] + (y-col[o]->position.y) * col[o]->dimension[0] * col[o]->dimension[2];
-                        if(col[o]->model[index]!=0){
-                            ExplodeAtPoint(col[o],x,y,z,damageColRadius);
-                            ExplodeAtPoint(obj,x,y,z,damageObjRadius);
-                            allowMovement = 0;
-                            break;
-                        }
+            for(o=0; o<numCol; o++){
+                
+                if((x-col[o]->position.x)<col[o]->dimension[0] && (x-col[o]->position.x)>-1 && (z-col[o]->position.z)<col[o]->dimension[2] && (z-col[o]->position.z)>-1 && (y-col[o]->position.y)<col[o]->dimension[1] && (y-col[o]->position.y)>-1){
+                    index = (x-col[o]->position.x) + (z-col[o]->position.z) * col[o]->dimension[0] + (y-col[o]->position.y) * col[o]->dimension[0] * col[o]->dimension[2];
+                    if(col[o]->model[index]!=0){
+                        ExplodeAtPoint(col[o],x,y,z,damageColRadius);
+                        ExplodeAtPoint(obj,x,y,z,damageObjRadius);
+                        allowMovement = 0;
+                        break;
                     }
                 }
             }

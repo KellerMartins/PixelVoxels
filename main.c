@@ -168,9 +168,8 @@ int main(int argc, char *argv[]){
 	
 	//Carrega o mapa
 	Rooms = InitList(sizeof(MultiVoxelObject));
-	MultiVoxelObject testRoom = LoadMultiVoxelModel("Models/test.vox");
+	MultiVoxelObject testRoom = LoadMultiVoxelModel("Models/dune.vox");
 	InsertListStart(&Rooms,&testRoom);
-
 	//Inicializações do jogo
 	InitRenderer();
 	InputStart();
@@ -208,17 +207,21 @@ int main(int argc, char *argv[]){
 		NOW = SDL_GetPerformanceCounter();
 		deltaTime = (double)((NOW - LAST)*1000 / SDL_GetPerformanceFrequency() )*0.001;
 
-		//Updates
-		InputUpdate();
-		GameUpdate();
-		PoolUpdate();
-
 		SDL_Color bgColor = {0,38,75,0};
 		ClearRender(bgColor);
+
+
+
+
 
 		RenderObjectList(Players, (VoxelObjectList){NULL,0});
 		RenderObjectList( ((MultiVoxelObject*) GetFirst(Rooms))->objects , SceneShadowCasters);
 		RenderObjectList(EnemiesAndBullets, (VoxelObjectList){NULL,0});
+
+		//Updates
+		InputUpdate();
+		GameUpdate();
+		PoolUpdate();
 
 		RenderToScreen();
 

@@ -71,8 +71,7 @@ List InitList(unsigned size){
 }
 
 void FreeList(List *list){
-	int i;
-	for(i=0;i<GetLength(*list); i++){
+	while(list->first){
 		RemoveListStart(list);
 	}
 }

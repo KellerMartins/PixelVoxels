@@ -1,3 +1,4 @@
+#version 120
 uniform sampler2D fbo_texture;
 uniform float pWidth;
 uniform float pHeight;
@@ -26,14 +27,14 @@ void main(void) {
     pixel = (neighbor.a - curDepth) > 0.01? neighbor.rgb*0.54:pixel;
 
     //Vignette
-    vec3 dist = vec3((f_texcoord.x - 0.5f) * 1.25f,(f_texcoord.y - 0.5f) * 1.25f,0);
+    vec3 dist = vec3((f_texcoord.x - 0.5) * 1.25,(f_texcoord.y - 0.5f) * 1.25,0);
     float vignette = clamp(1 - dot(dist, dist)*vignettePower,0,1);
 
     //Red Shift
     float redShift;
     if(redShiftSpread>0){
         float aberrationMask = clamp(dot(dist, dist)*redShiftPower,0,1)*redShiftSpread;
-        redShift = texture2D(fbo_texture, vec2(f_texcoord.x - aberrationMask*pWidth,f_texcoord.y));
+        redShift = texture2D(fbo_texture, vec2(f_texcoord.x - aberrationMask*pWidth,f_texcoord.y)).r;
     }else{
         redShift = pixel.r;
     }

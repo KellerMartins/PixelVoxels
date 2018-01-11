@@ -40,7 +40,9 @@ typedef struct VoxelObject{
 
     unsigned char *model;
     unsigned char *lighting;
-    unsigned short int **render;
+    GLfloat *vertices;
+	GLfloat *vColors;
+	int numberOfVertices;
 	int numberOfPoints;
 	AnchorPoint *points;
 

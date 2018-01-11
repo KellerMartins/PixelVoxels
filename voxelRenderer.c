@@ -13,11 +13,12 @@ extern double deltaTime;
 Vector3 cameraPosition;
 
 GLuint CubeID;
-GLuint FramebufferName = 0;
+GLuint frameBuffer = 0;
 GLuint renderedTexture = 0;
-GLuint depthrenderbuffer = 0;
+GLuint depthRenderBuffer = 0;
+GLuint vao = 0, vbo[2] = {0,0};
 
-GLuint Shaders[1] = {0};
+GLuint Shaders[2] = {0,0};
 
 void MoveCamera(float x, float y, float z){
     cameraPosition.x +=x*deltaTime;
@@ -27,11 +28,11 @@ void MoveCamera(float x, float y, float z){
 }
 
 void InitRenderer(){
-    cameraPosition = (Vector3){-GAME_SCREEN_WIDTH/2,0,0};
+    cameraPosition = (Vector3){0,0,0};
 
     //Framebuffer
-    glGenFramebuffers(1, &FramebufferName);
-    glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+    glGenFramebuffers(1, &frameBuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
 
     //Render Texture
     glGenTextures(1, &renderedTexture);
@@ -42,10 +43,10 @@ void InitRenderer(){
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    glGenRenderbuffers(1, &depthrenderbuffer);
-    glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
+    glGenRenderbuffers(1, &depthRenderBuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, depthRenderBuffer);
     glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
-    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthRenderBuffer);
 
     // Set "renderedTexture" as our colour attachement #0
     glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, renderedTexture, 0);
@@ -57,6 +58,19 @@ void InitRenderer(){
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) return;
 
     glBindFramebuffer(GL_FRAMEBUFFER,0);
+
+    // VAO Generation and binding
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    // Color and vertex VBO generation and binding
+    glGenBuffers(2, vbo);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
     //Load surface into a OpenGL texture
     SDL_Surface *cubeimg = IMG_Load("Textures/cube.png");
@@ -78,9 +92,13 @@ void InitRenderer(){
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     SDL_FreeSurface(cubeimg);
 
-    //Compile shader
+    //Compile shaders
     if(!CompileAndLinkShader("Shaders/ScreenVert.vs","Shaders/ScreenFrag.fs",0)) printf(">Failed to compile/link shader! Description above\n\n");
     else printf(">Compiled/linked shader sucessfully!\n\n");
+
+     if(!CompileAndLinkShader("Shaders/VoxelVert.vs","Shaders/VoxelFrag.fs",1)) printf(">Failed to compile/link shader! Description above\n\n");
+    else printf(">Compiled/linked shader sucessfully!\n\n");
+    
 
     LoadPalette("Textures/magicaPalette.png");
 }
@@ -95,6 +113,11 @@ void ReloadShaders(){
         printf(">Failed to compile/link shader! Description above\n\n");
     else 
         printf(">Compiled/linked shader sucessfully!\n\n");
+
+    if(!CompileAndLinkShader("Shaders/VoxelVert.vs","Shaders/VoxelFrag.fs",1)) 
+        printf(">Failed to compile/link shader! Description above\n\n");
+    else 
+        printf(">Compiled/linked shader sucessfully!\n\n");
 }
 
 void FreeRenderer(){
@@ -102,7 +125,7 @@ void FreeRenderer(){
  }
 
  void ClearRender(SDL_Color col){
-    glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+    glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
     //glViewport(0,0,GAME_SCREEN_WIDTH,GAME_SCREEN_HEIGHT);
 
     glClearColor(col.r/255.0, col.g/255.0, col.b/255.0,0.0);
@@ -171,69 +194,20 @@ void RenderObjectList(VoxelObjectList objs, VoxelObjectList shadowCasters){
 
             }
             RenderObject(objs.list[i]);
-            if(shadowCasters.list!=NULL){
-                for(int j=0;j<shadowCasters.numberOfObjects;j++){
-                    CalculateShadow(objs.list[i],shadowCasters.list[j]);
-                }
-            }
+            //if(shadowCasters.list!=NULL){
+                //for(int j=0;j<shadowCasters.numberOfObjects;j++){
+                    //CalculateShadow(objs.list[i],shadowCasters.list[j]);
+                //}
+            //}
         }
     }
 }
 
 void RenderObject(VoxelObject *obj){
-
-    //unsigned int color = 0;
-
-    int x,y,z,i,px,py,zp,startz,nv,colorIndex,edgeIndx,lightIndx,useRot = 0;
-    float rx,ry,rz;
-    float sinx = 1,cosx = 0;
-    float siny = 1,cosy = 0;
-    float sinz = 1,cosz = 0;
-    //Termos que multiplicam as posicoes na rotacao
-    float rxt1 = 1, rxt2 = 1, rxt3 = 1;
-    float ryt1 = 1, ryt2 = 1, ryt3 = 1;
-    float rzt1 = 1, rzt2 = 1;
-
-    if(obj->rotation.x != 0.0f || obj->rotation.y != 0.0f || obj->rotation.z != 0.0f){
-        useRot = 1;
-        sinx = sin(obj->rotation.x * PI_OVER_180);
-        cosx = cos(obj->rotation.x * PI_OVER_180);
-
-        siny = sin(obj->rotation.y * PI_OVER_180);
-        cosy = cos(obj->rotation.y * PI_OVER_180);
-        
-        sinz = sin(obj->rotation.z * PI_OVER_180);
-        cosz = cos(obj->rotation.z * PI_OVER_180);
-
-        //Pre calculo dos termos
-        rxt1 = cosy*cosz; rxt2 = (cosz*sinx*siny - cosx*sinz); rxt3 = (cosx*cosz*siny + sinx*sinz);
-        ryt1 = cosy*sinz; ryt2 = (cosx*siny*sinz - cosz*sinx); ryt3 = (cosx*cosz + sinx*siny*sinz);
-        rzt1 = cosx*cosy; rzt2 = sinx*cosy;
-    }
-    const float edge = 0.80;
-    const float base = 0.75;
-    const float crease = 0.70;
-    const float sunlight = 1.42;
-    const float shadow = 0.79;
-
-    double illuminFrac;
-    float lightVal,edgeVal,heightVal;
-    float r,g,b;
-    startz = (obj->dimension[2]-1);
-
-    //Checagem se fora da tela
-    //> Desabilitada por enquanto, não utilizo elementos fora da tela ainda
-    //if( /*Esquerda*/ ((obj->maxDimension+obj->position.x)-(obj->position.y))*2 + roundf(-cameraPosition.x) < 0 ||
-    //    /*Direita*/  ((obj->position.x)-(obj->maxDimension+obj->position.y))*2 + roundf(-cameraPosition.x) > GAME_SCREEN_WIDTH ||
-    //    /*Acima*/    ((obj->maxDimension+obj->position.x)+(obj->maxDimension+obj->position.y)) + roundf(-cameraPosition.y) < 0 ||
-    //    /*Abaixo*/   ((obj->position.x)+(obj->position.y)) -(obj->maxDimension*2) + roundf(-cameraPosition.y) > GAME_SCREEN_HEIGHT
-    //){
-    //    return;
-    //}
     
     //Configure OpenGL parameters to render point sprites
 
-    glBindFramebuffer(GL_FRAMEBUFFER, FramebufferName);
+    glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
     glViewport(0,0,GAME_SCREEN_WIDTH,GAME_SCREEN_HEIGHT);
 
     glBindTexture(GL_TEXTURE_2D, CubeID);
@@ -241,93 +215,56 @@ void RenderObject(VoxelObject *obj){
 
     glEnable(GL_DEPTH_TEST);
     glAlphaFunc (GL_NOTEQUAL, 0.0f);
-    glEnable(GL_ALPHA_TEST);
     glPointSize(5);
     glEnable(GL_POINT_SPRITE);
-    glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
 
-    //Define projection matrices
-	glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    glOrtho(0,GAME_SCREEN_WIDTH, 0,GAME_SCREEN_HEIGHT, -500,500);
+    //Define matrices
+    float right = GAME_SCREEN_WIDTH/2;
+    float left = -GAME_SCREEN_WIDTH/2;
+    float top = GAME_SCREEN_HEIGHT/2;
+    float bottom = -GAME_SCREEN_HEIGHT/2;
+    float near = -500;
+    float far = 500;
+    
+    GLfloat ProjectionMatrix[4][4]={{2.0f/(right-left), 0                 , 0                , -(right + left)/(right - left) },
+                                    {0                , 2.0f/(top-bottom) , 0                , -(top + bottom)/(top - bottom) },
+                                    {0                , 0                 , -2.0f/(far-near) , -(far + near)/(far - near)     },
+                                    {0                , 0                 , 0                ,   1                            }};
 
-    glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
+    float sinx = sin(obj->rotation.x * PI_OVER_180);
+    float cosx = cos(obj->rotation.x * PI_OVER_180);
+    float siny = sin(obj->rotation.y * PI_OVER_180);
+    float cosy = cos(obj->rotation.y * PI_OVER_180);
+    float sinz = sin(obj->rotation.z * PI_OVER_180);
+    float cosz = cos(obj->rotation.z * PI_OVER_180);
 
-    glBegin(GL_POINTS);
-    for(z=startz; z>=0; z--){
-        heightVal = clamp(((1.0+(((z+obj->position.z+cameraPosition.z)*0.5))/128)),0,1.4);
+    GLfloat RotationMatrix[3][3]={{cosy*cosz , cosz*sinx*siny - cosx*sinz , cosx*cosz*siny + sinx*sinz},
+                                  {cosy*sinz , cosx*cosz + sinx*siny*sinz , cosx*siny*sinz - cosz*sinx},
+                                  {-siny     , cosy*sinx                  , cosx*cosy                 }};
 
-        nv = obj->render[z][0];
-        for(i = nv; i >0 ; i--){
-            
-            x = (obj->render[z][i] & 127);
-            y = ((obj->render[z][i]>>7) & 127);
 
-            colorIndex = (x) + ((z)) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
-            Pixel color = voxColors[obj->model[colorIndex]];
+    glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+    glBufferData(GL_ARRAY_BUFFER, obj->numberOfVertices * 3 * sizeof(GLfloat), obj->vertices, GL_DYNAMIC_DRAW);
+    glEnableVertexAttribArray(0);
 
-            //Aplica rotação na posição do voxel
-            if(useRot){
-                x -= obj->center.x;
-                y -= obj->center.y;
-                z -= obj->center.z;
+    glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+    glBufferData(GL_ARRAY_BUFFER, obj->numberOfVertices * 3 * sizeof(GLfloat), obj->vColors, GL_DYNAMIC_DRAW);
+    glEnableVertexAttribArray(1);
 
-                rx = x*rxt1 + y*rxt2 + z*rxt3;
-                ry = x*ryt1 + z*ryt2 + y*ryt3;
-                rz = z*rzt1 + y*rzt2 - x*siny;
+    glUseProgram(Shaders[1]);
 
-                rx += obj->center.x;
-                ry += obj->center.y;
-                rz += obj->center.z;
+    glUniformMatrix4fv(glGetUniformLocation(Shaders[1], "projection"), 1, GL_FALSE, &ProjectionMatrix[0]);
+    glUniformMatrix3fv(glGetUniformLocation(Shaders[1], "rotation"), 1, GL_FALSE, &RotationMatrix[0]);
+    glUniform3f(glGetUniformLocation(Shaders[1], "objPos"), obj->position.x, obj->position.y, obj->position.z);
+    glUniform3f(glGetUniformLocation(Shaders[1], "centerPos"), obj->center.x, obj->center.y, obj->center.z);
+    glUniform3f(glGetUniformLocation(Shaders[1], "camPos"), cameraPosition.x, cameraPosition.y, cameraPosition.z);
+    glUniform1i(glGetUniformLocation(Shaders[1], "tex"), 0);
 
-                z += obj->center.z;
-            }else{
-                rx = x;
-                ry = y;
-                rz = z;
-            }
-            rx = roundf(rx);
-            ry = roundf(ry);
-            rz = roundf(rz);
+    glDrawArrays(GL_POINTS, 0, obj->numberOfVertices);
 
-            //Clipping do objeto quando fora da faixa de 0 a 255
-            zp = rz + roundf(obj->position.z+cameraPosition.z);
-            if(zp<0 || zp>255) continue;
-            
-            //Obtém o nivel de iluminação do voxel e multiplica pela sombra dinâmica
-            lightIndx = (obj->lighting[colorIndex] & 6)>>1;
-            lightIndx *=obj->lighting[colorIndex] & 1;
-            //Reseta a sombra dinâmica para 1 (sem sombra), para ser recalculada no prox frame 
-            obj->lighting[colorIndex] |= 1;
-
-            //Adiciona iluminação leve nas bordas
-            edgeIndx = obj->lighting[colorIndex]>>3;
-            lightVal = lightIndx == 1? 1:(lightIndx >= 2? sunlight:shadow);
-            edgeVal = (edgeIndx<5? edge:edgeIndx == 5? base:crease);
-
-            //Multiplica iluminações e já coloca a conversão da cor de (0,256) para (0,1)
-            illuminFrac = lightVal * edgeVal * heightVal * ONE_OVER_256;
-
-            //Transforma a cor de um Int16 para cada um dos componentes RGB
-            r = clamp(color.r * illuminFrac,0,1);
-            g = clamp(color.g * illuminFrac,0,1);
-            b = clamp(color.b * illuminFrac,0,1);
-
-            //Projeção das posições de 3 dimensões para duas na tela
-            py = ((rx+obj->position.x)+(ry+obj->position.y)) +(zp*2) + roundf(-cameraPosition.y);
-            px = ((rx+obj->position.x)-(ry+obj->position.y))*2 + roundf(-cameraPosition.x);
-
-            glColor4f(r, g, b, (rz + obj->position.z)/256.0);
-            glVertex3f(px+0.375, py+0.375, (rz-(ry+rx)/126 + obj->position.z));
-        }
-    }
-    glColor3f(1.0f, 1.0f, 1.0f);
-    glEnd();
-
+    glUseProgram(0);
     glDisable(GL_POINT_SPRITE);
-
-    glDisable( GL_TEXTURE_2D );
+    glDisable(GL_DEPTH_TEST);
     
 }
 
@@ -335,15 +272,28 @@ void CalculateRendered(VoxelObject *obj){
     if(obj->modificationStartZ <0 || obj->modificationEndZ <0 ){
         return;
     }
-    int x,y,z,index,dir,occ,occPixel = 0,occUp,occLeft,occDown;
-    for(z = obj->modificationStartZ; z<=obj->modificationEndZ ;z++){
-        obj->render[z][0]=0;
-        for(y = obj->dimension[1]-1; y>=0; y--){
-            for(x = obj->dimension[0]-1; x>=0; x--){
+
+    List visibleVoxels = InitList(sizeof(Vector3));
+
+    int x,y,z,i,index,dir,occ;
+    int xLimitS = clamp(obj->modificationStartX-1 ,0,obj->dimension[0]-1);
+    int xLimitE = clamp(obj->modificationEndX+1   ,0,obj->dimension[0]-1);
+    int yLimitS = clamp(obj->modificationStartY-1 ,0,obj->dimension[1]-1);
+    int yLimitE = clamp(obj->modificationEndY+1   ,0,obj->dimension[1]-1);
+    int zLimitS = clamp(obj->modificationStartZ-1 ,0,obj->dimension[2]-1);
+    int zLimitE = clamp(obj->modificationEndZ+1   ,0,obj->dimension[2]-1);
+
+    for(i=0;i<obj->numberOfVertices*3;i+=3){
+        Vector3 voxelPos = {roundf(obj->vertices[i]),roundf(obj->vertices[i+1]),roundf(obj->vertices[i+2])};
+
+        if( (voxelPos.x<xLimitS || voxelPos.x>xLimitE || voxelPos.y<yLimitS || voxelPos.y>yLimitE || voxelPos.z<zLimitS || voxelPos.z>zLimitE))
+            InsertListEnd(&visibleVoxels,(void*)&voxelPos);           
+    }
+
+    for(z = zLimitE; z>=zLimitS ;z--){
+        for(y = yLimitE; y>=yLimitS; y--){
+            for(x = xLimitS; x<=xLimitE; x++){
                 occ = 0;
-                occUp   = 0;
-                occLeft = 0;
-                occDown = 0;
 
                 index = (x + z * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);
                 
@@ -353,12 +303,10 @@ void CalculateRendered(VoxelObject *obj){
                         dir = (x + (z+1) * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);//0 0 1
                         if(obj->model[dir]!=0){
                             occ++; 
-                            occUp=1;
                         }
                         dir = (x + (z-1) * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);//0 0 -1
                         if(obj->model[dir]!=0){
                             occ++;
-                            occDown = 1;
                         }
                         dir = (x + z * obj->dimension[0] + (y+1) * obj->dimension[0] * obj->dimension[2]);//0 1 0
                         if(obj->model[dir]!=0){
@@ -375,33 +323,29 @@ void CalculateRendered(VoxelObject *obj){
                         dir = ( (x-1) + z * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);//1 0 0 
                         if(obj->model[dir]!=0){
                             occ++;
-                            occLeft = 1;
                         }
                     }
                     if(occ!=6){
-                        if((occLeft && occDown && occUp) || y == obj->dimension[1]-1){
-                            occPixel = 0;
-                        }else{
-                            if(!occLeft && !occDown && occUp){
-                                occPixel = 1;
-                            }
-                            if(!occLeft && occDown && occUp){
-                                occPixel = 1;
-                            }
-                            if(!occDown && !occUp && x>0){
-                                occPixel = 2;
-                            }
-                            if(occLeft && !occDown){
-                                occPixel = 2;
-                            }
-                        }
-                        obj->render[z][0]++;
-                        obj->render[z][(int)obj->render[z][0]] = (unsigned short int)((occPixel<<14) | ( y << 7) | x);
+                        Vector3 vPos = {x,y,z};
+                        InsertListStart(&visibleVoxels,(void*)&vPos);
                     }
                 }
             }
         }
     }
+
+    free(obj->vertices);
+    obj->vertices = malloc(GetLength(visibleVoxels) * 3 * sizeof(GLfloat));
+    obj->numberOfVertices = GetLength(visibleVoxels);
+
+    ListCellPointer current = visibleVoxels.first;
+    i = 0;
+    while(current){
+        memcpy(&obj->vertices[i],GetElement(*current),sizeof(Vector3));
+        i+=3;
+        current = GetNextCell(current);
+    }
+    FreeList(&visibleVoxels);
 }
 
 
@@ -479,51 +423,47 @@ void CalculateLighting(VoxelObject *obj){
             }
         }
     }
-    /*for(y=obj->modificationStartY; y<obj->modificationEndY; y++){
-        for(x=obj->modificationStartX; x<obj->modificationEndX; x++){
-            for(z=zstart; z>=0; z--){
-                index = (x + z * obj->maxDimension + y * obj->maxDimension * obj->maxDimension);
-                if(obj->model[index]==0){
-                    PointLight(obj,x,y,z,3);
-                }
-            }
-        }
-    }*/
+
+    const float edge = 0.80;
+    const float base = 0.75;
+    const float crease = 0.70;
+    const float sunlight = 1.42;
+    const float shadow = 0.79;
+
+    free(obj->vColors);
+    obj->vColors = malloc(obj->numberOfVertices * 3 * sizeof(GLfloat));
+
+    int i;
+    for(i = 0; i <obj->numberOfVertices*3; i+=3){
+        x = roundf(obj->vertices[i]);
+        y = roundf(obj->vertices[i+1]);
+        z = roundf(obj->vertices[i+2]);
+
+        float heightVal = clamp(((1.0+(((z+obj->position.z+cameraPosition.z)*0.5))/128)),0,1.4);
+
+        unsigned colorIndex = (x) + (z) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
+        Pixel color = voxColors[obj->model[colorIndex]];
+        
+        //Obtém o nivel de iluminação do voxel e multiplica pela sombra dinâmica
+        int lightIndx = (obj->lighting[colorIndex] & 6)>>1;
+        lightIndx *= obj->lighting[colorIndex] & 1;
+
+        //Adiciona iluminação leve nas bordas
+        int edgeIndx = obj->lighting[colorIndex]>>3;
+        float lightVal = lightIndx == 1? 1:(lightIndx >= 2? sunlight:shadow);
+        float edgeVal = (edgeIndx<5? edge:edgeIndx == 5? base:crease);
+
+        //Multiplica iluminações e já coloca a conversão da cor de (0,256) para (0,1)
+        double illuminFrac = lightVal * edgeVal * heightVal * ONE_OVER_256;
+
+        //Transforma a cor de um Int16 para cada um dos componentes RGB
+        obj->vColors[i] = clamp(color.r * illuminFrac,0,1);
+        obj->vColors[i+1] = clamp(color.g * illuminFrac,0,1);
+        obj->vColors[i+2] = clamp(color.b * illuminFrac,0,1);
+    }
+
 }
 
-/*void PointLight(VoxelObject *obj,int x, int y, int z,int radius){
-    int px,py,pz;
-
-    px = x;
-    py = y; 
-    pz = z;
-
-    int startx,endx,starty,endy,startz,endz;
-    int ix,iy,iz,index,total = 0;
-
-    startx = px-radius <0? 0:px-radius;
-    starty = py-radius <0? 0:py-radius;
-    startz = pz-radius <0? 0:pz-radius;
-
-    endx = px+radius>obj->maxDimension? obj->maxDimension : px+radius;
-    endy = py+radius>obj->maxDimension? obj->maxDimension : py+radius;
-    endz = pz+radius>obj->maxDimension? obj->maxDimension : pz+radius;
-
-    for(ix = startx;ix<endx;ix++){
-        for(iy = starty;iy<endy;iy++){
-            for(iz = startz;iz<endz;iz++){
-                int randRadius = radius+0;//(rand() % 3);
-                if( ((ix-px)*(ix-px))+((iy-py)*(iy-py))+((iz-pz)*(iz-pz)) <= (randRadius*randRadius)){
-                    total++;
-                    index = (ix) + (iz) * obj->maxDimension + (iy) * obj->maxDimension * obj->maxDimension;
-
-                    //lighting => 8bits  [2-Empty] [3-Occlusion][2-Point Light(3) Direct Light(2), Ambient(1) and self shadow(0)] [1-Shadow from caster]
-                    obj->lighting[index] = (unsigned char)(obj->lighting[index] | 0b00000110);
-                }
-            }
-        }   
-    }
-}*/
 
 void CalculateShadow(VoxelObject *obj,VoxelObject *shadowCaster){
 
@@ -634,7 +574,7 @@ SDL_Texture* RenderIcon(VoxelObject *obj){
 
     Pixel color;
 
-    int x,y,z,i,px,py,startz,nv,cp = 0,colorIndex;
+    int x,y,z,i,px,py,cp = 0,colorIndex;
     Uint16 voxeld;
     int r,g,b;
 
@@ -643,38 +583,33 @@ SDL_Texture* RenderIcon(VoxelObject *obj){
         iconPixels[i] = (Pixel){0,0,0,0};
     }
 
-    startz = (obj->dimension[2]-1);
-    
-    for(z=startz; z>=0; z--){
+    for(i = 0; i <obj->numberOfVertices*3; i+=3){
+        
+        x = roundf(obj->vertices[i]);
+        y = roundf(obj->vertices[i+1]);
+        z = roundf(obj->vertices[i+2]);
 
-        nv = obj->render[z][0];
-        for(i = 1; i <= nv ; i++){
-            
-            x = (obj->render[z][i] & 127);
-            y = ((obj->render[z][i]>>7) & 127);
+        colorIndex = (x) + ((z)) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
+        color = voxColors[obj->model[colorIndex]];
 
-            colorIndex = (x) + ((z)) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
-            color = voxColors[obj->model[colorIndex]];
+        //Transforma a cor de um Int16 para cada um dos componentes RGB
+        voxeld = (y*2 +obj->dimension[1])*2;
+        r = clamp(color.r,0,255);
+        g = clamp(color.g,0,255);
+        b = clamp(color.b,0,255);
 
-            //Transforma a cor de um Int16 para cada um dos componentes RGB
-            voxeld = (y*2 +obj->dimension[1])*2;
-            r = clamp(color.r,0,255);
-            g = clamp(color.g,0,255);
-            b = clamp(color.b,0,255);
+        //Projeção das posições de 3 dimensões para duas na tela
+        py = (obj->dimension[2]-1) - z;
+        px = x;
 
-            //Projeção das posições de 3 dimensões para duas na tela
-            py = startz - z;
-            px = x;
+        cp = py*iconWidth + px;
 
-            cp = py*iconWidth + px;
-
-            if(voxeld > iconDepth[cp]){                  
-                iconPixels[cp].r = r;
-                iconPixels[cp].g = g;
-                iconPixels[cp].b = b;
-                iconPixels[cp].a = 255;
-                iconDepth[cp] = voxeld;
-            }
+        if(voxeld > iconDepth[cp]){                  
+            iconPixels[cp].r = r;
+            iconPixels[cp].g = g;
+            iconPixels[cp].b = b;
+            iconPixels[cp].a = 255;
+            iconDepth[cp] = voxeld;
         }
     }
     const float shadow = 0.75;
@@ -969,16 +904,14 @@ int CompileAndLinkShader(char *vertPath, char *fragPath, unsigned shaderIndex){
 }
 
 void FreeObject(VoxelObject *obj){
-    if(!obj->render) return;
+    if(!obj->model) return;
 
     free(obj->model);
     free(obj->lighting);
-    int i;
-    for(i=0;i<obj->dimension[2];i++){
-        free(obj->render[i]);
-    }
-    free(obj->render);
-    obj->render = NULL;
+    free(obj->vertices);
+    free(obj->vColors);
+
+    obj->model = NULL;
 }
 
 void FreeMultiObject(MultiVoxelObject *obj){

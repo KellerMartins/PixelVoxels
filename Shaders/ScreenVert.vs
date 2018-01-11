@@ -1,3 +1,4 @@
+#version 120
 attribute vec2 v_coord;
 uniform sampler2D fbo_texture;
 uniform float pWidth;

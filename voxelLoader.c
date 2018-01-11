@@ -133,12 +133,9 @@ MultiVoxelObject LoadMultiVoxelModel(char modelPath[])
                 modelsList.list[currentModel]->model = calloc(modelsList.list[currentModel]->dimension[0] * modelsList.list[currentModel]->dimension[1] * modelsList.list[currentModel]->dimension[2],sizeof(unsigned char));
                 modelsList.list[currentModel]->lighting = calloc(modelsList.list[currentModel]->dimension[0] * modelsList.list[currentModel]->dimension[1] * modelsList.list[currentModel]->dimension[2],sizeof(unsigned char));
 
-                modelsList.list[currentModel]->render = calloc(modelsList.list[currentModel]->dimension[2],sizeof(unsigned short int*));
-                
-                for(i=0;i<modelsList.list[currentModel]->dimension[2];i++){
-                    //Alloc a list of voxels to render, with one extra position with the number of voxels in that z slice
-                    modelsList.list[currentModel]->render[i] = calloc(1 + modelsList.list[currentModel]->dimension[0] * modelsList.list[currentModel]->dimension[1],sizeof(unsigned short int));
-                }
+                modelsList.list[currentModel]->vertices = NULL;
+                modelsList.list[currentModel]->vColors = NULL;
+                modelsList.list[currentModel]->numberOfVertices = 0;
                 
                 //Inserting voxels into the VoxelObject structure
                 for (i = 0; i < modelsList.list[currentModel]->voxelCount; i++)
@@ -375,6 +372,14 @@ MultiVoxelObject LoadMultiVoxelModel(char modelPath[])
     free(magic);
     fclose(file);
 
+    //If the file being loaded doesn't contains any property (files from Magicavoxel ver <0.99), just put the objects loaded as is
+    if(!propertiesListStart){
+        mobj.objects = modelsList;
+        printf("File doesn't contain any property, considering all objects active and with position zero\n");
+        printf(">DONE!\n\n");
+        return mobj;
+    }
+
     //Create the models to be inserted on the MultiObject and copy the needed data
 
     VoxelObject *obj = NULL;
@@ -496,17 +501,14 @@ MultiVoxelObject LoadMultiVoxelModel(char modelPath[])
 
             obj->model = calloc(obj->dimension[0]*obj->dimension[1]*obj->dimension[2], sizeof(unsigned char));
             obj->lighting = calloc(obj->dimension[0]*obj->dimension[1]*obj->dimension[2], sizeof(unsigned char));
-            obj->render = calloc(obj->dimension[2], sizeof(unsigned short int*));
-            for(i=0;i<obj->dimension[2];i++){
-                obj->render[i] = calloc(1+obj->dimension[1]*obj->dimension[0], sizeof(unsigned short int) );
-            }
+            obj->vertices = calloc(modelsList.list[shp->data[3]]->numberOfVertices * 3, sizeof(GLfloat));
+            obj->vColors = calloc(modelsList.list[shp->data[3]]->numberOfVertices * 3, sizeof(GLfloat));
+            obj->numberOfVertices = modelsList.list[shp->data[3]]->numberOfVertices;
 
             memcpy(obj->model, modelsList.list[shp->data[3]]->model, obj->dimension[0]*obj->dimension[1]*obj->dimension[2] * sizeof(unsigned char) );
             memcpy(obj->lighting, modelsList.list[shp->data[3]]->lighting, obj->dimension[0]*obj->dimension[1]*obj->dimension[2] * sizeof(unsigned char) );
-            
-            for(i=0;i<obj->dimension[2];i++){
-                 memcpy(obj->render[i],modelsList.list[shp->data[3]]->render[i],(1 + obj->dimension[0]*obj->dimension[1])* sizeof(unsigned short int) );
-            }
+            memcpy(obj->vertices,modelsList.list[shp->data[3]]->vertices,obj->numberOfVertices * 3 * sizeof(GLfloat) );
+            memcpy(obj->vColors,modelsList.list[shp->data[3]]->vColors,obj->numberOfVertices * 3 * sizeof(GLfloat) );
 
             obj->position = (Vector3){pos.x - (obj->dimension[0]/2),pos.y - (obj->dimension[1]/2),pos.z - (obj->dimension[2]/2)};
             obj->rotation = rot;
@@ -560,12 +562,11 @@ VoxelObject LoadVoxelModel(char modelPath[])
         printf("Failed to open file!\n");
 	perror("Error");
         //Return an empty VoxelObject in case of failure
-        return (VoxelObject){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,(Vector3){0,0,0}};
+        return (VoxelObject){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     }
 
     unsigned char *data = NULL;
     unsigned char *lighting = NULL;
-    unsigned short int **render = NULL;
     Voxel *voxelData = NULL;
     AnchorPoint *points = NULL;
 
@@ -646,7 +647,7 @@ VoxelObject LoadVoxelModel(char modelPath[])
                         printf("Failed to allocate voxel array!\n");
                         free(magic);
                         free(chunkId);
-                        return (VoxelObject){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,(Vector3){0,0,0}};
+                        return (VoxelObject){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
                     }
                     
                     for(i = 0; i < numVoxels; i++){
@@ -668,13 +669,6 @@ VoxelObject LoadVoxelModel(char modelPath[])
         //Allocating memory and initializing structures
         data = calloc(obj.dimension[0] * obj.dimension[1] * obj.dimension[2],sizeof(unsigned char));
         lighting = calloc(obj.dimension[0] * obj.dimension[1] * obj.dimension[2],sizeof(unsigned char));
-
-        render = calloc(obj.dimension[2],sizeof(unsigned short int*));
-        
-        for(i=0;i<obj.dimension[2];i++){
-            //Alloc a list of voxels to render, with one extra position with the number of voxels in that z slice
-            render[i] = calloc(1 + obj.dimension[0] * obj.dimension[1],sizeof(unsigned short int));
-        }
         
         //Inserting voxels into the VoxelObject structure
         for (i = 0; i < numVoxels; i++)
@@ -717,7 +711,7 @@ VoxelObject LoadVoxelModel(char modelPath[])
         free(chunkId);
     }else{
         printf("Magic word is not 'VOX ', but '%s'\n",magic);
-        return (VoxelObject){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,(Vector3){0,0,0}};
+        return (VoxelObject){0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
     }
     free(magic);
     free(voxelData);
@@ -726,7 +720,9 @@ VoxelObject LoadVoxelModel(char modelPath[])
     obj.voxelsRemaining = numVoxels;
     obj.model = data;
     obj.lighting = lighting;
-    obj.render = render;
+    obj.vertices = NULL;
+    obj.vColors = NULL;
+    obj.numberOfVertices = 0;
     obj.position = (Vector3){0,0,0};
     obj.rotation = (Vector3){0,0,0};
     obj.center = (Vector3){obj.dimension[0]/2,obj.dimension[1]/2,obj.dimension[2]/2};

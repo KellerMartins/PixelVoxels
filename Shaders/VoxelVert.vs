@@ -10,7 +10,11 @@ uniform mat3 rotation;
 
 // We output the ex_Color variable to the next shader in the chain
 out vec3 ex_Color;
+out vec3 ex_Position;
 out float depth;
+out vec3 pointLight;
+out vec3 pointLightDir;
+
 void main(void) {
     vec3 rotPos = (in_Position-centerPos) * rotation;
     rotPos += centerPos;
@@ -27,7 +31,11 @@ void main(void) {
     // GLSL allows shorthand use of vectors too, the following is also valid:
     // gl_Position = vec4(in_Position, 0.0, 1.0);
     // We're simply passing the color through unmodified
-
+    vec3 globalPos = vec3(px + objPos.x,py + objPos.y,pz + objPos.z);
     ex_Color = in_Color;
-    depth = (pz + objPos.z)/256.0;
+
+    pointLight = 100.01/pow(distance(globalPos,vec3(0,0,20)),2) * vec3(1,1,1);
+    pointLightDir = normalize(vec3(0,0,20)-globalPos);
+
+    depth = in_Position.x<0? -1.0 : (pz + objPos.z)/256.0;
 }

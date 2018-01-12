@@ -394,11 +394,17 @@ void MoveObject(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObjec
                 break;
             }
 
-            if(useRot){
+            x = roundf(obj->vertices[i]);
+            y = roundf(obj->vertices[i+1]);
+            z = roundf(obj->vertices[i+2]);
 
-                x = roundf(obj->vertices[i]) - obj->center.x;
-                y = roundf(obj->vertices[i+1]) - obj->center.y;
-                z = roundf(obj->vertices[i+2]) - obj->center.z;
+            //Ignore invalid voxels
+            if(x<0 || y<0 || z<0) continue;
+
+            if(useRot){
+                x -= obj->center.x;
+                y -= obj->center.y;
+                z -= obj->center.z;
 
                 rotx = x*cosy*cosz + y*(cosz*sinx*siny - cosx*sinz) + z*(cosx*cosz*siny + sinx*sinz);
                 roty = x*cosy*sinz + z*(cosx*siny*sinz - cosz*sinx) + y*(cosx*cosz + sinx*siny*sinz);
@@ -409,9 +415,9 @@ void MoveObject(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObjec
                 z = rotz + (obj->position.z+(movement.z*moveDelta)) + obj->center.z;
 
             }else{
-                x = roundf(obj->vertices[i]) + (obj->position.x+(movement.x*moveDelta));
-                y = roundf(obj->vertices[i+1]) + (obj->position.y+(movement.y*moveDelta));
-                z = roundf(obj->vertices[i+2]) + (obj->position.z+(movement.z*moveDelta));
+                x += (obj->position.x+(movement.x*moveDelta));
+                y += (obj->position.y+(movement.y*moveDelta));
+                z += (obj->position.z+(movement.z*moveDelta));
             }
 
             for(o=0; o<numCol; o++){
@@ -468,11 +474,18 @@ void MoveObjectTo(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObj
                 break;
             }
 
+            x = roundf(obj->vertices[i]);
+            y = roundf(obj->vertices[i+1]);
+            z = roundf(obj->vertices[i+2]);
+
+            //Ignore invalid voxels
+            if(x<0 || y<0 || z<0) continue;
+
             if(useRot){
 
-                x = roundf(obj->vertices[i]) - obj->center.x;
-                y = roundf(obj->vertices[i+1]) - obj->center.y;
-                z = roundf(obj->vertices[i+2]) - obj->center.z;
+                x -= obj->center.x;
+                y -= obj->center.y;
+                z -= obj->center.z;
 
                 rotx = x*cosy*cosz + y*(cosz*sinx*siny - cosx*sinz) + z*(cosx*cosz*siny + sinx*sinz);
                 roty = x*cosy*sinz + z*(cosx*siny*sinz - cosz*sinx) + y*(cosx*cosz + sinx*siny*sinz);
@@ -483,9 +496,9 @@ void MoveObjectTo(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObj
                 z = rotz + (movement.z) + obj->center.z;
 
             }else{
-                x = roundf(obj->vertices[i]) + (obj->position.x+(movement.x));
-                y = roundf(obj->vertices[i+1]) + (obj->position.y+(movement.y));
-                z = roundf(obj->vertices[i+2]) + (obj->position.z+(movement.z));
+                x += (obj->position.x+(movement.x));
+                y += (obj->position.y+(movement.y));
+                z += (obj->position.z+(movement.z));
             }
 
             for(o=0; o<numCol; o++){

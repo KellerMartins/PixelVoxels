@@ -273,7 +273,8 @@ void CalculateRendered(VoxelObject *obj){
         return;
     }
 
-    List visibleVoxels = InitList(sizeof(Vector3));
+    List avaliableVoxels = InitList(sizeof(int));
+    List requestedVoxels = InitList(sizeof(Vector3));
 
     int x,y,z,i,index,dir,occ;
     int xLimitS = clamp(obj->modificationStartX-1 ,0,obj->dimension[0]-1);
@@ -285,14 +286,19 @@ void CalculateRendered(VoxelObject *obj){
 
     for(i=0;i<obj->numberOfVertices*3;i+=3){
         Vector3 voxelPos = {roundf(obj->vertices[i]),roundf(obj->vertices[i+1]),roundf(obj->vertices[i+2])};
-
-        if( (voxelPos.x<xLimitS || voxelPos.x>xLimitE || voxelPos.y<yLimitS || voxelPos.y>yLimitE || voxelPos.z<zLimitS || voxelPos.z>zLimitE))
-            InsertListEnd(&visibleVoxels,(void*)&voxelPos);           
+        if(voxelPos.x<0 || voxelPos.y<0 || voxelPos.z<0){
+            InsertListEnd(&avaliableVoxels,(void*)&i);
+            continue;
+        }
+        if((voxelPos.x<xLimitS || voxelPos.x>xLimitE || voxelPos.y<yLimitS || voxelPos.y>yLimitE || voxelPos.z<zLimitS || voxelPos.z>zLimitE))
+            continue;
+        else
+            InsertListEnd(&avaliableVoxels,(void*)&i);           
     }
-
+    
     for(z = zLimitE; z>=zLimitS ;z--){
         for(y = yLimitE; y>=yLimitS; y--){
-            for(x = xLimitS; x<=xLimitE; x++){
+            for(x = xLimitE; x>=xLimitS; x--){
                 occ = 0;
 
                 index = (x + z * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);
@@ -327,25 +333,70 @@ void CalculateRendered(VoxelObject *obj){
                     }
                     if(occ!=6){
                         Vector3 vPos = {x,y,z};
-                        InsertListStart(&visibleVoxels,(void*)&vPos);
+                        InsertListStart(&requestedVoxels,(void*)&vPos);
                     }
                 }
             }
         }
     }
+    
+    //First array creation
+    if(obj->numberOfVertices == 0){
+        obj->vertices = malloc(GetLength(requestedVoxels) * 3 * sizeof(GLfloat));
+        obj->numberOfVertices = GetLength(requestedVoxels);
 
-    free(obj->vertices);
-    obj->vertices = malloc(GetLength(visibleVoxels) * 3 * sizeof(GLfloat));
-    obj->numberOfVertices = GetLength(visibleVoxels);
+        ListCellPointer current = requestedVoxels.first;
+        i = 0;
+        while(current){
+            memcpy(&obj->vertices[i],GetElement(*current),sizeof(Vector3));
+            i+=3;
+            current = GetNextCell(current);
+        }
+        FreeList(&requestedVoxels);
+    }else{
+        
+        ListCellPointer currentAv = avaliableVoxels.first;
+        ListCellPointer currentReq = requestedVoxels.first;
+        while(currentAv && currentReq){
+            int indx = *((int*)GetElement(*currentAv));
+            memcpy(&obj->vertices[indx],GetElement(*currentReq),sizeof(Vector3));
 
-    ListCellPointer current = visibleVoxels.first;
-    i = 0;
-    while(current){
-        memcpy(&obj->vertices[i],GetElement(*current),sizeof(Vector3));
-        i+=3;
-        current = GetNextCell(current);
+            RemoveListStart(&avaliableVoxels);
+            RemoveListStart(&requestedVoxels);
+
+            currentAv = avaliableVoxels.first;
+            currentReq = requestedVoxels.first;
+        }
+        if(!currentAv && currentReq){
+            //Have more voxels to be added than removed, realloc to insert
+            int numReqRemaining = GetLength(requestedVoxels);
+            obj->vertices = realloc(obj->vertices, (obj->numberOfVertices + numReqRemaining) * 3 * sizeof(GLfloat));
+            
+            int indx = (obj->numberOfVertices*3);
+            while(currentReq){ 
+                memcpy(&obj->vertices[indx],GetElement(*currentReq),sizeof(Vector3));
+
+                RemoveListStart(&requestedVoxels);
+                currentReq = requestedVoxels.first;
+                indx+=3;
+            }
+
+            obj->numberOfVertices += numReqRemaining;
+
+        }else if (!currentReq){
+            //Have more removed than added, mark the empty positions as invalid
+            while(currentAv){
+                int indx = *((int*)GetElement(*currentAv));
+
+                obj->vertices[indx] = -1;
+                obj->vertices[indx+1] = -1;
+                obj->vertices[indx+2] = -1;
+
+                RemoveListStart(&avaliableVoxels);
+                currentAv = avaliableVoxels.first;
+            }
+        }
     }
-    FreeList(&visibleVoxels);
 }
 
 
@@ -438,6 +489,13 @@ void CalculateLighting(VoxelObject *obj){
         x = roundf(obj->vertices[i]);
         y = roundf(obj->vertices[i+1]);
         z = roundf(obj->vertices[i+2]);
+
+        if(x<0 || y<0 || z<0){
+            obj->vColors[i] = 0;
+            obj->vColors[i+1] = 0;
+            obj->vColors[i+2] = 0;
+            continue;
+        }
 
         float heightVal = clamp(((1.0+(((z+obj->position.z+cameraPosition.z)*0.5))/128)),0,1.4);
 
@@ -588,6 +646,9 @@ SDL_Texture* RenderIcon(VoxelObject *obj){
         x = roundf(obj->vertices[i]);
         y = roundf(obj->vertices[i+1]);
         z = roundf(obj->vertices[i+2]);
+
+        //Ignore invalid voxels
+        if(x<0 || y<0 || z<0) continue;
 
         colorIndex = (x) + ((z)) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
         color = voxColors[obj->model[colorIndex]];

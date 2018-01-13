@@ -102,8 +102,8 @@ int main(int argc, char *argv[]){
 	//
 
 	//Setting OpenGL version
-	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
+	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 3 );
+    SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 1 );
 
 	//Creating OpenGL context
 	gGlContext = SDL_GL_CreateContext(window);

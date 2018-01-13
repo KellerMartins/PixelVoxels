@@ -18,9 +18,9 @@ out vec3 pointLightDir;
 void main(void) {
     vec3 rotPos = (in_Position-centerPos) * rotation;
     rotPos += centerPos;
-    int px = int(floor(rotPos.x));
-    int py = int(floor(rotPos.y));
-    int pz = int(floor(rotPos.z));
+    float px = rotPos.x;
+    float py = rotPos.y;
+    float pz = rotPos.z;
 
     vec4 pixelPos = vec4( ((px + objPos.x) - (py + objPos.y))*2 + floor(-camPos.x) + 0.375,
                           ((px + objPos.x) + (py + objPos.y)) + (pz + objPos.z + camPos.z )*2 + floor(-camPos.y) + 0.375,
@@ -34,8 +34,8 @@ void main(void) {
     vec3 globalPos = vec3(px + objPos.x,py + objPos.y,pz + objPos.z);
     ex_Color = in_Color;
 
-    pointLight = 100.01/pow(distance(globalPos,vec3(0,0,20)),2) * vec3(1,1,1);
-    pointLightDir = normalize(vec3(0,0,20)-globalPos);
+    pointLight = 200.01/pow(distance(globalPos,vec3(-10,-10,30)),2) * vec3(1,1,1);
+    pointLightDir = normalize(vec3(-10,-10,30)-globalPos);
 
     depth = in_Position.x<0? -1.0 : (pz + objPos.z)/256.0;
 }

@@ -12,7 +12,7 @@ extern double deltaTime;
 
 Vector3 cameraPosition;
 
-GLuint CubeID;
+GLuint CubeTex[1] = {0};
 GLuint frameBuffer = 0;
 GLuint renderedTexture = 0;
 GLuint depthRenderBuffer = 0;
@@ -73,12 +73,13 @@ void InitRenderer(){
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
     //Load surface into a OpenGL texture
+    
+    glGenTextures(1, CubeTex);
+
+    //Normal
     SDL_Surface *cubeimg = IMG_Load("Textures/cube.png");
     if(!cubeimg){ printf("Failed to load!\n"); return; }
-
-    
-    glGenTextures(1, &CubeID);
-    glBindTexture(GL_TEXTURE_2D, CubeID);
+    glBindTexture(GL_TEXTURE_2D, CubeTex[0]);
     
     int Mode = GL_RGB;
     
@@ -126,13 +127,11 @@ void FreeRenderer(){
 
  void ClearRender(SDL_Color col){
     glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
-    //glViewport(0,0,GAME_SCREEN_WIDTH,GAME_SCREEN_HEIGHT);
 
     glClearColor(col.r/255.0, col.g/255.0, col.b/255.0,0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    //glViewport(0,0,SCREEN_WIDTH,SCREEN_HEIGHT);
 }
 
 void RenderToScreen(){
@@ -158,6 +157,7 @@ void RenderToScreen(){
     loc = glGetUniformLocation(Shaders[0], "redShiftSpread");
     if (loc != -1) glUniform1f(loc, 0);
     
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, renderedTexture);
     
     glBegin(GL_QUADS);
@@ -210,7 +210,9 @@ void RenderObject(VoxelObject *obj){
     glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
     glViewport(0,0,GAME_SCREEN_WIDTH,GAME_SCREEN_HEIGHT);
 
-    glBindTexture(GL_TEXTURE_2D, CubeID);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, CubeTex[0]);
+
     glEnable(GL_TEXTURE_2D);
 
     glEnable(GL_DEPTH_TEST);
@@ -803,8 +805,10 @@ void RenderText(char *text, SDL_Color color, int x, int y, TTF_Font* font)
 
     GLuint texture;
     glGenTextures(1, &texture);
+    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
 
+    glColor3f(1.0f, 1.0f, 1.0f);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);

@@ -1,10 +1,8 @@
 #ifndef VOXELLOADER_H
 #define VOXELLOADER_H
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "../Engine.h"
+#include "../Components/voxelModel.h"
 #include "voxelRenderer.h"
-#include "utils.h"
 
 VoxelObject LoadVoxelModel(char modelPath[]);
 MultiVoxelObject LoadMultiVoxelModel(char modelPath[]);

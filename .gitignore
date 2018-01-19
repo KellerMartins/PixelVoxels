@@ -1,3 +1,4 @@
 .vscode
 out
 gmon.out
+version.rc

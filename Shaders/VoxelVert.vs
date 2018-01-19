@@ -2,6 +2,7 @@
 // in_Position was bound to attribute index 0 and in_Color was bound to attribute index 1
 in vec3 in_Position;
 in vec3 in_Color;
+uniform int spriteScale;
 uniform vec3 camPos;
 uniform vec3 objPos;
 uniform vec3 centerPos;
@@ -22,8 +23,8 @@ void main(void) {
     float py = rotPos.y;
     float pz = rotPos.z;
 
-    vec4 pixelPos = vec4( ((px + objPos.x) - (py + objPos.y))*2 + floor(-camPos.x) + 0.375,
-                          ((px + objPos.x) + (py + objPos.y)) + (pz + objPos.z + camPos.z )*2 + floor(-camPos.y) + 0.375,
+    vec4 pixelPos = vec4( ((px + objPos.x) - (py + objPos.y))*spriteScale*2 + floor(-camPos.x) + 0.375,
+                          ((px + objPos.x) + (py + objPos.y))*spriteScale + (pz + objPos.z + camPos.z )*spriteScale*2 + floor(-camPos.y) + 0.375,
                           (pz-(py+px)/126.0 + objPos.z) , 1);
 
     gl_Position = projection * pixelPos;

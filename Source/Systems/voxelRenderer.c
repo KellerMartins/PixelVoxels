@@ -1,17 +1,13 @@
 #include "voxelRenderer.h"
 
+extern engineTime Time;
+extern engineCore Core;
+extern engineScreen Screen;
+
 Pixel voxColors[256];
-
-extern SDL_Renderer * renderer;
-extern int GAME_SCREEN_WIDTH;
-extern int GAME_SCREEN_HEIGHT;
-
-extern int SCREEN_WIDTH;
-extern int SCREEN_HEIGHT;
-extern double deltaTime;
-
 Vector3 cameraPosition;
 
+int cubeTexDimension = 1;
 GLuint CubeTex[1] = {0};
 GLuint frameBuffer = 0;
 GLuint renderedTexture = 0;
@@ -21,9 +17,9 @@ GLuint vao = 0, vbo[2] = {0,0};
 GLuint Shaders[2] = {0,0};
 
 void MoveCamera(float x, float y, float z){
-    cameraPosition.x +=x*deltaTime;
-    cameraPosition.y +=y*deltaTime;
-    cameraPosition.z +=z*deltaTime;
+    cameraPosition.x +=x*Time.deltaTime;
+    cameraPosition.y +=y*Time.deltaTime;
+    cameraPosition.z +=z*Time.deltaTime;
     //printf("CamPos: |%2.1f|%2.1f|%2.1f|\n",cameraPosition.x,cameraPosition.y,cameraPosition.z);
 }
 
@@ -37,7 +33,7 @@ void InitRenderer(){
     //Render Texture
     glGenTextures(1, &renderedTexture);
     glBindTexture(GL_TEXTURE_2D, renderedTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT, 0,GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA, Screen.gameWidth, Screen.gameHeight, 0,GL_RGBA, GL_UNSIGNED_BYTE, 0);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -45,7 +41,7 @@ void InitRenderer(){
 
     glGenRenderbuffers(1, &depthRenderBuffer);
     glBindRenderbuffer(GL_RENDERBUFFER, depthRenderBuffer);
-    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, GAME_SCREEN_WIDTH, GAME_SCREEN_HEIGHT);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, Screen.gameWidth, Screen.gameHeight);
     glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthRenderBuffer);
 
     // Set "renderedTexture" as our colour attachement #0
@@ -86,7 +82,7 @@ void InitRenderer(){
     if(cubeimg->format->BytesPerPixel == 4) {
         Mode = GL_RGBA;
     }
-    
+    cubeTexDimension = max(cubeimg->w, cubeimg->h);
     glTexImage2D(GL_TEXTURE_2D, 0, Mode, cubeimg->w, cubeimg->h, 0, Mode, GL_UNSIGNED_BYTE, cubeimg->pixels);
     
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -125,7 +121,7 @@ void FreeRenderer(){
     //glDeleteTextures(0,&CubeID​);
  }
 
- void ClearRender(SDL_Color col){
+void ClearRender(SDL_Color col){
     glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
 
     glClearColor(col.r/255.0, col.g/255.0, col.b/255.0,0.0);
@@ -138,7 +134,7 @@ void RenderToScreen(){
 
     glEnable(GL_TEXTURE_2D);
 
-    glViewport(0,0,SCREEN_WIDTH,SCREEN_HEIGHT);
+    glViewport(0,0,Screen.windowWidth,Screen.windowHeight);
     
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
@@ -146,9 +142,9 @@ void RenderToScreen(){
 
     glUseProgram(Shaders[0]);
     GLdouble loc = glGetUniformLocation(Shaders[0], "pWidth");
-    if (loc != -1) glUniform1f(loc, 1.0/(float)GAME_SCREEN_WIDTH);
+    if (loc != -1) glUniform1f(loc, 1.0/(float)Screen.gameWidth);
     loc = glGetUniformLocation(Shaders[0], "pHeight");
-    if (loc != -1) glUniform1f(loc, 1.0/(float)GAME_SCREEN_HEIGHT);
+    if (loc != -1) glUniform1f(loc, 1.0/(float)Screen.gameHeight);
 
     loc = glGetUniformLocation(Shaders[0], "vignettePower");
     if (loc != -1) glUniform1f(loc, 0.25);
@@ -162,10 +158,10 @@ void RenderToScreen(){
     
     glBegin(GL_QUADS);
     {
-        glTexCoord2f(0,1); glVertex2f(-SCREEN_WIDTH/2,  SCREEN_HEIGHT/2);
-        glTexCoord2f(1,1); glVertex2f( SCREEN_WIDTH/2,  SCREEN_HEIGHT/2);
-        glTexCoord2f(1,0); glVertex2f( SCREEN_WIDTH/2, -SCREEN_HEIGHT/2);
-        glTexCoord2f(0,0); glVertex2f(-SCREEN_WIDTH/2, -SCREEN_HEIGHT/2);
+        glTexCoord2f(0,1); glVertex2f(-Screen.windowWidth/2,  Screen.windowHeight/2);
+        glTexCoord2f(1,1); glVertex2f( Screen.windowWidth/2,  Screen.windowHeight/2);
+        glTexCoord2f(1,0); glVertex2f( Screen.windowWidth/2, -Screen.windowHeight/2);
+        glTexCoord2f(0,0); glVertex2f(-Screen.windowWidth/2, -Screen.windowHeight/2);
     }
     glEnd();
 
@@ -208,7 +204,7 @@ void RenderObject(VoxelObject *obj){
     //Configure OpenGL parameters to render point sprites
 
     glBindFramebuffer(GL_FRAMEBUFFER, frameBuffer);
-    glViewport(0,0,GAME_SCREEN_WIDTH,GAME_SCREEN_HEIGHT);
+    glViewport(0,0,Screen.gameWidth,Screen.gameHeight);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, CubeTex[0]);
@@ -217,14 +213,14 @@ void RenderObject(VoxelObject *obj){
 
     glEnable(GL_DEPTH_TEST);
     glAlphaFunc (GL_NOTEQUAL, 0.0f);
-    glPointSize(5);
+    glPointSize(cubeTexDimension);
     glEnable(GL_POINT_SPRITE);
 
     //Define matrices
-    float right = GAME_SCREEN_WIDTH/2;
-    float left = -GAME_SCREEN_WIDTH/2;
-    float top = GAME_SCREEN_HEIGHT/2;
-    float bottom = -GAME_SCREEN_HEIGHT/2;
+    float right = Screen.gameWidth/2;
+    float left = -Screen.gameWidth/2;
+    float top = Screen.gameHeight/2;
+    float bottom = -Screen.gameHeight/2;
     float near = -500;
     float far = 500;
     
@@ -260,6 +256,7 @@ void RenderObject(VoxelObject *obj){
     glUniform3f(glGetUniformLocation(Shaders[1], "objPos"), obj->position.x, obj->position.y, obj->position.z);
     glUniform3f(glGetUniformLocation(Shaders[1], "centerPos"), obj->center.x, obj->center.y, obj->center.z);
     glUniform3f(glGetUniformLocation(Shaders[1], "camPos"), cameraPosition.x, cameraPosition.y, cameraPosition.z);
+    glUniform1i(glGetUniformLocation(Shaders[1], "spriteScale"), cubeTexDimension/5);
     glUniform1i(glGetUniformLocation(Shaders[1], "tex"), 0);
 
     glDrawArrays(GL_POINTS, 0, obj->numberOfVertices);
@@ -624,11 +621,11 @@ SDL_Texture* RenderIcon(VoxelObject *obj){
     int iconHeight = obj->dimension[2];
     printf("\n%d %d %d\n",obj->dimension[0],obj->dimension[1],obj->dimension[2]);
 
-    SDL_Texture *icon = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, iconWidth, iconHeight);
+    SDL_Texture *icon = SDL_CreateTexture(Core.renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, iconWidth, iconHeight);
     
     Pixel *iconPixels;
 	int pitch = iconWidth * sizeof(Pixel);
-    Uint16 *iconDepth = (Uint16*) calloc(GAME_SCREEN_HEIGHT*GAME_SCREEN_WIDTH,sizeof(Uint16));
+    Uint16 *iconDepth = (Uint16*) calloc(Screen.gameHeight*Screen.gameWidth,sizeof(Uint16));
 
     SDL_LockTexture(icon, NULL, (void**)&iconPixels, &pitch);
 
@@ -744,20 +741,20 @@ void SaveTextureToPNG(SDL_Texture *tex, char* out){
     SDL_QueryTexture(tex, NULL, NULL, &w, &h);
 
     SDL_Surface *sshot = SDL_CreateRGBSurface(0, w, h, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000);
-    SDL_Texture *target = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, w, h);
+    SDL_Texture *target = SDL_CreateTexture(Core.renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, w, h);
 
     //Copy texture to render target
-    SDL_SetRenderTarget(renderer, target);
+    SDL_SetRenderTarget(Core.renderer, target);
     SDL_Rect rect = {0,0,w,h};
-    SDL_RenderCopy(renderer, tex, NULL,&rect);
+    SDL_RenderCopy(Core.renderer, tex, NULL,&rect);
 
     //Transfer render target pixels to surface
-    SDL_RenderReadPixels(renderer, NULL, SDL_PIXELFORMAT_ARGB8888, sshot->pixels, sshot->pitch);
+    SDL_RenderReadPixels(Core.renderer, NULL, SDL_PIXELFORMAT_ARGB8888, sshot->pixels, sshot->pitch);
     //Save surface to PNG
     IMG_SavePNG(sshot, out);
 
     //Return render target to default
-    SDL_SetRenderTarget(renderer, NULL);
+    SDL_SetRenderTarget(Core.renderer, NULL);
     
     //Free allocated surface and texture
     SDL_FreeSurface(sshot);
@@ -793,7 +790,7 @@ void RenderText(char *text, SDL_Color color, int x, int y, TTF_Font* font)
     glPushMatrix();
     glLoadIdentity();
 
-    glOrtho(0, SCREEN_WIDTH,0,SCREEN_HEIGHT,-1,1); 
+    glOrtho(0, Screen.windowWidth,0,Screen.windowHeight,-1,1); 
     glMatrixMode(GL_PROJECTION);
     glPushMatrix();
     glLoadIdentity();
@@ -966,101 +963,4 @@ int CompileAndLinkShader(char *vertPath, char *fragPath, unsigned shaderIndex){
     free((void*)fShaderSource);
 
     return 1;
-}
-
-void FreeObject(VoxelObject *obj){
-    if(!obj->model) return;
-
-    free(obj->model);
-    free(obj->lighting);
-    free(obj->vertices);
-    free(obj->vColors);
-
-    obj->model = NULL;
-}
-
-void FreeMultiObject(MultiVoxelObject *obj){
-    FreeObjectList(&obj->objects);
-}
-
-VoxelObjectList InitializeObjectList(){
-    VoxelObjectList list;
-    list.list = NULL;
-    list.numberOfObjects = 0;
-    return list;
-}
-void FreeObjectList(VoxelObjectList *list){
-    if(!list){printf("Cant free list: list is empty!\n"); return;}
-
-    int i;
-    for(i=0;i<list->numberOfObjects;i++){
-       FreeObject(list->list[i]);
-    }
-    free(list->list);
-}
-
-void AddObjectInList(VoxelObjectList *dest, VoxelObject *obj){
-    if(!dest->list){
-        dest->list = malloc(sizeof(VoxelObject *));
-        dest->list[0] = obj;
-        dest->numberOfObjects = 1;
-    }else{
-        VoxelObject **newList = malloc( (dest->numberOfObjects+1) * sizeof(VoxelObject *));
-        memcpy(newList,dest->list,dest->numberOfObjects*sizeof(VoxelObject *));
-
-        free(dest->list);
-        dest->list = newList;
-        dest->list[dest->numberOfObjects++] = obj;
-    }
-}
-
-//Combine multiple ObjectLists into one
-//If dest is NULL, the resulting list contains all sources
-//If it isnt, the resulting list contains the dest and all sources, and the original list of the dest is freed
-void CombineObjectLists(VoxelObjectList *dest, int numberOfSources,...){
-
-    if(!dest){printf("Error: destination list is NULL!\n"); return;}
-
-    va_list args;
-	
-    //Counts the number of objects in the final list
-    int i,j,objectsCount = 0;
-	va_start(args,numberOfSources);
-
-        for(i=0; i<numberOfSources; i++){
-            VoxelObjectList current = va_arg(args,VoxelObjectList);
-            objectsCount += current.numberOfObjects;
-        }
-
-    va_end(args);
-
-    if(dest->list){
-        objectsCount += dest->numberOfObjects;
-    }
-    
-    //Allocate the final list
-	VoxelObject **final = calloc(objectsCount,sizeof(VoxelObject *));
-
-    //Iterate in every source list, getting the objects in their list and putting in the final
-	va_start(args,numberOfSources);
-	int pos = 0;
-
-    if(dest->list){
-        for(j=0; j<dest->numberOfObjects; j++){
-			final[pos++] = dest->list[j];
-		}
-    }
-
-	for(i=0; i<numberOfSources; i++){
-
-		VoxelObjectList current = va_arg(args,VoxelObjectList);
-
-		for(j=0; j<current.numberOfObjects; j++){
-			final[pos++] = current.list[j];
-		}
-	}
-    va_end(args);
-
-    dest->list = final;
-    dest->numberOfObjects = objectsCount;
 }

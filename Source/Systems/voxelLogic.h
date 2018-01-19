@@ -1,12 +1,8 @@
 #ifndef VOXELLOGIC_H
 #define VOXELLOGIC_H
-#include <math.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <SDL2/SDL.h>
-#include "voxelRenderer.h"
+#include "../Engine.h"
+#include "../Components/voxelModel.h"
 #include "voxelLoader.h"
-#include "utils.h"
 
 #define POOLSIZE 2
 

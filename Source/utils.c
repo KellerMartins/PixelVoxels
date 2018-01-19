@@ -118,7 +118,7 @@ void InsertListStart(List *list, void* e){
 	list->length +=1;
 }
 
-void InsertListIndex(List *list, void* e, unsigned index){
+void InsertListIndex(List *list, void* e, int index){
 	int i;
 	//Get the element that will go after the element to be inserted
 	ListCellPointer current = list->first;
@@ -200,7 +200,7 @@ void RemoveListStart(List *list){
 	list->length -=1;
 }
 
-void RemoveListIndex(List *list,unsigned index){
+void RemoveListIndex(List *list,int index){
 	int i;
 	if(index == 0) return RemoveListStart(list);
 	else if(index == list->length-1) return RemoveListEnd(list);
@@ -223,15 +223,15 @@ void* GetElement(ListCell c){
 	return c.element;
 }
 
-void* GetLast(List list){
+void* GetLastElement(List list){
 	return list.last->element;
 }
 
-void* GetFirst(List list){
+void* GetFirstElement(List list){
 	return list.first->element;
 }
 
-void* GetAt(List list,unsigned index){
+void* GetElementAt(List list,int index){
 	int i;
 
 	ListCellPointer current = list.first;
@@ -246,6 +246,31 @@ ListCellPointer GetNextCell(ListCellPointer c){
 	if(!c) return NULL;
 	return c->next;
 }
+
+ListCellPointer GetPreviousCell(ListCellPointer c){
+	if(!c) return NULL;
+	return c->previous;
+}
+
+ListCellPointer GetFirstCell(List list){
+	return list.first;
+}
+
+ListCellPointer GetLastCell(List list){
+	return list.last;
+}
+
+ListCellPointer GetCellAt(List list,int index){
+	int i;
+
+	ListCellPointer current = list.first;
+	for(i=0;i<index;i++){
+		current = GetNextCell(current);
+	}
+
+	return current;
+}
+
 
 unsigned GetElementSize(List list){
 	return list.elementSize;

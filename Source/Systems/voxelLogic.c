@@ -1,16 +1,15 @@
 #include "voxelLogic.h"
 
 extern int ExitGame;
-extern double deltaTime;
 
-extern const int SCREEN_WIDTH;
-extern const int SCREEN_HEIGHT;
-extern const int GAME_SCREEN_WIDTH;
-extern const int GAME_SCREEN_HEIGHT;
+extern engineTime Time;
+extern engineCore Core;
+extern engineScreen Screen;
 
 extern List Rooms;
 extern PoolObject Pool[POOLSIZE];
 extern Vector3 cameraPosition;
+extern int cubeTexDimension;
 
 //Array com o estado do teclado (atual e do frame anterior)
 const Uint8 *keyboard_current = NULL;
@@ -53,23 +52,23 @@ void GameUpdate(){
 
     //Cria um vetor do mouse centrado no centro do player, para definir o angulo a rodar o objeto para olhar para o mouse
     float screenPosX, screenPosY;
-    screenPosY = (int)(((model.center.x + model.position.x) + (model.center.y + model.position.y)) + (model.center.z + model.position.z + cameraPosition.z )*2 + floorf(-cameraPosition.y)) + 0.375;
-    screenPosX = (int)(((model.center.x + model.position.x) - (model.center.y + model.position.y))*2 + floorf(-cameraPosition.x)) + 0.375;
+    screenPosY = (int)(((model.center.x + model.position.x) + (model.center.y + model.position.y))*cubeTexDimension*0.2 + (model.center.z + model.position.z + cameraPosition.z )*cubeTexDimension*0.4 + floorf(-cameraPosition.y)) + 0.375;
+    screenPosX = (int)(((model.center.x + model.position.x) - (model.center.y + model.position.y))*cubeTexDimension*0.4 + floorf(-cameraPosition.x)) + 0.375;
 
-    screenPosY = ((screenPosY/(float)GAME_SCREEN_HEIGHT))*2;
-    screenPosX = ((screenPosX/(float)GAME_SCREEN_WIDTH))*2;
+    screenPosY = ((screenPosY/(float)Screen.gameHeight))*2;
+    screenPosX = ((screenPosX/(float)Screen.gameWidth))*2;
 
     int mx,my;
     SDL_GetMouseState(&mx,&my);
-    Vector3 mouseVec = {((mx/(float)SCREEN_WIDTH)-0.5f)*2 - screenPosX,((1-(my/(float)SCREEN_HEIGHT))-0.5f)*2 - screenPosY,0};
+    Vector3 mouseVec = {((mx/(float)Screen.windowWidth)-0.5f)*2 - screenPosX,((1-(my/(float)Screen.windowHeight))-0.5f)*2 - screenPosY,0};
     
     /*glPointSize(20);
     glEnable(GL_POINT_SPRITE);
     glBegin(GL_POINTS);
     glColor3f(1.0f, 0.5f, 0);
-    glVertex2f(SCREEN_WIDTH/2 + screenPosX*SCREEN_WIDTH/2 + mouseVec.x*70,SCREEN_HEIGHT/2 + screenPosY*SCREEN_HEIGHT/2 +mouseVec.y*70);
+    glVertex2f(Screen.windowWidth/2 + screenPosX*Screen.windowWidth/2 + mouseVec.x*70,Screen.windowHeight/2 + screenPosY*Screen.windowHeight/2 +mouseVec.y*70);
     glPointSize(10);
-    glVertex2f(SCREEN_WIDTH/2 + screenPosX*SCREEN_WIDTH/2,SCREEN_HEIGHT/2 + screenPosY*SCREEN_HEIGHT/2);
+    glVertex2f(Screen.windowWidth/2 + screenPosX*Screen.windowWidth/2,Screen.windowHeight/2 + screenPosY*Screen.windowHeight/2);
     glColor3f(1.0f, 1.0f, 1.0f);
     glEnd();
     glDisable(GL_POINT_SPRITE);*/
@@ -151,7 +150,7 @@ void GameUpdate(){
         moved=1;
     }
     if(!IsListEmpty(Rooms))
-        MoveObjectTo(&model,model.position,(Vector3){model.rotation.x,model.rotation.y,angle},((MultiVoxelObject*) GetFirst(Rooms))->objects.list,((MultiVoxelObject*) GetFirst(Rooms))->objects.numberOfObjects,0,0);
+        MoveObjectTo(&model,model.position,(Vector3){model.rotation.x,model.rotation.y,angle},((MultiVoxelObject*) GetFirstElement(Rooms))->objects.list,((MultiVoxelObject*) GetFirstElement(Rooms))->objects.numberOfObjects,0,0);
     else
         MoveObjectTo(&model,model.position,(Vector3){model.rotation.x,model.rotation.y,angle},0,0,0,0);
     if(moved){
@@ -162,7 +161,7 @@ void GameUpdate(){
             moveDir.z *= 20;
         }
         if(!IsListEmpty(Rooms))
-            MoveObject(&model,moveDir,rotVal,((MultiVoxelObject*) GetFirst(Rooms))->objects.list,((MultiVoxelObject*) GetFirst(Rooms))->objects.numberOfObjects,5,2);
+            MoveObject(&model,moveDir,rotVal,((MultiVoxelObject*) GetFirstElement(Rooms))->objects.list,((MultiVoxelObject*) GetFirstElement(Rooms))->objects.numberOfObjects,5,2);
         else
             MoveObject(&model,moveDir,rotVal,0,0,5,2);
     }
@@ -281,7 +280,7 @@ void PoolUpdate(){
                         dir.y *=250;
                         dir.z *=250;
                         if(!IsListEmpty(Rooms)){
-                            MoveObject(Pool[p].objs.list[o],dir,VECTOR3_ZERO,((MultiVoxelObject*) GetFirst(Rooms))->objects.list,((MultiVoxelObject*) GetFirst(Rooms))->objects.numberOfObjects,4,8);
+                            MoveObject(Pool[p].objs.list[o],dir,VECTOR3_ZERO,((MultiVoxelObject*) GetFirstElement(Rooms))->objects.list,((MultiVoxelObject*) GetFirstElement(Rooms))->objects.numberOfObjects,4,8);
                         }else{
                             MoveObject(Pool[p].objs.list[o],dir,VECTOR3_ZERO,NULL,0,4,8);
                         }
@@ -369,7 +368,7 @@ void Spawn(unsigned int index,float x, float y, float z, float rx, float ry, flo
 void MoveObject(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObject **col,const int numCol,int damageColRadius,int damageObjRadius){
     //printf("%0.0f Per cent\n",100*(obj->voxelsRemaining/(float)obj->voxelCount));
     int o,i,x,y,z,index = 0,allowMovement = 1,useRot = 0;
-    double moveDelta = deltaTime>0.02? 0.02:deltaTime;
+    double moveDelta = Time.deltaTime>0.02? 0.02:Time.deltaTime;
 
     float rotx,roty,rotz;
     float sinx = 1,cosx = 0;

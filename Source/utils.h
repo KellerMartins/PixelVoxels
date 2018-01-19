@@ -67,18 +67,23 @@ int IsListEmpty(List list);
 
 void InsertListEnd(List *list, void* e);
 void InsertListStart(List *list, void* e);
-void InsertListIndex(List *list, void* e, unsigned index);
+void InsertListIndex(List *list, void* e, int index);
 
 void RemoveListEnd(List *list);
 void RemoveListStart(List *list);
-void RemoveListIndex(List *list,unsigned index);
+void RemoveListIndex(List *list,int index);
 
 void* GetElement(ListCell c);
-void* GetLast(List list);
-void* GetFirst(List list);
-void* GetAt(List list,unsigned index);
+void* GetLastElement(List list);
+void* GetFirstElement(List list);
+void* GetElementAt(List list,int index);
 
 ListCellPointer GetNextCell(ListCellPointer c);
+ListCellPointer GetPreviousCell(ListCellPointer c);
+ListCellPointer GetLastCell(List list);
+ListCellPointer GetFirstCell(List list);
+ListCellPointer GetCellAt(List list,int index);
+
 unsigned GetElementSize(List list);
 unsigned GetLength(List list);
 

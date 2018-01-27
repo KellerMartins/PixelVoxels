@@ -3,10 +3,17 @@
 engineCore Core;
 engineScreen Screen;
 engineTime Time;
-engineECS ECS = {0,NULL};
+engineECS ECS = {.maxEntities = 0,.maxUsedIndex = 0, .Entities = 0};
+engineRendering Rendering;
+engineInput Input;
 
 unsigned char initializedEngine = 0;
 unsigned char initializedECS = 0;
+unsigned char initializedInput = 0;
+
+int exitGame = 0;
+
+//-------- ECS Functions -------------
 
 //Initialize the Entity Component System lists and arrays
 //Needs to be called before registering any component 
@@ -39,7 +46,7 @@ int InitECS(unsigned max_entities){
 	return 1;
 }
 
-int RegisterNewComponent(char componentName[25],void (*constructorFunc)(ComponentID component, EntityID entity),void (*destructorFunc)(ComponentID component, EntityID entity)){
+int RegisterNewComponent(char componentName[25],void (*constructorFunc)(EntityID entity),void (*destructorFunc)(EntityID entity)){
 	if(!initializedECS){
 		printf("ECS not initialized! Initialize ECS before registering the components and systems\n");
 		return -1;
@@ -153,6 +160,7 @@ EntityID CreateEntity(){
 	int *avaliableIndex = (int *)GetFirstElement(ECS.AvaliableEntitiesIndexes);
 	if(avaliableIndex){
 		int index = *avaliableIndex;
+		if(index>ECS.maxUsedIndex) ECS.maxUsedIndex = index;
 		//Clear the entity before returning
 		ECS.Entities[index].mask = CreateComponentMaskByID(0);
 
@@ -191,18 +199,18 @@ void AddComponentToEntity(ComponentID component, EntityID entity){
 		printf("AddComponentToEntity: Component index out of range!(%d)\n",component);
 		return;
 	}
+	if(EntityContainsMask(entity, CreateComponentMaskByID(1,component))){
+		printf("AddComponentToEntity: An entity can only have one of each component type! (E:%d C:%d)\n",entity, component);
+		return;
+	}
+	
 
 	ECS.Entities[entity].mask.mask |= 1 << component;
-
+	
 	//Get the component type
-	int i;
-	ListCellPointer current = GetFirstCell(ECS.ComponentTypes);
-	for(i=0;i<component;i++){
-		current = GetNextCell(current);
-	}
-
+	ListCellPointer compType = GetCellAt(ECS.ComponentTypes,component);
 	//Call the component constructor
-	((ComponentType*)(GetElement(*current)))->constructor(component, entity);
+	((ComponentType*)(GetElement(*compType)))->constructor(entity);
 }
 
 void RemoveComponentFromEntity(ComponentID component, EntityID entity){
@@ -214,18 +222,17 @@ void RemoveComponentFromEntity(ComponentID component, EntityID entity){
 		printf("RemoveComponentToEntity: Component index out of range!(%d)\n",component);
 		return;
 	}
+	if(!EntityContainsMask(entity, CreateComponentMask(1,component))){
+		printf("AddComponentToEntity: This entity doesnt have this component! (E:%d C:%d)\n",entity, component);
+	}
 
 	ECS.Entities[entity].mask.mask &= ~(1 << component);
 
 	//Get the component type
-	int i;
-	ListCellPointer current = GetFirstCell(ECS.ComponentTypes);
-	for(i=0;i<component;i++){
-		current = GetNextCell(current);
-	}
+	ListCellPointer compType = GetCellAt(ECS.ComponentTypes,component);
 
 	//Call the component destructor
-	((ComponentType*)(GetElement(*current)))->destructor(component, entity);
+	((ComponentType*)(GetElement(*compType)))->destructor(entity);
 }
 
 ComponentMask GetEntityComponents(EntityID entity){
@@ -236,9 +243,21 @@ ComponentMask GetEntityComponents(EntityID entity){
 	return ECS.Entities[entity].mask;
 }
 
-int EntityContainsMask(Entity entity, ComponentMask mask){
-	return (entity.mask.mask & mask.mask) == mask.mask;
+int EntityContainsMask(EntityID entity, ComponentMask mask){
+	if(!mask.mask) return 0;
+	return (ECS.Entities[entity].mask.mask & mask.mask) == mask.mask;
 }
+
+int EntityContainsComponent(EntityID entity, ComponentID component){
+	if(component<0 || component>GetLength(ECS.ComponentTypes)){
+		printf("EntityContainsComponent: Component index out of range!(%d)\n",component);
+		return 0;
+	}
+	unsigned long compMask = 1<<component;
+	return (ECS.Entities[entity].mask.mask & compMask) == compMask;
+}
+
+//-------- Engine Functions -------------
 
 //Engine initialization function
 //Return 1 if suceeded, 0 if failed
@@ -247,6 +266,9 @@ int InitEngine(){
 		printf("ECS not initialized! Initialize and configure ECS before initializing the engine!\n");
 		return 0;
 	}
+
+	if(!initializedInput) InitializeInput();
+	exitGame = 0;
 
 	printf("Initializing Engine...\n");
 
@@ -296,7 +318,17 @@ int InitEngine(){
 		printf("Window could not be created! SDL_Error %s\n", SDL_GetError() );
 		EndEngine(1);
         return 0;
-	}	
+	}
+
+	//Define internal game resolution
+	Screen.gameWidth = Screen.windowWidth/Screen.gameScale;
+	Screen.gameHeight = Screen.windowHeight/Screen.gameScale;
+
+	//Initialize renderer
+	Core.renderer = SDL_CreateRenderer(Core.window, -1, SDL_RENDERER_ACCELERATED);
+	SDL_RenderSetLogicalSize(Core.renderer, Screen.gameWidth, Screen.gameHeight);
+
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 
 	//
 	//OpenGl initializations
@@ -339,18 +371,68 @@ int InitEngine(){
     glDepthFunc(GL_LEQUAL);
     glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
-	//Define resolução interna do jogo
-	Screen.gameWidth = Screen.windowWidth/Screen.gameScale;
-	Screen.gameHeight = Screen.windowHeight/Screen.gameScale;
+	Rendering.cameraPosition = (Vector3){0,0,0};
+	Rendering.clearScreenColor = (SDL_Color){0,0,0,0};
 
-	//Inicializa o renderizador e a textura da tela
-	Core.renderer = SDL_CreateRenderer(Core.window, -1, SDL_RENDERER_ACCELERATED);
-	SDL_RenderSetLogicalSize(Core.renderer, Screen.gameWidth, Screen.gameHeight);
+    //Framebuffer
+    glGenFramebuffers(1, &Rendering.frameBuffer);
+    glBindFramebuffer(GL_FRAMEBUFFER, Rendering.frameBuffer);
 
-    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
+    //Screen Render Texture
+    glGenTextures(1, &Rendering.screenTexture);
+    glBindTexture(GL_TEXTURE_2D, Rendering.screenTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA, Screen.gameWidth, Screen.gameHeight, 0,GL_RGBA, GL_UNSIGNED_BYTE, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    glGenRenderbuffers(1, &Rendering.depthRenderBuffer);
+    glBindRenderbuffer(GL_RENDERBUFFER, Rendering.depthRenderBuffer);
+    glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, Screen.gameWidth, Screen.gameHeight);
+    glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, Rendering.depthRenderBuffer);
+
+    // Set "screenTexture" as our colour attachement #0
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, Rendering.screenTexture, 0);
+
+    // Set the list of draw buffers.
+    GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+    glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
+
+    if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE){
+		printf("InitEngine: Error generating framebuffer! (%x)\n",glCheckFramebufferStatus(GL_FRAMEBUFFER));
+		EndEngine(1);
+        return 0;
+	}
+
+    glBindFramebuffer(GL_FRAMEBUFFER,0);
+
+    // VAO Generation and binding
+    glGenVertexArrays(1, &Rendering.vao);
+    glBindVertexArray(Rendering.vao);
+
+    // Color and vertex VBO generation and binding
+    glGenBuffers(2, Rendering.vbo);
+
+    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[0]);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[1]);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	
+    //Compile shaders
+    if(!CompileAndLinkShader("Shaders/ScreenVert.vs","Shaders/ScreenFrag.fs",0)) printf(">Failed to compile/link shader! Description above\n\n");
+    else printf(">Compiled/linked shader sucessfully!\n");
+
+     if(!CompileAndLinkShader("Shaders/VoxelVert.vs","Shaders/VoxelFrag.fs",1)) printf(">Failed to compile/link shader! Description above\n\n");
+    else printf(">Compiled/linked shader sucessfully!\n");
+
+	//Load voxel palette
+	LoadVoxelPalette("Textures/magicaPalette.png");
+
+
 
 	//Call initialization function of all systems
-
 	ListCellPointer current = GetFirstCell(ECS.SystemList);
 	while(current){
 		System curSystem = *((System *)GetElement(*current));
@@ -371,16 +453,19 @@ void EngineUpdate(){
 	Time.nowCounter = SDL_GetPerformanceCounter();
 	Time.deltaTime = (double)((Time.nowCounter - Time.lastCounter)*1000 / SDL_GetPerformanceFrequency() )*0.001;
 
+	ClearRender(Rendering.clearScreenColor);
+	InputUpdate();
+
 	//Run systems updates
 	int i;
-	for(i=0;i<ECS.maxEntities;i++){
+	for(i=0;i<=ECS.maxUsedIndex;i++){
 
 		ListCellPointer currentSystem = GetFirstCell(ECS.SystemList);
 		while(currentSystem){
 			//Entity contains needed components
-			if(EntityContainsMask(ECS.Entities[i],((System*)GetElement(*currentSystem))->required) ){
+			if(EntityContainsMask(i,((System*)GetElement(*currentSystem))->required) ){
 				//Entity doesn't contains the excluded components
-				if(!EntityContainsMask(ECS.Entities[i],((System*)GetElement(*currentSystem))->excluded) ){
+				if(!EntityContainsMask(i,((System*)GetElement(*currentSystem))->excluded) ){
 					//Execute system update in the entity
 					((System*)GetElement(*currentSystem)) -> systemUpdate(i);
 				}
@@ -423,6 +508,10 @@ void EndEngine(int errorOcurred){
 	FreeList(&ECS.AvaliableEntitiesIndexes);
 	free(ECS.Entities);
 
+	initializedECS = 0;
+
+	FreeInput();
+
 	//Finish core systems
 	if(Core.soloud){
 		Soloud_deinit(Core.soloud);
@@ -443,5 +532,397 @@ void EndEngine(int errorOcurred){
 	if(SDL_WasInit(SDL_INIT_EVERYTHING)!=0)
     	SDL_Quit();
 
-    if(errorOcurred) system("pause");
+    if(errorOcurred){
+		printf("Engine finished with errors!\n");
+		system("pause");
+	}else{
+		printf("Engine finished sucessfully\n");
+	}
+}
+
+void ExitGame(){
+	exitGame = 1;
+}
+
+int GameExited(){
+	return exitGame;
+}
+
+//-------- Rendering Functions -------------
+
+void ClearRender(SDL_Color col){
+    glBindFramebuffer(GL_FRAMEBUFFER, Rendering.frameBuffer);
+
+    glClearColor(col.r/255.0, col.g/255.0, col.b/255.0,0.0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
+void RenderToScreen(){
+
+    glEnable(GL_TEXTURE_2D);
+
+    glViewport(0,0,Screen.windowWidth,Screen.windowHeight);
+    
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    glUseProgram(Rendering.Shaders[0]);
+    GLdouble loc = glGetUniformLocation(Rendering.Shaders[0], "pWidth");
+    if (loc != -1) glUniform1f(loc, 1.0/(float)Screen.gameWidth);
+    loc = glGetUniformLocation(Rendering.Shaders[0], "pHeight");
+    if (loc != -1) glUniform1f(loc, 1.0/(float)Screen.gameHeight);
+
+    loc = glGetUniformLocation(Rendering.Shaders[0], "vignettePower");
+    if (loc != -1) glUniform1f(loc, 0.25);
+    loc = glGetUniformLocation(Rendering.Shaders[0], "redShiftPower");
+    if (loc != -1) glUniform1f(loc, 2);    
+    loc = glGetUniformLocation(Rendering.Shaders[0], "redShiftSpread");
+    if (loc != -1) glUniform1f(loc, 0);
+    
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, Rendering.screenTexture);
+    
+    glBegin(GL_QUADS);
+    {
+        glTexCoord2f(0,1); glVertex2f(-Screen.windowWidth/2,  Screen.windowHeight/2);
+        glTexCoord2f(1,1); glVertex2f( Screen.windowWidth/2,  Screen.windowHeight/2);
+        glTexCoord2f(1,0); glVertex2f( Screen.windowWidth/2, -Screen.windowHeight/2);
+        glTexCoord2f(0,0); glVertex2f(-Screen.windowWidth/2, -Screen.windowHeight/2);
+    }
+    glEnd();
+
+    glDisable( GL_TEXTURE_2D );
+    glUseProgram(0);
+}
+
+void RenderText(char *text, SDL_Color color, int x, int y, TTF_Font* font) 
+{	
+    SDL_Surface * sFont = TTF_RenderText_Blended_Wrapped(font, text, color,500);
+    if(!sFont){printf("Failed to render text!\n"); return;}
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    glOrtho(0, Screen.windowWidth,0,Screen.windowHeight,-1,1); 
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+
+    glDisable(GL_DEPTH_TEST);
+    glEnable(GL_TEXTURE_2D);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glColor3f(1.0f, 1.0f, 1.0f);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, sFont->w, sFont->h, 0, GL_BGRA, 
+                    GL_UNSIGNED_BYTE, sFont->pixels);
+
+    
+    glBegin(GL_QUADS);
+    {
+        glTexCoord2f(0,1); glVertex2f(x, y);
+        glTexCoord2f(1,1); glVertex2f(x + sFont->w, y);
+        glTexCoord2f(1,0); glVertex2f(x + sFont->w, y + sFont->h);
+        glTexCoord2f(0,0); glVertex2f(x, y + sFont->h);
+    }
+    glEnd();
+    glDisable(GL_BLEND);
+    glDisable(GL_TEXTURE_2D);
+    glEnable(GL_DEPTH_TEST);
+
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    
+    glDeleteTextures(1, &texture);
+    SDL_FreeSurface(sFont);
+}
+
+const GLchar *LoadShaderSource(char *filename) {
+    if(!filename) return NULL;
+
+    FILE *file = fopen(filename, "r");             // open 
+    fseek(file, 0L, SEEK_END);                     // find the end
+    size_t size = ftell(file);                     // get the size in bytes
+    GLchar *shaderSource = calloc(1, size);        // allocate enough bytes
+    rewind(file);                                  // go back to file beginning
+    fread(shaderSource, size, sizeof(char), file); // read each char into ourblock
+    fclose(file);                                  // close the stream
+
+    return shaderSource;
+}
+
+int CompileAndLinkShader(char *vertPath, char *fragPath, unsigned shaderIndex){
+    //Create an empty vertex shader handle
+    GLuint vertexShader = glCreateShader(GL_VERTEX_SHADER);
+    const GLchar *vShaderSource = LoadShaderSource(vertPath);
+
+    //Send the vertex shader source code to GL
+    glShaderSource(vertexShader, 1, &vShaderSource, 0);
+
+    //Compile the vertex shader
+    glCompileShader(vertexShader);
+
+    GLint isCompiled = 0;
+    glGetShaderiv(vertexShader, GL_COMPILE_STATUS, &isCompiled);
+    if(isCompiled == GL_FALSE)
+    {
+        GLint maxLength = 0;
+        glGetShaderiv(vertexShader, GL_INFO_LOG_LENGTH, &maxLength);
+
+        //The maxLength includes the NULL character
+        GLchar *infoLog = (GLchar *) malloc(maxLength * sizeof(GLchar));
+        glGetShaderInfoLog(vertexShader, maxLength, &maxLength, &infoLog[0]);
+        
+        //We don't need the shader anymore.
+        glDeleteShader(vertexShader);
+        free((void*)vShaderSource);
+
+        printf("Vertex Shader Info Log:\n%s\n",infoLog);
+        
+        free(infoLog);
+        
+        //In this simple program, we'll just leave
+        return 0;
+    }
+
+    //Create an empty fragment shader handle
+    GLuint fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
+    const GLchar *fShaderSource = LoadShaderSource(fragPath);
+
+    //Send the fragment shader source code to GL
+    glShaderSource(fragmentShader, 1, &fShaderSource, 0);
+
+    //Compile the fragment shader
+    glCompileShader(fragmentShader);
+
+    glGetShaderiv(fragmentShader, GL_COMPILE_STATUS, &isCompiled);
+    if(isCompiled == GL_FALSE)
+    {
+        GLint maxLength = 0;
+        glGetShaderiv(fragmentShader, GL_INFO_LOG_LENGTH, &maxLength);
+
+        //The maxLength includes the NULL character
+        GLchar *infoLog = (GLchar *) malloc(maxLength * sizeof(GLchar));
+        glGetShaderInfoLog(fragmentShader, maxLength, &maxLength, &infoLog[0]);
+        
+        //We don't need the shader anymore.
+        glDeleteShader(fragmentShader);
+        free((void*)fShaderSource);
+        //Either of them. Don't leak shaders.
+        glDeleteShader(vertexShader);
+        free((void*)vShaderSource);
+
+        printf("Fragment Shader Info Log:\n%s\n",infoLog);
+        
+        free(infoLog);
+        
+        //In this simple program, we'll just leave
+        return 0;
+    }
+
+    //Vertex and fragment shaders are successfully compiled.
+    //Now time to link them together into a program.
+    //Get a program object.
+    Rendering.Shaders[shaderIndex] = glCreateProgram();
+
+    //Attach our shaders to our program
+    glAttachShader(Rendering.Shaders[shaderIndex], vertexShader);
+    glAttachShader(Rendering.Shaders[shaderIndex], fragmentShader);
+
+    //Link our program
+    glLinkProgram(Rendering.Shaders[shaderIndex]);
+
+    //Note the different functions here: glGetProgram* instead of glGetShader*.
+    GLint isLinked = 0;
+    glGetProgramiv(Rendering.Shaders[shaderIndex], GL_LINK_STATUS, (int *)&isLinked);
+    if(isLinked == GL_FALSE)
+    {
+        GLint maxLength = 0;
+        glGetProgramiv(Rendering.Shaders[shaderIndex], GL_INFO_LOG_LENGTH, &maxLength);
+
+        //The maxLength includes the NULL character
+        GLchar *infoLog = (GLchar *) malloc(maxLength * sizeof(GLchar));
+        glGetProgramInfoLog(Rendering.Shaders[shaderIndex], maxLength, &maxLength, &infoLog[0]);
+        
+        //We don't need the program anymore.
+        glDeleteProgram(Rendering.Shaders[shaderIndex]);
+        //Don't leak shaders either.
+        glDeleteShader(vertexShader);
+        free((void*)vShaderSource);
+        glDeleteShader(fragmentShader);
+        free((void*)fShaderSource);
+
+        printf("Shader linkage Info Log:\n%s\n",infoLog);
+        
+        free(infoLog);
+        //In this simple program, we'll just leave
+        return 0;
+    }
+
+    //Always detach shaders after a successful link.
+    glDetachShader(Rendering.Shaders[shaderIndex], vertexShader);
+    glDetachShader(Rendering.Shaders[shaderIndex], fragmentShader);
+    free((void*)vShaderSource);
+    free((void*)fShaderSource);
+
+    return 1;
+}
+
+void ReloadShaders(){
+    int i;
+    for(i=0;i<sizeof(Rendering.Shaders) / sizeof(Rendering.Shaders[0]); i++){
+        glDeleteProgram(Rendering.Shaders[i]);
+    }
+
+    if(!CompileAndLinkShader("Shaders/ScreenVert.vs","Shaders/ScreenFrag.fs",0)) 
+        printf(">Failed to compile/link shader! Description above\n\n");
+    else 
+        printf(">Compiled/linked shader sucessfully!\n\n");
+
+    if(!CompileAndLinkShader("Shaders/VoxelVert.vs","Shaders/VoxelFrag.fs",1)) 
+        printf(">Failed to compile/link shader! Description above\n\n");
+    else 
+        printf(">Compiled/linked shader sucessfully!\n\n");
+}
+
+void LoadVoxelPalette(char path[]){
+    SDL_Surface * palSurf = IMG_Load(path);
+    if(!palSurf){ printf(">Error loading palette!\n"); return; }
+
+    int i;
+    Uint8 r,g,b,a;
+
+    for(i=0;i<256;i++){
+        Uint32 *sPix = (Uint32 *)(palSurf->pixels + i* palSurf->format->BytesPerPixel);
+
+        SDL_GetRGBA(*sPix,palSurf->format,&r,&g,&b,&a);
+        Pixel color = {clamp(b,0,255),clamp(g,0,255),clamp(r,0,255),a};
+        Rendering.voxelColors[i+1] = color;
+    }
+    SDL_FreeSurface(palSurf);
+    printf(">Loaded palette sucessfully!\n");
+}
+
+void MoveCamera(float x, float y, float z){
+    Rendering.cameraPosition.x +=x*Time.deltaTime;
+    Rendering.cameraPosition.y +=y*Time.deltaTime;
+    Rendering.cameraPosition.z +=z*Time.deltaTime;
+    //printf("CamPos: |%2.1f|%2.1f|%2.1f|\n",cameraPosition.x,cameraPosition.y,cameraPosition.z);
+}
+
+// ----------- Input functions ---------------
+
+int InitializeInput(){
+	if(initializedInput){
+		printf("Input already initialized!\n");
+		return 0;
+	}
+	
+	Input.keyboardLast = (Uint8 *)calloc(SDL_NUM_SCANCODES,sizeof(Uint8));
+	Input.keyboardCurrent = SDL_GetKeyboardState(NULL);
+
+	initializedInput = 1;
+	return 1;
+}
+
+int FreeInput(){
+	if(!initializedInput){
+		printf("FreeInput: Input not initialized!\n");
+		return 0;
+	}
+	
+	free(Input.keyboardLast);
+	initializedInput = 0;
+
+	return 1;
+}
+
+void InputUpdate(){
+    memcpy(Input.keyboardLast,Input.keyboardCurrent,SDL_NUM_SCANCODES*sizeof(Uint8));
+
+    while (SDL_PollEvent(&Input.event)) {
+        switch (Input.event.type)
+        {
+            case SDL_QUIT:
+				printf("B");
+                exitGame = 1;
+                break;
+        }
+    }
+}
+
+int GetKey(SDL_Scancode key){
+	if(!initializedInput){
+		printf("GetKey: Input not initialized!\n");
+		return 0;
+	}
+	if(key >= SDL_NUM_SCANCODES){
+		printf("GetKey: Key out of bounds! (%d)\n",key);
+		return 0;
+	}
+	return Input.keyboardCurrent[key];
+}
+int GetKeyDown(SDL_Scancode key){
+	if(!initializedInput){
+		printf("GetKeyDown: Input not initialized!\n");
+		return 0;
+	}
+	if(key >= SDL_NUM_SCANCODES){
+		printf("GetKeyDown: Key out of bounds! (%d)\n",key);
+		return 0;
+	}
+	return (Input.keyboardCurrent[key] && !Input.keyboardLast[key]);
+} 
+int GetKeyUp(SDL_Scancode key){
+	if(!initializedInput){
+		printf("GetKeyUp: Input not initialized!\n");
+		return 0;
+	}
+	if(key >= SDL_NUM_SCANCODES){
+		printf("GetKeyUp: Key out of bounds! (%d)\n",key);
+		return 0;
+	}
+	return (!Input.keyboardCurrent[key] && Input.keyboardLast[key]);
+} 
+// ----------- Misc. functions ---------------
+
+void SaveTextureToPNG(SDL_Texture *tex, char* out){
+    //Get texture dimensions
+    int w, h;
+    SDL_QueryTexture(tex, NULL, NULL, &w, &h);
+
+    SDL_Surface *sshot = SDL_CreateRGBSurface(0, w, h, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000);
+    SDL_Texture *target = SDL_CreateTexture(Core.renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_TARGET, w, h);
+
+    //Copy texture to render target
+    SDL_SetRenderTarget(Core.renderer, target);
+    SDL_Rect rect = {0,0,w,h};
+    SDL_RenderCopy(Core.renderer, tex, NULL,&rect);
+
+    //Transfer render target pixels to surface
+    SDL_RenderReadPixels(Core.renderer, NULL, SDL_PIXELFORMAT_ARGB8888, sshot->pixels, sshot->pitch);
+    //Save surface to PNG
+    IMG_SavePNG(sshot, out);
+
+    //Return render target to default
+    SDL_SetRenderTarget(Core.renderer, NULL);
+    
+    //Free allocated surface and texture
+    SDL_FreeSurface(sshot);
+    SDL_DestroyTexture(target);
+
 }

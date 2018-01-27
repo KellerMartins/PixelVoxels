@@ -3,7 +3,7 @@ PD = C:
 CC = gcc
 
 #OBJS specifies which files to compile as part of the project
-OBJS = Source/main.c Source/Systems/voxelLoader.c Source/Systems/voxelRenderer.c  Source/Systems/voxelLogic.c Source/utils.c Source/Engine.c Source/Components/voxelModel.c 
+OBJS = $(wildcard Source/*.c) $(wildcard Source/Components/*.c) $(wildcard Source/Systems/*.c) 
 
 #INCLUDE_PATHS specifies the additional include paths we'll need
 INCLUDE_PATHS = -I $(PD)\SDL2\SDL2_MinGW_32Bits\include -I $(PD)\SoLoud\include -I $(PD)\glew\include

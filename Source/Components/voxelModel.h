@@ -1,19 +1,12 @@
 #ifndef VOXELMODEL_H
 #define VOXELMODEL_H
-#include "../utils.h"
+#include "../Engine.h"
+#include "Transform.h"
 #include <GL/glew.h>
 #include <SDL2/SDL_opengl.h>
 
-typedef struct AnchorPoint{
-	char type;
-  	char x;
-	char y;
-	char z;
-}AnchorPoint;
-
-typedef struct VoxelObject{
+typedef struct VoxelModel{
 	int enabled;
-	unsigned int timeOfActivation;
 
 	char modificationStartX;
 	char modificationEndX;
@@ -29,44 +22,24 @@ typedef struct VoxelObject{
     GLfloat *vertices;
 	GLfloat *vColors;
 	int numberOfVertices;
-	int numberOfPoints;
-	AnchorPoint *points;
 
 	unsigned int dimension[3];
 
     unsigned int voxelCount;
 	unsigned int voxelsRemaining;
 
-	Vector3 position;
-	Vector3 rotation;
 	Vector3 center;
-}VoxelObject;
+}VoxelModel;
 
-//A simpler list implementation, where each element of the list is a pointer to
-//an object. As this list is rarely changed during the game loop, I opted to keep
-//it simple instead of using the other, more general list implementation on this
-typedef struct VoxelObjectList{
-	VoxelObject **list;
-	unsigned int numberOfObjects;
-}VoxelObjectList;
+void VoxelModelConstructor(EntityID entity);
+void VoxelModelDestructor(EntityID entity);
 
-typedef struct MultiVoxelObject{
-	int enabled;
-	VoxelObjectList objects;
+VoxelModel* GetVoxelModelPointer(EntityID entity);
 
-	Vector3 position;
-	Vector3 rotation;
-	Vector3 center;
+void LoadVoxelModel(EntityID entity, char modelPath[]);
+void CalculateRendered(EntityID entity);
+void CalculateLighting(EntityID entity);
+//void LoadMultiVoxelModel(EntityID entity, char modelPath[]);
 
-}MultiVoxelObject;
-
-void FreeObject(VoxelObject *obj);
-void FreeMultiObject(MultiVoxelObject *obj);
-
-VoxelObjectList InitializeObjectList();
-void FreeObjectList(VoxelObjectList *list);
-void AddObjectInList(VoxelObjectList *dest, VoxelObject *obj);
-void RenderObjectList(VoxelObjectList objs, VoxelObjectList shadowCasters);
-void CombineObjectLists(VoxelObjectList *dest,  int numberOfSources,...);
 
 #endif

@@ -25,6 +25,14 @@ typedef struct engineCore{
     Soloud *soloud;
 }engineCore;
 
+typedef struct engineInput{
+    //Keyboard key state arrays
+    const Uint8 *keyboardCurrent;
+    Uint8 *keyboardLast;
+
+    SDL_Event event;
+}engineInput;
+
 typedef struct engineScreen{
     //Internal resolution, used in rendering
     int gameWidth;
@@ -39,6 +47,20 @@ typedef struct engineScreen{
 
     unsigned maxFPS;
 }engineScreen;
+
+typedef struct engineRendering{
+    Vector3 cameraPosition;
+
+    GLuint frameBuffer;
+    GLuint screenTexture;
+    GLuint depthRenderBuffer;
+    GLuint vao , vbo[2];
+
+    GLuint Shaders[2];
+
+    Pixel voxelColors[256];
+    SDL_Color clearScreenColor;
+}engineRendering;
 
 typedef struct engineTime{
     double deltaTime;
@@ -69,8 +91,8 @@ typedef int ComponentID;
 typedef struct ComponentType{
     char name[25];
     unsigned nameSize;
-    void (*constructor)(ComponentID component, EntityID entity);
-    void (*destructor)(ComponentID component, EntityID entity);
+    void (*constructor)(EntityID entity);
+    void (*destructor)(EntityID entity);
 }ComponentType;
 
 typedef struct System{
@@ -86,6 +108,7 @@ typedef struct System{
 
 typedef struct engineECS{
     unsigned maxEntities;
+    long int maxUsedIndex;
 
     //Dinamically allocated array of Entity structs
     Entity *Entities;
@@ -104,7 +127,7 @@ typedef struct engineECS{
 //ECS functions
 int InitECS(unsigned max_entities);
 
-int RegisterNewComponent(char componentName[25],void (*constructorFunc)(ComponentID component, EntityID entity),void (*destructorFunc)(ComponentID component, EntityID entity));
+int RegisterNewComponent(char componentName[25],void (*constructorFunc)(EntityID entity),void (*destructorFunc)(EntityID entity));
 int RegisterNewSystem(unsigned priority, ComponentMask required, ComponentMask excluded, void (*initFunc)(), void (*updateFunc)(EntityID entity), void (*freeFunc)());
 
 ComponentID GetComponentID(char componentName[25]);
@@ -119,13 +142,35 @@ void DestroyEntity();
 void AddComponentToEntity(ComponentID component, EntityID entity);
 void RemoveComponentFromEntity(ComponentID component, EntityID entity);
 ComponentMask GetEntityComponents(EntityID entity);
-int EntityContainsMask(Entity entity, ComponentMask mask);
-
+int EntityContainsMask(EntityID entity, ComponentMask mask);
+int EntityContainsComponent(EntityID entity, ComponentID component);
 
 //Engine functions
 int InitEngine();
+int FreeInput();
 void EngineUpdate();
 void EngineUpdateEnd();
 void EndEngine(int errorOcurred);
+void ExitGame();
+int GameExited();
+
+//Rendering functions
+void ClearRender(SDL_Color col);
+void RenderToScreen();
+void RenderText(char *text, SDL_Color color, int x, int y, TTF_Font* font);
+int CompileAndLinkShader();
+void ReloadShaders();
+void LoadVoxelPalette(char path[]);
+void MoveCamera(float x, float y, float z);
+
+//Input functions
+int InitializeInput();
+void InputUpdate();
+int GetKey(SDL_Scancode key);
+int GetKeyDown(SDL_Scancode key);
+int GetKeyUp(SDL_Scancode key);
+
+//Misc.
+void SaveTextureToPNG(SDL_Texture *tex, char* out);
 
 #endif

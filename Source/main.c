@@ -1,82 +1,95 @@
 #include "Engine.h"
 #include "utils.h"
-#include "Components/voxelModel.h"
-#include "Systems/voxelLoader.h"
-#include "Systems/voxelRenderer.h"
-#include "Systems/voxelLogic.h"
+#include "Components/VoxelModel.h"
+#include "Components/Transform.h"
+#include "Components/Rigidbody.h"
+#include "Systems/VoxelRenderer.h"
+#include "Systems/VoxelModification.h"
+#include "Systems/VoxelPhysics.h"
 
-int ExitGame = 0;
-
-char *fpscounter;
-TTF_Font* font = NULL;
-
-//Array de ponteiros com os objetos
-VoxelObjectList SceneShadowCasters;
-VoxelObjectList EnemiesAndBullets;
-List Rooms;
-
-//Pool de objetos
-PoolObject Pool[POOLSIZE];
-
-extern VoxelObject model;
 extern engineTime Time;
 extern engineCore Core;
 extern engineScreen Screen;
+extern engineRendering Rendering;
+extern engineECS ECS;
 
+TTF_Font* font = NULL;
 
 int main(int argc, char *argv[]){
 
 	InitECS(10);
 
+	ComponentID transformComponent = RegisterNewComponent("Transform", &TransformConstructor, &TransformDestructor);
+	ComponentID voxelModelComponent = RegisterNewComponent("VoxelModel", &VoxelModelConstructor, &VoxelModelDestructor);
+	ComponentID rigidBodyComponent = RegisterNewComponent("RigidBody", &RigidBodyConstructor, &RigidBodyDestructor);
+
+	if(RegisterNewSystem(1,CreateComponentMask(3,"Transform", "VoxelModel","RigidBody"),(ComponentMask){0},&VoxelPhysicsInit,&VoxelPhysicsUpdate,&VoxelPhysicsFree) < 0) printf("Failed to register VoxelPhysics system!\n");
+	if(RegisterNewSystem(0,CreateComponentMask(2,"Transform", "VoxelModel"),(ComponentMask){0},&VoxelRendererInit,&VoxelRendererUpdate,&VoxelRendererFree) < 0) printf("Failed to register VoxelRender system!\n");
+	if(RegisterNewSystem(2,CreateComponentMask(1,"VoxelModel"),(ComponentMask){0},&VoxelModificationInit,&VoxelModificationUpdate,&VoxelModificationFree) < 0) printf("Failed to register VoxelModification system!\n");
+
 	if(!InitEngine()) return 1;
 
-	//Inicializações do jogo
-	InitRenderer();
-	InputStart();
-	GameStart();
+	Rendering.clearScreenColor = (SDL_Color){0,38,75,0};
 
-	//Inicializa string para o contador de frames
-	fpscounter = (char*)calloc(50,sizeof(char));
-
-	//Inicializa contadores de FPS
 	InitFPS();
 
-	//Inicializa fonte
+	//Initialize font
 	font = TTF_OpenFont("Interface/Fonts/Visitor.ttf",18);
 	if(!font){
 		printf("Font: Error loading font!");
 	}
-	
-	//Carrega o mapa
-	Rooms = InitList(sizeof(MultiVoxelObject));
-	MultiVoxelObject testRoom = LoadMultiVoxelModel("Models/dune.vox");
-	InsertListStart(&Rooms,&testRoom);
 
-	VoxelObjectList Players =  InitializeObjectList();
-	AddObjectInList(&Players,&model);
+	static EntityID e = -1;
+	e = CreateEntity();
+	LoadVoxelModel(e,"Models/dune.vox");
+	AddComponentToEntity(GetComponentID("RigidBody"),e);
+	SetStaticRigidbody(e,1);
 
-	//Cria as listas de ponteiros de objetos a renderizar
-	SceneShadowCasters = InitializeObjectList();
-	EnemiesAndBullets = InitializeObjectList();
-	CombineObjectLists(&SceneShadowCasters,3,Players,Pool[0].objs,Pool[1].objs);
-	CombineObjectLists(&EnemiesAndBullets,2,Pool[0].objs,Pool[1].objs);
+	static EntityID e1 = -1;
+	e1 = CreateEntity();
+	LoadVoxelModel(e1,"Models/bullet.vox");
+	AddComponentToEntity(GetComponentID("RigidBody"),e1);
+	SetUseGravity(e1,1);
+	SetPosition(e1,(Vector3){5,50,80});
+	SetVelocity(e1,(Vector3){0.1,0,0});
+	SetMass(e1,1);
+	SetBounciness(e1, 0.7);
 
-	//Loop do jogo
-	while (!ExitGame)
+	printf("GameLoop Initialized\n");
+	//Game Loop
+	while (!GameExited())
 	{
+
 		EngineUpdate();
 
-		SDL_Color bgColor = {0,38,75,0};
-		ClearRender(bgColor);
-
-		RenderObjectList(Players, (VoxelObjectList){NULL,0});
-		RenderObjectList( ((MultiVoxelObject*) GetFirstElement(Rooms))->objects , SceneShadowCasters);
-		RenderObjectList(EnemiesAndBullets, (VoxelObjectList){NULL,0});
-
-		//Updates
-		InputUpdate();
-		GameUpdate();
-		PoolUpdate();
+		if (GetKey(SDL_SCANCODE_UP))
+		{
+			MoveCamera(0,-150,0);
+		}
+		else if (GetKey(SDL_SCANCODE_DOWN))
+		{
+			MoveCamera(0,150,0);
+		}
+		if (GetKey(SDL_SCANCODE_RIGHT))
+		{
+			MoveCamera(150,0,0);
+		}
+		else if (GetKey(SDL_SCANCODE_LEFT))
+		{
+			MoveCamera(-150,0,0);
+		}
+		if (GetKey(SDL_SCANCODE_RSHIFT))
+		{
+			MoveCamera(0,0,50);
+		}
+		else if (GetKey(SDL_SCANCODE_RCTRL))
+		{
+			MoveCamera(0,0,-50);
+		}
+		if (GetKey(SDL_SCANCODE_ESCAPE))
+		{
+			ExitGame();
+		}
 
 		RenderToScreen();
 
@@ -87,23 +100,11 @@ int main(int argc, char *argv[]){
 
 		EngineUpdateEnd();
 		ProcessFPS();
-
 	}
-	free(fpscounter);
-
-	FreeList(&Rooms);
-
-	FreeRenderer();
-	FreeInput();
-	FreePool();
 
 	if(font!=NULL)
 	 	TTF_CloseFont(font);
 
-	FreeObjectList(&SceneShadowCasters);
-	FreeObjectList(&EnemiesAndBullets);
-
 	EndEngine(0);
-
     return 0;
 }

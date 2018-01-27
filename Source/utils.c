@@ -1,6 +1,7 @@
 #include "utils.h"
 
-// ----- FPS counter functions =======
+//-------- FPS counter functions -------------
+
 #define STORED_FRAMES 10
 Uint32 frameTimes[STORED_FRAMES];
 Uint32 frameTicksLast;
@@ -304,6 +305,10 @@ Vector3 Subtract(Vector3 a, Vector3 b){
 	return a;
 }
 
+Vector3 ScalarMult(Vector3 v, float s){
+	return (Vector3){ v.x * s, v.y * s, v.z * s };
+}
+
 Vector3 Reflection(Vector3 *v1,Vector3 *v2)
 {
 	float dotpr = dot(*v2,*v1);
@@ -351,7 +356,11 @@ Vector3 RotatePoint(Vector3 p, float rx, float ry, float rz, float pivotX, float
 
 }
 
-// ----------- Misc. functions ---------------
+// ----------- Numeric functions ---------------
+
+float Lerp(double t, float a, float b){
+    return (1-t)*a + t*b;
+}
 
 int Step(float edge, float x ) 
 {
@@ -378,3 +387,6 @@ float fModulus(float a, float b)
     float r = fmod(a,b);
     return r < 0 ? r + b : r;
 }
+
+// ----------- Misc. functions ---------------
+

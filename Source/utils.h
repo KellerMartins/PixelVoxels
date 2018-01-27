@@ -25,21 +25,55 @@
        __typeof__ (b) _b = (b); \
      _a < _b ? _a : _b; })
 
+/* --- PRINTF_BYTE_TO_BINARY macro's --- */
+#define PRINTF_BINARY_PATTERN_INT8 "%c%c%c%c%c%c%c%c"
+#define PRINTF_BYTE_TO_BINARY_INT8(i)    \
+    (((i) & 0x80ll) ? '1' : '0'), \
+    (((i) & 0x40ll) ? '1' : '0'), \
+    (((i) & 0x20ll) ? '1' : '0'), \
+    (((i) & 0x10ll) ? '1' : '0'), \
+    (((i) & 0x08ll) ? '1' : '0'), \
+    (((i) & 0x04ll) ? '1' : '0'), \
+    (((i) & 0x02ll) ? '1' : '0'), \
+    (((i) & 0x01ll) ? '1' : '0')
+
+#define PRINTF_BINARY_PATTERN_INT16 \
+    PRINTF_BINARY_PATTERN_INT8              PRINTF_BINARY_PATTERN_INT8
+#define PRINTF_BYTE_TO_BINARY_INT16(i) \
+    PRINTF_BYTE_TO_BINARY_INT8((i) >> 8),   PRINTF_BYTE_TO_BINARY_INT8(i)
+#define PRINTF_BINARY_PATTERN_INT32 \
+    PRINTF_BINARY_PATTERN_INT16             PRINTF_BINARY_PATTERN_INT16
+#define PRINTF_BYTE_TO_BINARY_INT32(i) \
+    PRINTF_BYTE_TO_BINARY_INT16((i) >> 16), PRINTF_BYTE_TO_BINARY_INT16(i)
+#define PRINTF_BINARY_PATTERN_INT64    \
+    PRINTF_BINARY_PATTERN_INT32             PRINTF_BINARY_PATTERN_INT32
+#define PRINTF_BYTE_TO_BINARY_INT64(i) \
+    PRINTF_BYTE_TO_BINARY_INT32((i) >> 32), PRINTF_BYTE_TO_BINARY_INT32(i)
+/* --- end macros --- */
+
 #define sign(x) (x > 0 ? 1 : (x < 0 ? -1 : 0))
 #define clamp(x,m,M) (x < m? m : (x > M ? M : x))
 #define FRAC0(x) (x - floorf(x))
 #define FRAC1(x) (1 - x + floorf(x))
 
-#define cross(u,v)   (Vector3){ (u).y * (v).z - (u).z * (v).y , (u).z * (v).x - (u).x * (v).z, (u).x * (v).y - (u).y * (v).x}
-#define dot(u,v)   ( (u).x * (v).x + (u).y * (v).y + (u).z * (v).z )
-#define norm(v)     sqrt(Dot(v,v))     // norm = length of  vector
-#define distance(u,v)      Norm(Subtract(u,v))          // distance = norm of difference
+#define cross(u,v)  (Vector3){ (u).y * (v).z - (u).z * (v).y , (u).z * (v).x - (u).x * (v).z, (u).x * (v).y - (u).y * (v).x}
+#define dot(u,v)  ( (u).x * (v).x + (u).y * (v).y + (u).z * (v).z )
+#define norm(v) sqrt(dot(v,v))                            // norm = length of  vector
+#define dist(u,v) sqrt(dot(subtract(u,v),subtract(u,v)))  // distance = norm of difference
 
 typedef struct Vector3{
 	float x;
 	float y;
 	float z;
 }Vector3;
+
+typedef struct Pixel{
+	unsigned char b;
+	unsigned char g;
+	unsigned char r;
+	unsigned char a;
+	
+}Pixel;
 
 //Generic list implementation
 //In this implementation, every new element added is copied to the list, not just referenced
@@ -96,8 +130,11 @@ float GetFPS();
 Vector3 NormalizeVector(Vector3 v);
 Vector3 Add(Vector3 a, Vector3 b);
 Vector3 Subtract(Vector3 a, Vector3 b);
+Vector3 ScalarMult(Vector3 v, float s);
 Vector3 Reflection(Vector3 *v1,Vector3 *v2);
 Vector3 RotatePoint(Vector3 p, float rx, float ry, float rz, float pivotX, float pivotY, float pivotZ);
+
+float Lerp(double t, float a, float b);
 int Step(float edge, float x );
 float Smoothstep(float edge0, float edge1, float x);
 int Modulus(int a, int b);

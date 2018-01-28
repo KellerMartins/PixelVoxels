@@ -65,8 +65,7 @@ void SetPosition(EntityID entity, Vector3 pos){
                 EntityID child = *((EntityID*) GetElement(*current));
 
                 if(EntityContainsComponent(child, ThisComponentID())){
-                    Transform *cTransform = ECS.Components[ThisComponentID()][child].data;
-                    cTransform->position = Add(cTransform->position,deltaPos);
+                    SetPosition(child, Add(GetPosition(child),deltaPos));
                 }
                 current = GetNextCell(current);
             }

@@ -57,12 +57,6 @@ int main(int argc, char *argv[]){
 	SetMass(e1,1);
 	SetBounciness(e1, 0.7);
 
-	static EntityID e2 = -1;
-	e2 = CreateEntity();
-	LoadVoxelModel(e2,"Models/Spaceship.vox");
-	SetPosition(e2,(Vector3){15,50,80});
-	SetParent(e2,e1);
-
 	printf("GameLoop Initialized\n");
 	//Game Loop
 	while (!GameExited())
@@ -101,14 +95,6 @@ int main(int argc, char *argv[]){
 		if (GetKey(SDL_SCANCODE_R))
 		{
 			ReloadShaders();
-		}
-		if (GetKeyDown(SDL_SCANCODE_Q))
-		{
-			if(IsChild(e2)){
-				UnsetParent(e2);
-			}else{
-				SetParent(e2,e1);
-			}
 		}
 
 		RenderToScreen();

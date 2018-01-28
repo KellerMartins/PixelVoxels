@@ -3,6 +3,7 @@
 #include "Components/VoxelModel.h"
 #include "Components/Transform.h"
 #include "Components/Rigidbody.h"
+#include "Components/ParentChild.h"
 #include "Systems/VoxelRenderer.h"
 #include "Systems/VoxelModification.h"
 #include "Systems/VoxelPhysics.h"
@@ -22,6 +23,7 @@ int main(int argc, char *argv[]){
 	ComponentID transformComponent = RegisterNewComponent("Transform", &TransformConstructor, &TransformDestructor);
 	ComponentID voxelModelComponent = RegisterNewComponent("VoxelModel", &VoxelModelConstructor, &VoxelModelDestructor);
 	ComponentID rigidBodyComponent = RegisterNewComponent("RigidBody", &RigidBodyConstructor, &RigidBodyDestructor);
+	ComponentID ParentChildComponent = RegisterNewComponent("ParentChild", &ParentChildConstructor, &ParentChildDestructor);
 
 	if(RegisterNewSystem(1,CreateComponentMask(3,"Transform", "VoxelModel","RigidBody"),(ComponentMask){0},&VoxelPhysicsInit,&VoxelPhysicsUpdate,&VoxelPhysicsFree) < 0) printf("Failed to register VoxelPhysics system!\n");
 	if(RegisterNewSystem(0,CreateComponentMask(2,"Transform", "VoxelModel"),(ComponentMask){0},&VoxelRendererInit,&VoxelRendererUpdate,&VoxelRendererFree) < 0) printf("Failed to register VoxelRender system!\n");
@@ -54,6 +56,12 @@ int main(int argc, char *argv[]){
 	SetVelocity(e1,(Vector3){0.1,0,0});
 	SetMass(e1,1);
 	SetBounciness(e1, 0.7);
+
+	static EntityID e2 = -1;
+	e2 = CreateEntity();
+	LoadVoxelModel(e2,"Models/Spaceship.vox");
+	SetPosition(e2,(Vector3){15,50,80});
+	SetParent(e2,e1);
 
 	printf("GameLoop Initialized\n");
 	//Game Loop
@@ -89,6 +97,18 @@ int main(int argc, char *argv[]){
 		if (GetKey(SDL_SCANCODE_ESCAPE))
 		{
 			ExitGame();
+		}
+		if (GetKey(SDL_SCANCODE_R))
+		{
+			ReloadShaders();
+		}
+		if (GetKeyDown(SDL_SCANCODE_Q))
+		{
+			if(IsChild(e2)){
+				UnsetParent(e2);
+			}else{
+				SetParent(e2,e1);
+			}
 		}
 
 		RenderToScreen();

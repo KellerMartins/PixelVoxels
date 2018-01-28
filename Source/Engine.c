@@ -224,6 +224,7 @@ void RemoveComponentFromEntity(ComponentID component, EntityID entity){
 	}
 	if(!EntityContainsMask(entity, CreateComponentMask(1,component))){
 		printf("AddComponentToEntity: This entity doesnt have this component! (E:%d C:%d)\n",entity, component);
+		return;
 	}
 
 	ECS.Entities[entity].mask.mask &= ~(1 << component);

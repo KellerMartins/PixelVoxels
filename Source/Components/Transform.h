@@ -1,6 +1,7 @@
 #ifndef TRANSFORM_H
 #define TRANSFORM_H
 #include "../Engine.h"
+#include "ParentChild.h"
 
 void TransformConstructor(EntityID entity);
 void TransformDestructor(EntityID entity);

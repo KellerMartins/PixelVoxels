@@ -50,7 +50,28 @@ void SetPosition(EntityID entity, Vector3 pos){
         return;
     }
     Transform *transform = (Transform *)ECS.Components[ThisComponentID()][entity].data;
+    Vector3 oldPos = transform->position;
     transform->position = pos;
+
+    //Modify childs position too
+    if(EntityContainsComponent(entity, GetComponentID("ParentChild"))){
+        if(IsParent(entity)){
+            Vector3 deltaPos = Subtract(transform->position,oldPos);
+            
+            ParentChild *parentComp = ECS.Components[GetComponentID("ParentChild")][entity].data;
+            
+            ListCellPointer current = GetFirstCell(parentComp->childs);
+            while(current){
+                EntityID child = *((EntityID*) GetElement(*current));
+
+                if(EntityContainsComponent(child, ThisComponentID())){
+                    Transform *cTransform = ECS.Components[ThisComponentID()][child].data;
+                    cTransform->position = Add(cTransform->position,deltaPos);
+                }
+                current = GetNextCell(current);
+            }
+        }
+    }
 }
 
 void SetRotation(EntityID entity, Vector3 rot){

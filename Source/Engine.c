@@ -244,6 +244,10 @@ ComponentMask GetEntityComponents(EntityID entity){
 	return ECS.Entities[entity].mask;
 }
 
+int IsEmptyComponentMask(ComponentMask mask){
+	return mask.mask? 0:1;
+}
+
 int EntityContainsMask(EntityID entity, ComponentMask mask){
 	if(!mask.mask) return 0;
 	return (ECS.Entities[entity].mask.mask & mask.mask) == mask.mask;
@@ -461,12 +465,17 @@ void EngineUpdate(){
 	int i;
 	for(i=0;i<=ECS.maxUsedIndex;i++){
 
+		//Iterate through the systems list
 		ListCellPointer currentSystem = GetFirstCell(ECS.SystemList);
 		while(currentSystem){
+
 			//Entity contains needed components
-			if(EntityContainsMask(i,((System*)GetElement(*currentSystem))->required) ){
+			//If no component is required , run for all
+			if(IsEmptyComponentMask(((System*)GetElement(*currentSystem))->required) || EntityContainsMask(i,((System*)GetElement(*currentSystem))->required) ){
+
 				//Entity doesn't contains the excluded components
-				if(!EntityContainsMask(i,((System*)GetElement(*currentSystem))->excluded) ){
+				//If there is no restriction, run all with the required components
+				if(IsEmptyComponentMask(((System*)GetElement(*currentSystem))->excluded) || !EntityContainsMask(i,((System*)GetElement(*currentSystem))->excluded) ){
 					//Execute system update in the entity
 					((System*)GetElement(*currentSystem)) -> systemUpdate(i);
 				}
@@ -836,6 +845,9 @@ int InitializeInput(){
 	Input.keyboardLast = (Uint8 *)calloc(SDL_NUM_SCANCODES,sizeof(Uint8));
 	Input.keyboardCurrent = SDL_GetKeyboardState(NULL);
 
+	Input.mouseX = 0;
+	Input.mouseY = 0;
+
 	initializedInput = 1;
 	return 1;
 }
@@ -854,7 +866,7 @@ int FreeInput(){
 
 void InputUpdate(){
     memcpy(Input.keyboardLast,Input.keyboardCurrent,SDL_NUM_SCANCODES*sizeof(Uint8));
-
+	SDL_GetMouseState(&Input.mouseX,&Input.mouseY);
     while (SDL_PollEvent(&Input.event)) {
         switch (Input.event.type)
         {

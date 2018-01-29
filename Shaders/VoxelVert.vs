@@ -24,7 +24,7 @@ void main(void) {
     float pz = rotPos.z;
 
     vec4 pixelPos = vec4( ((px + objPos.x) - (py + objPos.y))*spriteScale*2 + floor(-camPos.x) + 0.375,
-                          ((px + objPos.x) + (py + objPos.y))*spriteScale + (pz + objPos.z + camPos.z )*spriteScale*2 + floor(-camPos.y) + 0.375,
+                          ((px + objPos.x) + (py + objPos.y))*spriteScale + (pz + objPos.z + camPos.z )*spriteScale*2.2 + floor(-camPos.y) + 0.375,
                           (pz-(py+px)/126.0 + objPos.z) , 1);
 
     gl_Position = projection * pixelPos;

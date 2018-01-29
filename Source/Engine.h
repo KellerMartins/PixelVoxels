@@ -30,6 +30,9 @@ typedef struct engineInput{
     const Uint8 *keyboardCurrent;
     Uint8 *keyboardLast;
 
+    int mouseX;
+    int mouseY;
+
     SDL_Event event;
 }engineInput;
 
@@ -142,6 +145,7 @@ void DestroyEntity();
 void AddComponentToEntity(ComponentID component, EntityID entity);
 void RemoveComponentFromEntity(ComponentID component, EntityID entity);
 ComponentMask GetEntityComponents(EntityID entity);
+int IsEmptyComponentMask(ComponentMask mask);
 int EntityContainsMask(EntityID entity, ComponentMask mask);
 int EntityContainsComponent(EntityID entity, ComponentID component);
 

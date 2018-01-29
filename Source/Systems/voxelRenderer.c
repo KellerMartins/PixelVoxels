@@ -29,7 +29,7 @@ void VoxelRendererInit(){
     if(cubeimg->format->BytesPerPixel == 4) {
         Mode = GL_RGBA;
     }
-    cubeTexDimension = max(cubeimg->w, cubeimg->h);
+    cubeTexDimension = min(cubeimg->w, cubeimg->h);
     glTexImage2D(GL_TEXTURE_2D, 0, Mode, cubeimg->w, cubeimg->h, 0, Mode, GL_UNSIGNED_BYTE, cubeimg->pixels);
     
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -102,13 +102,15 @@ void VoxelRendererUpdate(EntityID entity){
     glUniform3f(glGetUniformLocation(Rendering.Shaders[1], "objPos"), position.x, position.y, position.z);
     glUniform3f(glGetUniformLocation(Rendering.Shaders[1], "centerPos"), obj->center.x, obj->center.y, obj->center.z);
     glUniform3f(glGetUniformLocation(Rendering.Shaders[1], "camPos"), Rendering.cameraPosition.x, Rendering.cameraPosition.y, Rendering.cameraPosition.z);
-    glUniform1i(glGetUniformLocation(Rendering.Shaders[1], "spriteScale"), cubeTexDimension/5);
+    glUniform1i(glGetUniformLocation(Rendering.Shaders[1], "spriteScale"), cubeTexDimension/5.0f);
     glUniform1i(glGetUniformLocation(Rendering.Shaders[1], "tex"), 0);
 
     glDrawArrays(GL_POINTS, 0, obj->numberOfVertices);
 
     glUseProgram(0);
-    glDisable(GL_POINT_SPRITE);
+
     glDisable(GL_DEPTH_TEST);
+    glDisable(GL_POINT_SPRITE);
+    glDisable(GL_TEXTURE_2D);
     
 }

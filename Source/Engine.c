@@ -874,9 +874,9 @@ void InputUpdate(){
 	Input.deltaMouseX = Input.mouseX - oldMouseX;
 	Input.deltaMouseY = Input.mouseY - oldMouseY;
 
-	Input.keyboardLast[0] = Input.keyboardCurrent[0];
-	Input.keyboardLast[1] = Input.keyboardCurrent[1];
-	Input.keyboardLast[2] = Input.keyboardCurrent[2];
+	Input.mouseButtonLast[0] = Input.mouseButtonCurrent[0];
+	Input.mouseButtonLast[1] = Input.mouseButtonCurrent[1];
+	Input.mouseButtonLast[2] = Input.mouseButtonCurrent[2];
 
     while (SDL_PollEvent(&Input.event)) {
         switch (Input.event.type)

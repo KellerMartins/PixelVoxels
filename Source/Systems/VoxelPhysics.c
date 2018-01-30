@@ -1,6 +1,7 @@
 #include "VoxelPhysics.h"
 //Each voxel is 10 centimeters
 
+static System *ThisSystem;
 static ComponentID VoxelModelID = -1;
 static ComponentID RigidBodyID = -1;
 static ComponentID TransformID = -1;
@@ -20,7 +21,9 @@ void SetGravity(double g){
     gravity = g;
 }
 
-void VoxelPhysicsInit(){
+void VoxelPhysicsInit(System *systemObject){
+    ThisSystem = systemObject;
+
     VoxelModelID = GetComponentID("VoxelModel");
     RigidBodyID = GetComponentID("RigidBody");
     TransformID = GetComponentID("Transform");
@@ -28,52 +31,67 @@ void VoxelPhysicsInit(){
 
 //Simple collision and kinematic movement
 //Warning: Not even close to be physically or mathematically correct!
-void VoxelPhysicsUpdate(EntityID entity){
-    if(IsStaticRigidbody(entity)) {
-        SetVelocity(entity,VECTOR3_ZERO);
-        SetAcceleration(entity,VECTOR3_ZERO);
-        return;
-    }
+void VoxelPhysicsUpdate(){
 
-    //Sets an limit of how high the physics time step can be
-    double moveDelta = Time.deltaTime>0.02? 0.02:Time.deltaTime;
-    ComponentMask needed = CreateComponentMaskByID(3,VoxelModelID, RigidBodyID, TransformID);
+    //Runs for all entities that use voxel physics
+    EntityID entity;
+	for(entity = 0; entity <= ECS.maxUsedIndex; entity++){
 
-    int i,collided = 0;
-    for(i=0;i<=ECS.maxUsedIndex;i++){
+        //Check if entity contains needed components
+        //If no component is required , run for all
+        if(!IsEmptyComponentMask(ThisSystem->required) && !EntityContainsMask(entity,ThisSystem->required) ) continue;
+        //Check if entity doesn't contains the excluded components
+        //If there is no restriction, run all with the required components
+        if(!IsEmptyComponentMask(ThisSystem->excluded) && EntityContainsMask(entity,ThisSystem->excluded) ) continue;
 
-        if(i==entity) continue;
-        //Skip entities without the needed components
-        if(!EntityContainsMask(i,needed)) continue;
-        
-        //VoxelModel *objB = GetVoxelModelPointer(i);
-        Vector3 collisionPoint;
-        //Vector3 collisionNormal = VECTOR3_ZERO;
-        if(VoxelModelVsVoxelModelCollision(entity, i,&collisionPoint)){
-            Vector3 VelA = Subtract(GetVelocity(entity) , ScalarMult(Subtract(GetVelocity(entity),GetVelocity(i)), Lerp(GetBounciness(entity),0.3,1)*2*GetMass(i)/(GetMass(entity) + GetMass(i)) ) );
-            Vector3 VelB = Add(GetVelocity(i) , ScalarMult(Subtract(GetVelocity(entity),GetVelocity(i)), Lerp(GetBounciness(i),0.5,1)*2*GetMass(entity)/(GetMass(entity) + GetMass(i)) ) );
-            //v1f = v1i -2*m2(v1i-v2i)/(m1+m2)
-            //v2f = v2i +2*m1(v1i-v2i)/(m1+m2)
 
-            SetVelocity(entity,VelA);
-            SetVelocity(i,VelB);
-            collided = 1;
-        }
-    }
-    
-
-    SetVelocity(entity,Add(GetVelocity(entity),ScalarMult(GetAcceleration(entity),moveDelta)));
-    if(UsesGravity(entity)){
-        if(!collided)
-            SetAcceleration(entity,(Vector3){0,0,-GetGravity()});
-        else{
+        if(IsStaticRigidbody(entity)) {
+            SetVelocity(entity,VECTOR3_ZERO);
             SetAcceleration(entity,VECTOR3_ZERO);
-        }  
-    }
-    Vector3 posDelta = ScalarMult(Add(ScalarMult(GetVelocity(entity),moveDelta) , ScalarMult(GetAcceleration(entity),0.5 * moveDelta * moveDelta)),WORLD_SCALE);
+            continue;
+        }
 
-    Vector3 pos = Add(GetPosition(entity),posDelta);
-    SetPosition(entity,pos);
+        //Sets an limit of how high the physics time step can be
+        double moveDelta = Time.deltaTime>0.02? 0.02:Time.deltaTime;
+        ComponentMask needed = CreateComponentMaskByID(3,VoxelModelID, RigidBodyID, TransformID);
+
+        //Checks for entities to collide with
+        int i,collided = 0;
+        for(i=0; i<=ECS.maxUsedIndex; i++){
+            
+            if(i==entity) continue;
+            //Skip entities without the needed components
+            if(!EntityContainsMask(i,needed)) continue;
+            
+            //VoxelModel *objB = GetVoxelModelPointer(i);
+            Vector3 collisionPoint;
+            //Vector3 collisionNormal = VECTOR3_ZERO;
+            if(VoxelModelVsVoxelModelCollision(entity, i,&collisionPoint)){
+                Vector3 VelA = Subtract(GetVelocity(entity) , ScalarMult(Subtract(GetVelocity(entity),GetVelocity(i)), Lerp(GetBounciness(entity),0.3,1)*2*GetMass(i)/(GetMass(entity) + GetMass(i)) ) );
+                Vector3 VelB = Add(GetVelocity(i) , ScalarMult(Subtract(GetVelocity(entity),GetVelocity(i)), Lerp(GetBounciness(i),0.5,1)*2*GetMass(entity)/(GetMass(entity) + GetMass(i)) ) );
+                //v1f = v1i -2*m2(v1i-v2i)/(m1+m2)
+                //v2f = v2i +2*m1(v1i-v2i)/(m1+m2)
+
+                SetVelocity(entity,VelA);
+                SetVelocity(i,VelB);
+                collided = 1;
+            }
+        }
+        
+
+        SetVelocity(entity,Add(GetVelocity(entity),ScalarMult(GetAcceleration(entity),moveDelta)));
+        if(UsesGravity(entity)){
+            if(!collided)
+                SetAcceleration(entity,(Vector3){0,0,-GetGravity()});
+            else{
+                SetAcceleration(entity,VECTOR3_ZERO);
+            }  
+        }
+        Vector3 posDelta = ScalarMult(Add(ScalarMult(GetVelocity(entity),moveDelta) , ScalarMult(GetAcceleration(entity),0.5 * moveDelta * moveDelta)),WORLD_SCALE);
+
+        Vector3 pos = Add(GetPosition(entity),posDelta);
+        SetPosition(entity,pos);
+    }
 }
 
 void VoxelPhysicsFree(){
@@ -133,80 +151,9 @@ int VoxelModelVsVoxelModelCollision(EntityID entityA, EntityID entityB,Vector3 *
                 collisionPoint->x += x;
                 collisionPoint->y += y;
                 collisionPoint->z += z;
-
-                /*objA->vColors[i] = 1;
-                objA->vColors[i+1] = 0;
-                objA->vColors[i+2] = 0;
-                x = roundf(objA->vertices[i]);
-                y = roundf(objA->vertices[i+1]);
-                z = roundf(objA->vertices[i+2]);
-
-                if(x-1 < 0){
-                    collisionNormal->x -= 1;
-                }else{
-                    index = (x-1) + (z) * objA->dimension[0] + (y) * objA->dimension[0] * objA->dimension[2];
-                    if(objA->model[index]==0){
-                        collisionNormal->x -= 1;
-                    }
-                }
-
-                if(x+1 >= objA->dimension[0]){
-                    collisionNormal->x += 1;
-                }else{
-                    index = (x+1) + (z) * objA->dimension[0] + (y) * objA->dimension[0] * objA->dimension[2];
-                    if(objA->model[index]==0){
-                        collisionNormal->x += 1;
-                    }
-                }
-
-                if(z-1 < 0){
-                    collisionNormal->z -= 1;
-                }else{
-                    index = (x) + (z-1) * objA->dimension[0] + (y) * objA->dimension[0] * objA->dimension[2];
-                    if(objA->model[index]==0){
-                        collisionNormal->z -= 1;
-                    }
-                }
-
-                if(z+1 >= objA->dimension[2]){
-                    collisionNormal->z += 1;
-                }else{
-                    index = (x) + (z+1) * objA->dimension[0] + (y) * objA->dimension[0] * objA->dimension[2];
-                    if(objA->model[index]==0){
-                        collisionNormal->z += 1;
-                    }
-                }
-
-                if(y-1 < 0){
-                    collisionNormal->y -= 1;
-                }else{
-                    index = (x) + (z) * objA->dimension[0] + (y-1) * objA->dimension[0] * objA->dimension[2];
-                    if(objA->model[index]==0){
-                        collisionNormal->y -= 1;
-                    }
-                }
-
-                if(y+1 >= objA->dimension[1]){
-                    collisionNormal->y += 1;
-                }else{
-                    index = (x) + (z) * objA->dimension[0] + (y+1) * objA->dimension[0] * objA->dimension[2];
-                    if(objA->model[index]==0){
-                        collisionNormal->y += 1;
-                    }
-                }*/
-                //printf("%f %f %f\n",collisionPoint->x,collisionPoint->y,collisionPoint->z);
-                
-                //collisions++;
                 return 1;
             }
         }
     }
-    /*if(collisions){
-        collisionPoint->x /= collisions;
-        collisionPoint->y /= collisions;
-        collisionPoint->z /= collisions;
-        printf("%i %i \n",entityA,entityB);
-        return 1;
-    }*/
     return 0;
 }

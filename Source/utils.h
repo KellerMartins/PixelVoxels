@@ -59,7 +59,6 @@
 #define cross(u,v)  (Vector3){ (u).y * (v).z - (u).z * (v).y , (u).z * (v).x - (u).x * (v).z, (u).x * (v).y - (u).y * (v).x}
 #define dot(u,v)  ( (u).x * (v).x + (u).y * (v).y + (u).z * (v).z )
 #define norm(v) sqrt(dot(v,v))                            // norm = length of  vector
-#define dist(u,v) sqrt(dot(subtract(u,v),subtract(u,v)))  // distance = norm of difference
 
 typedef struct Vector3{
 	float x;
@@ -131,8 +130,13 @@ Vector3 NormalizeVector(Vector3 v);
 Vector3 Add(Vector3 a, Vector3 b);
 Vector3 Subtract(Vector3 a, Vector3 b);
 Vector3 ScalarMult(Vector3 v, float s);
+double Distance(Vector3 a, Vector3 b);
+Vector3 VectorProjection(Vector3 a, Vector3 b);
+
 Vector3 Reflection(Vector3 *v1,Vector3 *v2);
 Vector3 RotatePoint(Vector3 p, float rx, float ry, float rz, float pivotX, float pivotY, float pivotZ);
+
+double DistanceFromPointToLine2D(Vector3 lP1,Vector3 lP2, Vector3 p);
 
 float Lerp(double t, float a, float b);
 int Step(float edge, float x );

@@ -3,8 +3,8 @@
 #include "../Engine.h"
 #include "../Components/VoxelModel.h"
 
-void VoxelModificationInit();
-void VoxelModificationUpdate(EntityID entity);
+void VoxelModificationInit(System *systemObject);
+void VoxelModificationUpdate();
 void VoxelModificationFree();
 
 #endif

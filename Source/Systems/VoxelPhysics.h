@@ -14,8 +14,8 @@
 double GetGravity();
 void SetGravity(double g);
 
-void VoxelPhysicsInit();
-void VoxelPhysicsUpdate(EntityID entity);
+void VoxelPhysicsInit(System *systemObject);
+void VoxelPhysicsUpdate();
 void VoxelPhysicsFree();
 
 #endif

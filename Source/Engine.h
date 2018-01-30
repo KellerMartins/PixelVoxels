@@ -32,6 +32,11 @@ typedef struct engineInput{
 
     int mouseX;
     int mouseY;
+    int deltaMouseX;
+    int deltaMouseY;
+
+    int mouseButtonCurrent[3];
+    int mouseButtonLast[3];
 
     SDL_Event event;
 }engineInput;
@@ -98,14 +103,15 @@ typedef struct ComponentType{
     void (*destructor)(EntityID entity);
 }ComponentType;
 
+typedef struct System System;
 typedef struct System{
     unsigned priority;
 
     ComponentMask required;
     ComponentMask excluded;
 
-    void (*systemInit)();
-    void (*systemUpdate)(EntityID entity);
+    void (*systemInit)(System *systemObject);
+    void (*systemUpdate)();
     void (*systemFree)();
 }System;
 
@@ -131,7 +137,7 @@ typedef struct engineECS{
 int InitECS(unsigned max_entities);
 
 int RegisterNewComponent(char componentName[25],void (*constructorFunc)(EntityID entity),void (*destructorFunc)(EntityID entity));
-int RegisterNewSystem(unsigned priority, ComponentMask required, ComponentMask excluded, void (*initFunc)(), void (*updateFunc)(EntityID entity), void (*freeFunc)());
+int RegisterNewSystem(unsigned priority, ComponentMask required, ComponentMask excluded, void (*initFunc)(System *systemObject), void (*updateFunc)(), void (*freeFunc)());
 
 ComponentID GetComponentID(char componentName[25]);
 
@@ -159,9 +165,10 @@ void ExitGame();
 int GameExited();
 
 //Rendering functions
+Vector3 PositionToGameScreenCoords(Vector3 position);
 void ClearRender(SDL_Color col);
 void RenderToScreen();
-void RenderText(char *text, SDL_Color color, int x, int y, TTF_Font* font);
+void RenderText(char *text, SDL_Color color, int x, int y, int z, TTF_Font* font);
 int CompileAndLinkShader();
 void ReloadShaders();
 void LoadVoxelPalette(char path[]);
@@ -173,6 +180,10 @@ void InputUpdate();
 int GetKey(SDL_Scancode key);
 int GetKeyDown(SDL_Scancode key);
 int GetKeyUp(SDL_Scancode key);
+
+int GetMouseButton(int button);
+int GetMouseButtonDown(int button);
+int GetMouseButtonUp(int button);
 
 //Misc.
 void SaveTextureToPNG(SDL_Texture *tex, char* out);

@@ -309,6 +309,18 @@ Vector3 ScalarMult(Vector3 v, float s){
 	return (Vector3){ v.x * s, v.y * s, v.z * s };
 }
 
+double Distance(Vector3 a, Vector3 b){
+	Vector3 AMinusB = Subtract(a,b);
+	return sqrt(dot(AMinusB,AMinusB));
+}
+
+Vector3 VectorProjection(Vector3 a, Vector3 b){
+	//https://en.wikipedia.org/wiki/Vector_projection
+	Vector3 normalizedB = NormalizeVector(b);
+	double a1 = dot(a, normalizedB);
+	return ScalarMult(normalizedB,a1);
+}
+
 Vector3 Reflection(Vector3 *v1,Vector3 *v2)
 {
 	float dotpr = dot(*v2,*v1);
@@ -354,6 +366,11 @@ Vector3 RotatePoint(Vector3 p, float rx, float ry, float rz, float pivotX, float
 	p.z = z;
 	return p;
 
+}
+
+double DistanceFromPointToLine2D(Vector3 lP1,Vector3 lP2, Vector3 p){
+	//https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
+	return abs((lP2.y - lP1.y)*p.x - (lP2.x - lP1.x)*p.y + lP2.x*lP1.y - lP2.y*lP1.x)/Distance(lP1,lP2);
 }
 
 // ----------- Numeric functions ---------------

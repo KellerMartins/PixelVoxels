@@ -17,14 +17,25 @@ void main(void) {
     vec3 pixel = texture2D(fbo_texture, f_texcoord).rgb;
 
     //Outline
+
+    const float ObjOutline = 0.54;
+    const float UIOutline = 0.1;
+    
     vec4 neighbor = texture2D(fbo_texture, vec2(f_texcoord.x + pWidth,f_texcoord.y));
-    pixel = (neighbor.a - curDepth) > 0.01? neighbor.rgb*0.54:pixel;
+    float borderMult = neighbor.a<0.9? ObjOutline : UIOutline;
+    pixel = (neighbor.a - curDepth) > 0.01? neighbor.rgb*borderMult:pixel;
+
     neighbor = texture2D(fbo_texture, vec2(f_texcoord.x - pWidth,f_texcoord.y));
-    pixel = (neighbor.a - curDepth) > 0.01? neighbor.rgb*0.54:pixel;
+    borderMult = neighbor.a<0.9? ObjOutline : UIOutline;
+    pixel = (neighbor.a - curDepth) > 0.01? neighbor.rgb*borderMult:pixel;
+
     neighbor = texture2D(fbo_texture, vec2(f_texcoord.x,f_texcoord.y + pHeight));
-    pixel = (neighbor.a - curDepth) > 0.01? neighbor.rgb*0.54:pixel;
+    borderMult = neighbor.a<0.9? ObjOutline : UIOutline;
+    pixel = (neighbor.a - curDepth) > 0.01? neighbor.rgb*borderMult:pixel;
+
     neighbor = texture2D(fbo_texture, vec2(f_texcoord.x,f_texcoord.y - pHeight));
-    pixel = (neighbor.a - curDepth) > 0.01? neighbor.rgb*0.54:pixel;
+    borderMult = neighbor.a<0.9? ObjOutline : UIOutline;
+    pixel = (neighbor.a - curDepth) > 0.01? neighbor.rgb*borderMult:pixel;
 
     //Vignette
     vec3 dist = vec3((f_texcoord.x - 0.5) * 1.25,(f_texcoord.y - 0.5f) * 1.25,0);

@@ -7,6 +7,7 @@
 #include "Systems/VoxelRenderer.h"
 #include "Systems/VoxelModification.h"
 #include "Systems/VoxelPhysics.h"
+#include "Systems/EditorGizmos.h"
 
 extern engineTime Time;
 extern engineCore Core;
@@ -23,11 +24,12 @@ int main(int argc, char *argv[]){
 	ComponentID transformComponent = RegisterNewComponent("Transform", &TransformConstructor, &TransformDestructor);
 	ComponentID voxelModelComponent = RegisterNewComponent("VoxelModel", &VoxelModelConstructor, &VoxelModelDestructor);
 	ComponentID rigidBodyComponent = RegisterNewComponent("RigidBody", &RigidBodyConstructor, &RigidBodyDestructor);
-	ComponentID ParentChildComponent = RegisterNewComponent("ParentChild", &ParentChildConstructor, &ParentChildDestructor);
+	ComponentID parentChildComponent = RegisterNewComponent("ParentChild", &ParentChildConstructor, &ParentChildDestructor);
 
 	if(RegisterNewSystem(1,CreateComponentMask(3,"Transform", "VoxelModel","RigidBody"),(ComponentMask){0},&VoxelPhysicsInit,&VoxelPhysicsUpdate,&VoxelPhysicsFree) < 0) printf("Failed to register VoxelPhysics system!\n");
 	if(RegisterNewSystem(0,CreateComponentMask(2,"Transform", "VoxelModel"),(ComponentMask){0},&VoxelRendererInit,&VoxelRendererUpdate,&VoxelRendererFree) < 0) printf("Failed to register VoxelRender system!\n");
 	if(RegisterNewSystem(2,CreateComponentMask(1,"VoxelModel"),(ComponentMask){0},&VoxelModificationInit,&VoxelModificationUpdate,&VoxelModificationFree) < 0) printf("Failed to register VoxelModification system!\n");
+	if(RegisterNewSystem(-1,CreateComponentMask(0),(ComponentMask){0},&EditorGizmosInit,&EditorGizmosUpdate,&EditorGizmosFree) < 0) printf("Failed to register Editor system!\n");
 
 	if(!InitEngine()) return 1;
 
@@ -92,17 +94,30 @@ int main(int argc, char *argv[]){
 		{
 			ExitGame();
 		}
-		if (GetKey(SDL_SCANCODE_R))
+		if (GetKeyDown(SDL_SCANCODE_R))
 		{
 			ReloadShaders();
 		}
 
 		RenderToScreen();
 
-		static char perfInfo[100];
-		sprintf(perfInfo,"%4.2f  :FPS\n  %3d : MS\n%5.4lf : DT", GetFPS(), Time.msTime, Time.deltaTime);
+		static char fpsInfo[20];
+		static char msInfo[20];
+		static char dtInfo[20];
+		sprintf(fpsInfo,"%4.2f  :FPS", GetFPS());
+		sprintf(msInfo,"%3d  : MS" ,Time.msTime);
+		sprintf(dtInfo,"%5.4lf  : DT", Time.deltaTime);
 		SDL_Color fontColor = {255,255,255,255};
-		RenderText(perfInfo, fontColor, Screen.windowWidth-100, Screen.windowHeight-50, font);
+
+		int w,h;
+		TTF_SizeText(font,fpsInfo,&w,&h);
+		RenderText(fpsInfo, fontColor, Screen.windowWidth-w - 10, Screen.windowHeight-50 + TTF_FontHeight(font)*2, 0, font);
+
+		TTF_SizeText(font,msInfo,&w,&h);
+		RenderText(msInfo, fontColor, Screen.windowWidth-w - 10, Screen.windowHeight-50 + TTF_FontHeight(font), 0, font);
+
+		TTF_SizeText(font,dtInfo,&w,&h);
+		RenderText(dtInfo, fontColor, Screen.windowWidth-w - 10, Screen.windowHeight-50, 0, font);
 
 		EngineUpdateEnd();
 		ProcessFPS();

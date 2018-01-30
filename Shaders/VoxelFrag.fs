@@ -4,7 +4,8 @@ precision highp float;
 
 in  vec3 ex_Color;
 in float depth;
-in vec3 pointLight;
+in vec3 pointLightCol;
+in float pointLightDist;
 in vec3 pointLightDir;
 in vec2 v_uv;
 
@@ -24,7 +25,7 @@ void main(void) {
         discard;
 
     vec3 ambientAndSun = vec3(0.04,0,0.1) + max(0,dot(sunDir,normal)) * vec3(1,1,1);
-    vec3 pointLighting = max(0,dot(normal,pointLightDir))*pointLight;
+    vec3 pointLighting = max(0,dot(normal,pointLightDir))*(pointLightDist)*pointLightCol;
 
     gl_FragColor = vec4((ambientAndSun + pointLighting) * ex_Color,1.0);
     gl_FragColor.a = depth;

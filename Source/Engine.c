@@ -71,7 +71,7 @@ int RegisterNewComponent(char componentName[25],void (*constructorFunc)(EntityID
 	return GetLength(ECS.ComponentTypes)-1;
 }
 
-int RegisterNewSystem(unsigned priority, ComponentMask required, ComponentMask excluded, void (*initFunc)(), void (*updateFunc)(EntityID entity), void (*freeFunc)()){
+int RegisterNewSystem(unsigned priority, ComponentMask required, ComponentMask excluded, void (*initFunc)(System *systemObject), void (*updateFunc)(), void (*freeFunc)()){
 	if(!initializedECS){
 		printf("ECS not initialized! Initialize ECS before registering the components and systems\n");
 		return -1;
@@ -440,8 +440,8 @@ int InitEngine(){
 	//Call initialization function of all systems
 	ListCellPointer current = GetFirstCell(ECS.SystemList);
 	while(current){
-		System curSystem = *((System *)GetElement(*current));
-		curSystem.systemInit();
+		System *curSystem = ((System *)GetElement(*current));
+		curSystem->systemInit(curSystem);
 
 		current = GetNextCell(current);
 	}
@@ -462,27 +462,13 @@ void EngineUpdate(){
 	InputUpdate();
 
 	//Run systems updates
-	int i;
-	for(i=0;i<=ECS.maxUsedIndex;i++){
+	
 
-		//Iterate through the systems list
-		ListCellPointer currentSystem = GetFirstCell(ECS.SystemList);
-		while(currentSystem){
-
-			//Entity contains needed components
-			//If no component is required , run for all
-			if(IsEmptyComponentMask(((System*)GetElement(*currentSystem))->required) || EntityContainsMask(i,((System*)GetElement(*currentSystem))->required) ){
-
-				//Entity doesn't contains the excluded components
-				//If there is no restriction, run all with the required components
-				if(IsEmptyComponentMask(((System*)GetElement(*currentSystem))->excluded) || !EntityContainsMask(i,((System*)GetElement(*currentSystem))->excluded) ){
-					//Execute system update in the entity
-					((System*)GetElement(*currentSystem)) -> systemUpdate(i);
-				}
-			}
-
-			currentSystem = GetNextCell(currentSystem);
-		}
+	//Iterate through the systems list
+	ListCellPointer currentSystem = GetFirstCell(ECS.SystemList);
+	while(currentSystem){
+		((System*)GetElement(*currentSystem)) -> systemUpdate();
+		currentSystem = GetNextCell(currentSystem);
 	}
 
 }
@@ -560,6 +546,15 @@ int GameExited(){
 
 //-------- Rendering Functions -------------
 
+Vector3 PositionToGameScreenCoords(Vector3 position){
+	Vector3 screenPos;
+	screenPos.x = (int)(((position.x) - (position.y))*2 + floorf(-Rendering.cameraPosition.x)) + 0.375;
+    screenPos.y = (int)(((position.x) + (position.y)) + (position.z + Rendering.cameraPosition.z )*2 + floorf(-Rendering.cameraPosition.y)) + 0.375;
+	screenPos.z = (position.z)/256.0;
+
+	return screenPos;
+}
+
 void ClearRender(SDL_Color col){
     glBindFramebuffer(GL_FRAMEBUFFER, Rendering.frameBuffer);
 
@@ -608,9 +603,11 @@ void RenderToScreen(){
     glUseProgram(0);
 }
 
-void RenderText(char *text, SDL_Color color, int x, int y, TTF_Font* font) 
+void RenderText(char *text, SDL_Color color, int x, int y, int z, TTF_Font* font) 
 {	
-    SDL_Surface * sFont = TTF_RenderText_Blended_Wrapped(font, text, color,500);
+    SDL_Surface * sFont = TTF_RenderText_Solid(font, text, color);
+	sFont = SDL_ConvertSurfaceFormat(sFont,SDL_PIXELFORMAT_RGBA8888,0);
+
     if(!sFont){printf("Failed to render text!\n"); return;}
 
     glMatrixMode(GL_MODELVIEW);
@@ -634,18 +631,18 @@ void RenderText(char *text, SDL_Color color, int x, int y, TTF_Font* font)
 
     glColor3f(1.0f, 1.0f, 1.0f);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, sFont->w, sFont->h, 0, GL_BGRA, 
                     GL_UNSIGNED_BYTE, sFont->pixels);
 
     
     glBegin(GL_QUADS);
     {
-        glTexCoord2f(0,1); glVertex2f(x, y);
-        glTexCoord2f(1,1); glVertex2f(x + sFont->w, y);
-        glTexCoord2f(1,0); glVertex2f(x + sFont->w, y + sFont->h);
-        glTexCoord2f(0,0); glVertex2f(x, y + sFont->h);
+        glTexCoord2f(0,1); glVertex3f(x, y, z);
+        glTexCoord2f(1,1); glVertex3f(x + sFont->w, y, z);
+        glTexCoord2f(1,0); glVertex3f(x + sFont->w, y + sFont->h, z);
+        glTexCoord2f(0,0); glVertex3f(x, y + sFont->h, z);
     }
     glEnd();
     glDisable(GL_BLEND);
@@ -847,6 +844,8 @@ int InitializeInput(){
 
 	Input.mouseX = 0;
 	Input.mouseY = 0;
+	Input.deltaMouseX = 0;
+	Input.deltaMouseY = 0;
 
 	initializedInput = 1;
 	return 1;
@@ -866,14 +865,55 @@ int FreeInput(){
 
 void InputUpdate(){
     memcpy(Input.keyboardLast,Input.keyboardCurrent,SDL_NUM_SCANCODES*sizeof(Uint8));
+
+	int oldMouseX = Input.mouseX;
+	int oldMouseY = Input.mouseY;
+
 	SDL_GetMouseState(&Input.mouseX,&Input.mouseY);
+
+	Input.deltaMouseX = Input.mouseX - oldMouseX;
+	Input.deltaMouseY = Input.mouseY - oldMouseY;
+
+	Input.keyboardLast[0] = Input.keyboardCurrent[0];
+	Input.keyboardLast[1] = Input.keyboardCurrent[1];
+	Input.keyboardLast[2] = Input.keyboardCurrent[2];
+
     while (SDL_PollEvent(&Input.event)) {
         switch (Input.event.type)
         {
             case SDL_QUIT:
-				printf("B");
                 exitGame = 1;
                 break;
+
+			case SDL_MOUSEBUTTONDOWN:
+				switch (Input.event.button.button)
+				{
+					case SDL_BUTTON_LEFT:
+						Input.mouseButtonCurrent[0] = 1;
+						break;
+					case SDL_BUTTON_RIGHT:
+						Input.mouseButtonCurrent[1] = 1;
+						break;
+					case SDL_BUTTON_MIDDLE:
+						Input.mouseButtonCurrent[2] = 1;
+						break;
+				}
+			break;
+
+			case SDL_MOUSEBUTTONUP:
+				switch (Input.event.button.button)
+				{
+					case SDL_BUTTON_LEFT:
+						Input.mouseButtonCurrent[0] = 0;
+						break;
+					case SDL_BUTTON_RIGHT:
+						Input.mouseButtonCurrent[1] = 0;
+						break;
+					case SDL_BUTTON_MIDDLE:
+						Input.mouseButtonCurrent[2] = 0;
+						break;
+				}
+			break;
         }
     }
 }
@@ -911,6 +951,41 @@ int GetKeyUp(SDL_Scancode key){
 	}
 	return (!Input.keyboardCurrent[key] && Input.keyboardLast[key]);
 } 
+
+
+int GetMouseButton(int button){
+	if(!initializedInput){
+		printf("GetMouseButton: Input not initialized!\n");
+		return 0;
+	}
+	if(button < SDL_BUTTON_LEFT || button > SDL_BUTTON_RIGHT){
+		printf("GetMouseButton: Button out of bounds! (%d)\n",button);
+		return 0;
+	}
+	return (Input.mouseButtonCurrent[button-SDL_BUTTON_LEFT]);
+}
+int GetMouseButtonDown(int button){
+	if(!initializedInput){
+		printf("GetMouseButtonDown: Input not initialized!\n");
+		return 0;
+	}
+	if(button < SDL_BUTTON_LEFT || button > SDL_BUTTON_RIGHT){
+		printf("GetMouseButtonDown: Button out of bounds! (%d)\n",button);
+		return 0;
+	}
+	return (Input.mouseButtonCurrent[button-SDL_BUTTON_LEFT] && !Input.mouseButtonLast[button-SDL_BUTTON_LEFT]);
+}
+int GetMouseButtonUp(int button){
+	if(!initializedInput){
+		printf("GetMouseButtonUp: Input not initialized!\n");
+		return 0;
+	}
+	if(button < SDL_BUTTON_LEFT || button > SDL_BUTTON_RIGHT){
+		printf("GetMouseButtonUp: Button out of bounds! (%d)\n",button);
+		return 0;
+	}
+	return (!Input.mouseButtonCurrent[button-SDL_BUTTON_LEFT] && Input.mouseButtonLast[button-SDL_BUTTON_LEFT]);
+}
 // ----------- Misc. functions ---------------
 
 void SaveTextureToPNG(SDL_Texture *tex, char* out){

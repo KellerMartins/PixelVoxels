@@ -13,7 +13,8 @@ uniform mat3 rotation;
 out vec3 ex_Color;
 out vec3 ex_Position;
 out float depth;
-out vec3 pointLight;
+out vec3 pointLightCol;
+out float pointLightDist;
 out vec3 pointLightDir;
 
 void main(void) {
@@ -23,20 +24,21 @@ void main(void) {
     float py = rotPos.y;
     float pz = rotPos.z;
 
-    vec4 pixelPos = vec4( ((px + objPos.x) - (py + objPos.y))*spriteScale*2 + floor(-camPos.x) + 0.375,
-                          ((px + objPos.x) + (py + objPos.y))*spriteScale + (pz + objPos.z + camPos.z )*spriteScale*2.2 + floor(-camPos.y) + 0.375,
+    vec4 pixelPos = vec4( floor(((px + objPos.x) - (py + objPos.y))*spriteScale*2 + floor(-camPos.x) + 0.375),
+                          floor(((px + objPos.x) + (py + objPos.y))*spriteScale + (pz + objPos.z + camPos.z )*spriteScale*2 + floor(-camPos.y) + 0.375),
                           (pz-(py+px)/126.0 + objPos.z) , 1);
 
     gl_Position = projection * pixelPos;
-
-    // GLSL allows shorthand use of vectors too, the following is also valid:
-    // gl_Position = vec4(in_Position, 0.0, 1.0);
-    // We're simply passing the color through unmodified
+    
     vec3 globalPos = vec3(px + objPos.x,py + objPos.y,pz + objPos.z);
     ex_Color = in_Color;
 
-    pointLight = 200.01/pow(distance(globalPos,vec3(-10,-10,30)),2) * vec3(1,1,1);
+    pointLightCol =  vec3(1,1,1);
+    pointLightDist = 200.01/pow(distance(globalPos,vec3(-10,-10,30)),2);
     pointLightDir = normalize(vec3(-10,-10,30)-globalPos);
 
-    depth = in_Position.x<0? -1.0 : (pz + objPos.z)/256.0;
+    if(in_Position.x<0 || globalPos.z>256)
+        depth = -1.0;
+    else
+        depth = (pz + objPos.z)/256.0;
 }

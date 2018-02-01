@@ -615,7 +615,7 @@ void RenderToScreen(){
     glUseProgram(0);
 }
 
-void RenderText(char *text, SDL_Color color, int x, int y, int z, TTF_Font* font) 
+void RenderText(char *text, SDL_Color color, int x, int y, TTF_Font* font) 
 {	
     SDL_Surface * originalFont = TTF_RenderText_Solid(font, text, color);
 	SDL_Surface * sFont = SDL_ConvertSurfaceFormat(originalFont,SDL_PIXELFORMAT_RGBA8888,0);
@@ -652,10 +652,10 @@ void RenderText(char *text, SDL_Color color, int x, int y, int z, TTF_Font* font
     
     glBegin(GL_QUADS);
     {
-        glTexCoord2f(0,1); glVertex3f(x, y, z);
-        glTexCoord2f(1,1); glVertex3f(x + sFont->w, y, z);
-        glTexCoord2f(1,0); glVertex3f(x + sFont->w, y + sFont->h, z);
-        glTexCoord2f(0,0); glVertex3f(x, y + sFont->h, z);
+        glTexCoord2f(0,1); glVertex2f(x, y);
+        glTexCoord2f(1,1); glVertex2f(x + sFont->w, y);
+        glTexCoord2f(1,0); glVertex2f(x + sFont->w, y + sFont->h);
+        glTexCoord2f(0,0); glVertex2f(x, y + sFont->h);
     }
     glEnd();
     glDisable(GL_BLEND);
@@ -912,10 +912,10 @@ void InputUpdate(){
 						Input.mouseButtonCurrent[0] = 1;
 						break;
 					case SDL_BUTTON_RIGHT:
-						Input.mouseButtonCurrent[1] = 1;
+						Input.mouseButtonCurrent[2] = 1;
 						break;
 					case SDL_BUTTON_MIDDLE:
-						Input.mouseButtonCurrent[2] = 1;
+						Input.mouseButtonCurrent[1] = 1;
 						break;
 				}
 			break;
@@ -927,10 +927,10 @@ void InputUpdate(){
 						Input.mouseButtonCurrent[0] = 0;
 						break;
 					case SDL_BUTTON_RIGHT:
-						Input.mouseButtonCurrent[1] = 0;
+						Input.mouseButtonCurrent[2] = 0;
 						break;
 					case SDL_BUTTON_MIDDLE:
-						Input.mouseButtonCurrent[2] = 0;
+						Input.mouseButtonCurrent[1] = 0;
 						break;
 				}
 			break;

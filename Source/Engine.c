@@ -301,7 +301,7 @@ int InitEngine(){
     Time.nowCounter = SDL_GetPerformanceCounter();
 	Time.lastCounter = 0;
 	
-	//Inicializações gerais
+	//Core initializations
 
 	srand( (unsigned)time(NULL) );
 	
@@ -617,9 +617,10 @@ void RenderToScreen(){
 
 void RenderText(char *text, SDL_Color color, int x, int y, int z, TTF_Font* font) 
 {	
-    SDL_Surface * sFont = TTF_RenderText_Solid(font, text, color);
-	sFont = SDL_ConvertSurfaceFormat(sFont,SDL_PIXELFORMAT_RGBA8888,0);
+    SDL_Surface * originalFont = TTF_RenderText_Solid(font, text, color);
+	SDL_Surface * sFont = SDL_ConvertSurfaceFormat(originalFont,SDL_PIXELFORMAT_RGBA8888,0);
 
+	SDL_FreeSurface(originalFont);
     if(!sFont){printf("Failed to render text!\n"); return;}
 
     glMatrixMode(GL_MODELVIEW);
@@ -706,7 +707,6 @@ int CompileAndLinkShader(char *vertPath, char *fragPath, unsigned shaderIndex){
         GLchar *infoLog = (GLchar *) malloc(maxLength * sizeof(GLchar));
         glGetShaderInfoLog(vertexShader, maxLength, &maxLength, &infoLog[0]);
         
-        //We don't need the shader anymore.
         glDeleteShader(vertexShader);
         free((void*)vShaderSource);
 
@@ -714,7 +714,6 @@ int CompileAndLinkShader(char *vertPath, char *fragPath, unsigned shaderIndex){
         
         free(infoLog);
         
-        //In this simple program, we'll just leave
         return 0;
     }
 
@@ -741,15 +740,14 @@ int CompileAndLinkShader(char *vertPath, char *fragPath, unsigned shaderIndex){
         //We don't need the shader anymore.
         glDeleteShader(fragmentShader);
         free((void*)fShaderSource);
-        //Either of them. Don't leak shaders.
+
         glDeleteShader(vertexShader);
         free((void*)vShaderSource);
 
         printf("Fragment Shader Info Log:\n%s\n",infoLog);
         
         free(infoLog);
-        
-        //In this simple program, we'll just leave
+
         return 0;
     }
 
@@ -788,7 +786,6 @@ int CompileAndLinkShader(char *vertPath, char *fragPath, unsigned shaderIndex){
         printf("Shader linkage Info Log:\n%s\n",infoLog);
         
         free(infoLog);
-        //In this simple program, we'll just leave
         return 0;
     }
 

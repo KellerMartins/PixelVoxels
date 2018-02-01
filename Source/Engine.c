@@ -115,7 +115,7 @@ ComponentID GetComponentID(char componentName[25]){
 }
 
 //Receives components name strings[25] and return a ComponentMask containing these components
-ComponentMask CreateComponentMask(int numComp, ...){
+ComponentMask CreateComponentMaskByName(int numComp, ...){
 	ComponentMask newMask = {0};
 
 	va_list args;
@@ -222,11 +222,10 @@ void RemoveComponentFromEntity(ComponentID component, EntityID entity){
 		printf("RemoveComponentToEntity: Component index out of range!(%d)\n",component);
 		return;
 	}
-	if(!EntityContainsMask(entity, CreateComponentMask(1,component))){
+	if(!EntityContainsMask(entity, CreateComponentMaskByID(1,component))){
 		printf("AddComponentToEntity: This entity doesnt have this component! (E:%d C:%d)\n",entity, component);
 		return;
 	}
-
 	ECS.Entities[entity].mask.mask &= ~(1 << component);
 
 	//Get the component type
@@ -260,6 +259,19 @@ int EntityContainsComponent(EntityID entity, ComponentID component){
 	}
 	unsigned long compMask = 1<<component;
 	return (ECS.Entities[entity].mask.mask & compMask) == compMask;
+}
+
+int MaskContainsComponent(ComponentMask mask, ComponentID component){
+	if(component<0 || component>GetLength(ECS.ComponentTypes)){
+		printf("MaskContainsComponent: Component index out of range!(%d)\n",component);
+		return 0;
+	}
+
+	return mask.mask>>component & 1;
+}
+
+ComponentMask IntersectComponentMasks(ComponentMask mask1, ComponentMask mask2){
+	return (ComponentMask){mask1.mask & mask2.mask};
 }
 
 //-------- Engine Functions -------------
@@ -847,6 +859,9 @@ int InitializeInput(){
 	Input.deltaMouseX = 0;
 	Input.deltaMouseY = 0;
 
+	Input.mouseWheelX = 0;
+	Input.mouseWheelY = 0;
+
 	initializedInput = 1;
 	return 1;
 }
@@ -878,9 +893,17 @@ void InputUpdate(){
 	Input.mouseButtonLast[1] = Input.mouseButtonCurrent[1];
 	Input.mouseButtonLast[2] = Input.mouseButtonCurrent[2];
 
+	Input.mouseWheelX = 0;
+	Input.mouseWheelY = 0;
+
     while (SDL_PollEvent(&Input.event)) {
+
         switch (Input.event.type)
         {
+			case SDL_MOUSEWHEEL:			
+				Input.mouseWheelX = Input.event.wheel.x;
+				Input.mouseWheelY = Input.event.wheel.y;
+			break;
             case SDL_QUIT:
                 exitGame = 1;
                 break;

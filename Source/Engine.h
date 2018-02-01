@@ -38,6 +38,9 @@ typedef struct engineInput{
     int mouseButtonCurrent[3];
     int mouseButtonLast[3];
 
+    int mouseWheelX;
+    int mouseWheelY;
+
     SDL_Event event;
 }engineInput;
 
@@ -142,7 +145,7 @@ int RegisterNewSystem(unsigned priority, ComponentMask required, ComponentMask e
 ComponentID GetComponentID(char componentName[25]);
 
 //Receives string
-ComponentMask CreateComponentMask(int numComp, ...);
+ComponentMask CreateComponentMaskByName(int numComp, ...);
 //Receives ComponentID
 ComponentMask CreateComponentMaskByID(int numComp, ...);
 
@@ -150,10 +153,13 @@ EntityID CreateEntity();
 void DestroyEntity();
 void AddComponentToEntity(ComponentID component, EntityID entity);
 void RemoveComponentFromEntity(ComponentID component, EntityID entity);
+
 ComponentMask GetEntityComponents(EntityID entity);
 int IsEmptyComponentMask(ComponentMask mask);
 int EntityContainsMask(EntityID entity, ComponentMask mask);
 int EntityContainsComponent(EntityID entity, ComponentID component);
+int MaskContainsComponent(ComponentMask mask, ComponentID component);
+ComponentMask IntersectComponentMasks(ComponentMask mask1, ComponentMask mask2);
 
 //Engine functions
 int InitEngine();

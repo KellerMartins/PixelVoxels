@@ -59,7 +59,7 @@ void LoadVoxelModel(EntityID entity, char modelPath[])
     AddComponentToEntity(ThisComponentID(), entity);
     
     //Add transform component if it doesnt have
-    if(!EntityContainsMask(entity, CreateComponentMask(1,"Transform"))){
+    if(!EntityContainsMask(entity, CreateComponentMaskByName(1,"Transform"))){
         AddComponentToEntity(GetComponentID("Transform"), entity);
     }
 

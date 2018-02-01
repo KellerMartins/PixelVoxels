@@ -120,6 +120,8 @@ ListCellPointer GetCellAt(List list,int index);
 unsigned GetElementSize(List list);
 unsigned GetLength(List list);
 
+#define ListForEach(element,list) for(element = GetFirstCell(list); element != NULL; element = GetNextCell(element))
+
 
 
 void InitFPS();

@@ -384,7 +384,7 @@ void CalculateLighting(EntityID entity){
     for(y=obj->modificationStartY; y<=obj->modificationEndY; y++){
         for(x=obj->modificationStartX; x<=obj->modificationEndX; x++){
 
-            //Define a luz no topo do objeto, que é transportado para baixo a cada iteração em z
+            //Sets light at the top of the object, that is "transported" at each z iteration
             lightAir = 1;
             lightBlock = 1;
 
@@ -396,7 +396,7 @@ void CalculateLighting(EntityID entity){
                     if(z<obj->dimension[2]-1){ //Up
                         dir = (x + (z+1) * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);
                         occlusion += obj->model[dir]==0? 0:1;
-                        //Ilumina o bloco caso o bloco acima seja vazio (com luz ou sombra), se não, mantém a cor
+                        //Lights the block if the top is empty (with light or shadow), else, keep the color
                         lightBlock = obj->model[dir]==0? lightAir*2:1;
                     }else{
                         lightBlock = 2;
@@ -476,19 +476,19 @@ void CalculateLighting(EntityID entity){
         unsigned colorIndex = (x) + (z) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
         Pixel color = Rendering.voxelColors[obj->model[colorIndex]];
         
-        //Obtém o nivel de iluminação do voxel e multiplica pela sombra dinâmica
+        //Get voxel lighting level and multiply by the dynamic shadow (not used for now)
         int lightIndx = (obj->lighting[colorIndex] & 6)>>1;
         lightIndx *= obj->lighting[colorIndex] & 1;
 
-        //Adiciona iluminação leve nas bordas
+        //Add some lightness on the edges
         int edgeIndx = obj->lighting[colorIndex]>>3;
         float lightVal = lightIndx == 1? 1:(lightIndx >= 2? sunlight:shadow);
         float edgeVal = (edgeIndx<5? edge:edgeIndx == 5? base:crease);
 
-        //Multiplica iluminações e já coloca a conversão da cor de (0,256) para (0,1)
+        //Multiply illuminations and convert from (0,256) to (0,1) range
         double illuminFrac = lightVal * edgeVal * heightVal * ONE_OVER_256;
 
-        //Transforma a cor de um Int16 para cada um dos componentes RGB
+        //Transform the color from a Int16 to each RGB component
         obj->vColors[i] = clamp(color.r * illuminFrac,0,1);
         obj->vColors[i+1] = clamp(color.g * illuminFrac,0,1);
         obj->vColors[i+2] = clamp(color.b * illuminFrac,0,1);

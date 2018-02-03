@@ -19,24 +19,24 @@ TTF_Font* font = NULL;
 
 int main(int argc, char *argv[]){
 
-	InitECS(10);
+	InitECS(110);
 
 	ComponentID transformComponent = RegisterNewComponent("Transform", &TransformConstructor, &TransformDestructor);
 	ComponentID voxelModelComponent = RegisterNewComponent("VoxelModel", &VoxelModelConstructor, &VoxelModelDestructor);
 	ComponentID rigidBodyComponent = RegisterNewComponent("RigidBody", &RigidBodyConstructor, &RigidBodyDestructor);
 	ComponentID parentChildComponent = RegisterNewComponent("ParentChild", &ParentChildConstructor, &ParentChildDestructor);
 
-	if(RegisterNewSystem(1,CreateComponentMaskByName(3,"Transform", "VoxelModel","RigidBody"),(ComponentMask){0},&VoxelPhysicsInit,&VoxelPhysicsUpdate,&VoxelPhysicsFree) < 0) printf("Failed to register VoxelPhysics system!\n");
-	if(RegisterNewSystem(0,CreateComponentMaskByName(2,"Transform", "VoxelModel"),(ComponentMask){0},&VoxelRendererInit,&VoxelRendererUpdate,&VoxelRendererFree) < 0) printf("Failed to register VoxelRender system!\n");
-	if(RegisterNewSystem(2,CreateComponentMaskByName(1,"VoxelModel"),(ComponentMask){0},&VoxelModificationInit,&VoxelModificationUpdate,&VoxelModificationFree) < 0) printf("Failed to register VoxelModification system!\n");
-	if(RegisterNewSystem(-1,CreateComponentMaskByName(0),(ComponentMask){0},&EditorGizmosInit,&EditorGizmosUpdate,&EditorGizmosFree) < 0) printf("Failed to register Editor system!\n");
+	if(RegisterNewSystem(1,CreateComponentMaskByID(3,transformComponent, voxelModelComponent,rigidBodyComponent),(ComponentMask){0},&VoxelPhysicsInit,&VoxelPhysicsUpdate,&VoxelPhysicsFree) < 0) printf("Failed to register VoxelPhysics system!\n");
+	if(RegisterNewSystem(0,CreateComponentMaskByID(2,transformComponent, voxelModelComponent),(ComponentMask){0},&VoxelRendererInit,&VoxelRendererUpdate,&VoxelRendererFree) < 0) printf("Failed to register VoxelRender system!\n");
+	if(RegisterNewSystem(2,CreateComponentMaskByID(1,voxelModelComponent),(ComponentMask){0},&VoxelModificationInit,&VoxelModificationUpdate,&VoxelModificationFree) < 0) printf("Failed to register VoxelModification system!\n");
+	if(RegisterNewSystem(-1,CreateComponentMaskByID(0),(ComponentMask){0},&EditorGizmosInit,&EditorGizmosUpdate,&EditorGizmosFree) < 0) printf("Failed to register Editor system!\n");
 
 	if(!InitEngine()) return 1;
 
 	Rendering.clearScreenColor = (SDL_Color){0,38,75,0};
 
 	InitFPS();
-
+	
 	//Initialize font
 	font = TTF_OpenFont("Interface/Fonts/Visitor.ttf",18);
 	if(!font){
@@ -65,7 +65,7 @@ int main(int argc, char *argv[]){
 	{
 
 		EngineUpdate();
-
+		
 		if (GetKey(SDL_SCANCODE_UP))
 		{
 			MoveCamera(0,-150,0);
@@ -109,10 +109,10 @@ int main(int argc, char *argv[]){
 		sprintf(dtInfo,"DT : %5.4lf", Time.deltaTime);
 		SDL_Color fontColor = {255,255,255,255};
 
-		RenderText(fpsInfo, fontColor, 10, TTF_FontHeight(font)*2 + 10, 0, font);
-		RenderText(msInfo, fontColor, 10, TTF_FontHeight(font) + 10, 0, font);
-		RenderText(dtInfo, fontColor, 10, 10, 0, font);
-
+		RenderText(fpsInfo, fontColor, 110, TTF_FontHeight(font)*2 + 10, font);
+		RenderText(msInfo, fontColor, 110, TTF_FontHeight(font) + 10, font);
+		RenderText(dtInfo, fontColor, 110, 10, font);
+		
 		EngineUpdateEnd();
 		ProcessFPS();
 	}

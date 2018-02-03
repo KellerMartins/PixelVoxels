@@ -458,6 +458,9 @@ int InitEngine(){
 		current = GetNextCell(current);
 	}
 
+	//Disable text input
+	SDL_StopTextInput();
+
 	initializedEngine = 1;
     printf("Engine sucessfully initialized!\n\n");
     return 1;
@@ -617,6 +620,9 @@ void RenderToScreen(){
 
 void RenderText(char *text, SDL_Color color, int x, int y, TTF_Font* font) 
 {	
+	if(!text) return;
+	if(text[0] == '\0') return;
+
     SDL_Surface * originalFont = TTF_RenderText_Solid(font, text, color);
 	SDL_Surface * sFont = SDL_ConvertSurfaceFormat(originalFont,SDL_PIXELFORMAT_RGBA8888,0);
 
@@ -859,6 +865,10 @@ int InitializeInput(){
 	Input.mouseWheelX = 0;
 	Input.mouseWheelY = 0;
 
+	Input.textInput = NULL;
+	Input.textInputMax = 0;
+	Input.textInputLength = 0;
+
 	initializedInput = 1;
 	return 1;
 }
@@ -892,6 +902,8 @@ void InputUpdate(){
 
 	Input.mouseWheelX = 0;
 	Input.mouseWheelY = 0;
+
+	int maxl = Input.textInputMax-Input.textInputLength;
 
     while (SDL_PollEvent(&Input.event)) {
 
@@ -934,8 +946,23 @@ void InputUpdate(){
 						break;
 				}
 			break;
+
+			case SDL_TEXTINPUT:
+				if(maxl>0){
+					strncpy(Input.textInput+Input.textInputLength, Input.event.text.text,1);
+					Input.textInputLength += 1;
+				}
+			break;
         }
     }
+
+	//Backspace delete
+	if(SDL_IsTextInputActive() && GetKeyDown(SDL_SCANCODE_BACKSPACE)){
+		if(Input.textInputLength>0){
+			memset(Input.textInput + Input.textInputLength-1, '\0',Input.textInputMax-Input.textInputLength+1);
+			Input.textInputLength -= 1;
+		}
+	}
 }
 
 int GetKey(SDL_Scancode key){
@@ -1005,6 +1032,29 @@ int GetMouseButtonUp(int button){
 		return 0;
 	}
 	return (!Input.mouseButtonCurrent[button-SDL_BUTTON_LEFT] && Input.mouseButtonLast[button-SDL_BUTTON_LEFT]);
+}
+
+void GetTextInput(char* outputTextPointer, int maxLength, int currentLength){
+	if(SDL_IsTextInputActive()){
+		printf("GetTextInput: Text input active, stop with StopTextInput() before calling again.\n");
+		return;
+	}
+
+    SDL_StartTextInput();
+	Input.textInput = outputTextPointer;
+	Input.textInputMax = maxLength;
+	Input.textInputLength = currentLength;
+}
+
+void StopTextInput(){
+	if(!SDL_IsTextInputActive()){
+		printf("StopTextInput: Text input already disabled.\n");
+		return;
+	}
+    SDL_StopTextInput();
+	Input.textInput = NULL;
+	Input.textInputMax = 0;
+	Input.textInputLength = 0;
 }
 // ----------- Misc. functions ---------------
 

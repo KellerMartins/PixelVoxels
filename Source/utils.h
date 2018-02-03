@@ -121,7 +121,7 @@ unsigned GetElementSize(List list);
 unsigned GetLength(List list);
 
 #define ListForEach(element,list) for(element = GetFirstCell(list); element != NULL; element = GetNextCell(element))
-
+#define GetElementAsType(cellPointer, type)  (*((type*)GetElement(*cellPointer)))
 
 
 void InitFPS();

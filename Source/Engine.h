@@ -41,6 +41,10 @@ typedef struct engineInput{
     int mouseWheelX;
     int mouseWheelY;
 
+    char *textInput;
+    unsigned textInputMax;
+    unsigned textInputLength;
+
     SDL_Event event;
 }engineInput;
 
@@ -190,6 +194,9 @@ int GetKeyUp(SDL_Scancode key);
 int GetMouseButton(int button);
 int GetMouseButtonDown(int button);
 int GetMouseButtonUp(int button);
+
+void GetTextInput(char* outputTextPointer, int maxLength, int currentLength);
+void StopTextInput();
 
 //Misc.
 void SaveTextureToPNG(SDL_Texture *tex, char* out);

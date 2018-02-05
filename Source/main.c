@@ -66,30 +66,30 @@ int main(int argc, char *argv[]){
 
 		EngineUpdate();
 		
-		if (GetKey(SDL_SCANCODE_UP))
-		{
-			MoveCamera(0,-150,0);
-		}
-		else if (GetKey(SDL_SCANCODE_DOWN))
-		{
-			MoveCamera(0,150,0);
-		}
-		if (GetKey(SDL_SCANCODE_RIGHT))
-		{
-			MoveCamera(150,0,0);
-		}
-		else if (GetKey(SDL_SCANCODE_LEFT))
-		{
-			MoveCamera(-150,0,0);
-		}
-		if (GetKey(SDL_SCANCODE_RSHIFT))
-		{
-			MoveCamera(0,0,50);
-		}
-		else if (GetKey(SDL_SCANCODE_RCTRL))
-		{
-			MoveCamera(0,0,-50);
-		}
+		// if (GetKey(SDL_SCANCODE_UP))
+		// {
+		// 	MoveCamera(0,-150,0);
+		// }
+		// else if (GetKey(SDL_SCANCODE_DOWN))
+		// {
+		// 	MoveCamera(0,150,0);
+		// }
+		// if (GetKey(SDL_SCANCODE_RIGHT))
+		// {
+		// 	MoveCamera(150,0,0);
+		// }
+		// else if (GetKey(SDL_SCANCODE_LEFT))
+		// {
+		// 	MoveCamera(-150,0,0);
+		// }
+		// if (GetKey(SDL_SCANCODE_RSHIFT))
+		// {
+		// 	MoveCamera(0,0,50);
+		// }
+		// else if (GetKey(SDL_SCANCODE_RCTRL))
+		// {
+		// 	MoveCamera(0,0,-50);
+		// }
 		if (GetKey(SDL_SCANCODE_ESCAPE))
 		{
 			ExitGame();

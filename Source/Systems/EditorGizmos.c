@@ -752,6 +752,7 @@ void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,in
     static char valueString[5] = "  0.0";
     if(editingField == *curField)
     {
+        //String edit field background
         glColor3f(0.3,0.3,0.3);
         glBegin(GL_QUADS);
             glVertex2f( min1.x, max3.y);
@@ -760,7 +761,26 @@ void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,in
             glVertex2f( min1.x, min1.y);
         glEnd();
 
+        //Get the cursor position by creating a string containing the characters until the cursor
+        //and getting his size when rendered with the used font
+        char buff[13];
+        strncpy(buff,textFieldString,Input.textInputCursorPos);
+        memset(buff+Input.textInputCursorPos,'\0',1);
+        int cursorPos,h;
+        TTF_SizeText(gizmosFont,buff,&cursorPos,&h);
+        cursorPos+=min1.x;
+
+        //Cursor line
+        glColor3f(0.7,0.7,0.7);
+        glLineWidth(2/Screen.gameScale);
+        glBegin(GL_LINES);
+            glVertex2f( cursorPos, min1.y);
+            glVertex2f( cursorPos, max1.y);
+        glEnd();
+
+        //Pass the string as float data
         data->x = strtof(textFieldString, NULL);
+        //Render the string
         RenderText(textFieldString, fontColor, min1.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
     }else if(editingField != (*curField)+1 && editingField != (*curField)+2){
@@ -792,6 +812,7 @@ void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,in
 
     if(editingField == *curField)
     {
+        //String edit field background
         glColor3f(0.3,0.3,0.3);
         glBegin(GL_QUADS);
             glVertex2f( min1.x, max3.y);
@@ -800,7 +821,26 @@ void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,in
             glVertex2f( min1.x, min1.y);
         glEnd();
 
+        //Get the cursor position by creating a string containing the characters until the cursor
+        //and getting his size when rendered with the used font
+        char buff[13];
+        strncpy(buff,textFieldString,Input.textInputCursorPos);
+        memset(buff+Input.textInputCursorPos,'\0',1);
+        int cursorPos,h;
+        TTF_SizeText(gizmosFont,buff,&cursorPos,&h);
+        cursorPos+=min1.x;
+
+        //Cursor line
+        glColor3f(0.7,0.7,0.7);
+        glLineWidth(2/Screen.gameScale);
+        glBegin(GL_LINES);
+            glVertex2f( cursorPos, min1.y);
+            glVertex2f( cursorPos, max1.y);
+        glEnd();
+
+        //Pass the string as float data
         data->y = strtof(textFieldString, NULL);
+        //Render the string
         RenderText(textFieldString, fontColor, min1.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
     }else if(editingField != (*curField)-1 && editingField != (*curField)+1){
@@ -832,6 +872,7 @@ void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,in
 
     if(editingField == *curField)
     {
+        //String edit field background
         glColor3f(0.3,0.3,0.3);
         glBegin(GL_QUADS);
             glVertex2f( min1.x, max3.y);
@@ -840,7 +881,26 @@ void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,in
             glVertex2f( min1.x, min1.y);
         glEnd();
 
+        //Get the cursor position by creating a string containing the characters until the cursor
+        //and getting his size when rendered with the used font
+        char buff[13];
+        strncpy(buff,textFieldString,Input.textInputCursorPos);
+        memset(buff+Input.textInputCursorPos,'\0',1);
+        int cursorPos,h;
+        TTF_SizeText(gizmosFont,buff,&cursorPos,&h);
+        cursorPos+=min1.x;
+
+        //Cursor line
+        glColor3f(0.7,0.7,0.7);
+        glLineWidth(2/Screen.gameScale);
+        glBegin(GL_LINES);
+            glVertex2f( cursorPos, min1.y);
+            glVertex2f( cursorPos, max1.y);
+        glEnd();
+
+        //Pass the string as float data
         data->z = strtof(textFieldString, NULL);
+        //Render the string
         RenderText(textFieldString, fontColor, min1.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
     }else if(editingField != (*curField)-2 && editingField != (*curField)-1){

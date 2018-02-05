@@ -868,6 +868,7 @@ int InitializeInput(){
 	Input.textInput = NULL;
 	Input.textInputMax = 0;
 	Input.textInputLength = 0;
+	Input.textInputCursorPos = 0;
 
 	initializedInput = 1;
 	return 1;
@@ -949,18 +950,54 @@ void InputUpdate(){
 
 			case SDL_TEXTINPUT:
 				if(maxl>0){
-					strncpy(Input.textInput+Input.textInputLength, Input.event.text.text,1);
+					char buff[100];
+					strncpy(buff, Input.textInput+Input.textInputCursorPos,Input.textInputLength-Input.textInputCursorPos);
+					strncpy(Input.textInput+Input.textInputCursorPos, Input.event.text.text,1);
+					strncpy(Input.textInput+Input.textInputCursorPos+1, buff,Input.textInputLength-Input.textInputCursorPos);
 					Input.textInputLength += 1;
+					Input.textInputCursorPos +=1;
 				}
 			break;
         }
     }
 
-	//Backspace delete
-	if(SDL_IsTextInputActive() && GetKeyDown(SDL_SCANCODE_BACKSPACE)){
-		if(Input.textInputLength>0){
-			memset(Input.textInput + Input.textInputLength-1, '\0',Input.textInputMax-Input.textInputLength+1);
-			Input.textInputLength -= 1;
+	
+	if(SDL_IsTextInputActive()){
+		
+		//Backspace delete
+		if(GetKeyDown(SDL_SCANCODE_BACKSPACE)){
+			if(Input.textInputCursorPos>0){
+				memmove(Input.textInput + Input.textInputCursorPos-1,Input.textInput + Input.textInputCursorPos,Input.textInputLength - Input.textInputCursorPos);
+				memset(Input.textInput + Input.textInputLength-1, '\0',1);
+				Input.textInputLength -= 1;
+				Input.textInputCursorPos -=1;
+			}
+		}
+		
+		//Del delete
+		if(GetKeyDown(SDL_SCANCODE_DELETE)){//string
+			if(Input.textInputLength-Input.textInputCursorPos>0){
+				//Deletes the character in the cursor position by moving the sucessing characters to the left and setting the last character as a '\0'
+				memmove(Input.textInput + Input.textInputCursorPos,Input.textInput + Input.textInputCursorPos+1,Input.textInputLength - (Input.textInputCursorPos + 1));
+				memset(Input.textInput + Input.textInputLength-1, '\0',1);
+				Input.textInputLength -= 1;
+			}
+		}
+		
+		//Cursor movement
+		if(GetKeyDown(SDL_SCANCODE_LEFT)){
+			Input.textInputCursorPos = Input.textInputCursorPos<1? 0:Input.textInputCursorPos-1;
+		}
+		if(GetKeyDown(SDL_SCANCODE_RIGHT)){
+			Input.textInputCursorPos = Input.textInputCursorPos<Input.textInputLength? Input.textInputCursorPos+1:Input.textInputLength;
+		}
+
+		//Home and End shortcuts
+		if(GetKeyDown(SDL_SCANCODE_HOME)){
+			Input.textInputCursorPos = 0;
+		}
+		if(GetKeyDown(SDL_SCANCODE_END)){
+			Input.textInputCursorPos = Input.textInputLength;
 		}
 	}
 }
@@ -1044,6 +1081,7 @@ void GetTextInput(char* outputTextPointer, int maxLength, int currentLength){
 	Input.textInput = outputTextPointer;
 	Input.textInputMax = maxLength;
 	Input.textInputLength = currentLength;
+	Input.textInputCursorPos = currentLength; 
 }
 
 void StopTextInput(){
@@ -1055,6 +1093,7 @@ void StopTextInput(){
 	Input.textInput = NULL;
 	Input.textInputMax = 0;
 	Input.textInputLength = 0;
+	Input.textInputCursorPos = 0;
 }
 // ----------- Misc. functions ---------------
 

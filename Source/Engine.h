@@ -44,6 +44,7 @@ typedef struct engineInput{
     char *textInput;
     unsigned textInputMax;
     unsigned textInputLength;
+    unsigned textInputCursorPos;
 
     SDL_Event event;
 }engineInput;

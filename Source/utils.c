@@ -153,12 +153,12 @@ void InsertListIndex(List *list, void* e, int index){
 			newCell->previous->next = newCell;
 		}
 
+		list->length +=1;
+
 	}else{
 		//Index is list length or off bounds (consider as insertion in the end)
 		InsertListEnd(list,e);
 	}
-
-	list->length +=1;
 }
 
 void RemoveListEnd(List *list){

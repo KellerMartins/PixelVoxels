@@ -26,10 +26,10 @@ int main(int argc, char *argv[]){
 	ComponentID rigidBodyComponent = RegisterNewComponent("RigidBody", &RigidBodyConstructor, &RigidBodyDestructor);
 	ComponentID parentChildComponent = RegisterNewComponent("ParentChild", &ParentChildConstructor, &ParentChildDestructor);
 
-	if(RegisterNewSystem(1,CreateComponentMaskByID(3,transformComponent, voxelModelComponent,rigidBodyComponent),(ComponentMask){0},&VoxelPhysicsInit,&VoxelPhysicsUpdate,&VoxelPhysicsFree) < 0) printf("Failed to register VoxelPhysics system!\n");
-	if(RegisterNewSystem(0,CreateComponentMaskByID(2,transformComponent, voxelModelComponent),(ComponentMask){0},&VoxelRendererInit,&VoxelRendererUpdate,&VoxelRendererFree) < 0) printf("Failed to register VoxelRender system!\n");
-	if(RegisterNewSystem(2,CreateComponentMaskByID(1,voxelModelComponent),(ComponentMask){0},&VoxelModificationInit,&VoxelModificationUpdate,&VoxelModificationFree) < 0) printf("Failed to register VoxelModification system!\n");
-	if(RegisterNewSystem(-1,CreateComponentMaskByID(0),(ComponentMask){0},&EditorGizmosInit,&EditorGizmosUpdate,&EditorGizmosFree) < 0) printf("Failed to register Editor system!\n");
+	if(RegisterNewSystem("VoxelPhysics",1,CreateComponentMaskByID(3,transformComponent, voxelModelComponent,rigidBodyComponent),(ComponentMask){0},&VoxelPhysicsInit,&VoxelPhysicsUpdate,&VoxelPhysicsFree) < 0) printf("Failed to register VoxelPhysics system!\n");
+	if(RegisterNewSystem("VoxelRender",0,CreateComponentMaskByID(2,transformComponent, voxelModelComponent),(ComponentMask){0},&VoxelRendererInit,&VoxelRendererUpdate,&VoxelRendererFree) < 0) printf("Failed to register VoxelRender system!\n");
+	if(RegisterNewSystem("VoxelModification",2,CreateComponentMaskByID(1,voxelModelComponent),(ComponentMask){0},&VoxelModificationInit,&VoxelModificationUpdate,&VoxelModificationFree) < 0) printf("Failed to register VoxelModification system!\n");
+	if(RegisterNewSystem("Editor",-1,CreateComponentMaskByID(0),(ComponentMask){0},&EditorGizmosInit,&EditorGizmosUpdate,&EditorGizmosFree) < 0) printf("Failed to register Editor system!\n");
 
 	if(!InitEngine()) return 1;
 

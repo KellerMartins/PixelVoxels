@@ -106,14 +106,17 @@ typedef int ComponentID;
 
 typedef struct ComponentType{
     char name[25];
-    unsigned nameSize;
     void (*constructor)(EntityID entity);
     void (*destructor)(EntityID entity);
 }ComponentType;
 
+typedef int SystemID;
+
 typedef struct System System;
 typedef struct System{
+    char name[25];
     unsigned priority;
+    int enabled;
 
     ComponentMask required;
     ComponentMask excluded;
@@ -145,7 +148,7 @@ typedef struct engineECS{
 int InitECS(unsigned max_entities);
 
 int RegisterNewComponent(char componentName[25],void (*constructorFunc)(EntityID entity),void (*destructorFunc)(EntityID entity));
-int RegisterNewSystem(unsigned priority, ComponentMask required, ComponentMask excluded, void (*initFunc)(System *systemObject), void (*updateFunc)(), void (*freeFunc)());
+int RegisterNewSystem(char systemName[25], unsigned priority, ComponentMask required, ComponentMask excluded, void (*initFunc)(System *systemObject), void (*updateFunc)(), void (*freeFunc)());
 
 ComponentID GetComponentID(char componentName[25]);
 
@@ -165,6 +168,11 @@ int EntityContainsMask(EntityID entity, ComponentMask mask);
 int EntityContainsComponent(EntityID entity, ComponentID component);
 int MaskContainsComponent(ComponentMask mask, ComponentID component);
 ComponentMask IntersectComponentMasks(ComponentMask mask1, ComponentMask mask2);
+
+SystemID GetSystemID(char systemName[25]);
+void EnableSystem(SystemID system);
+void DisableSystem(SystemID system);
+int IsSystemEnabled(SystemID system);
 
 //Engine functions
 int InitEngine();

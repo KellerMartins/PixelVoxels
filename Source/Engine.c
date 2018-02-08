@@ -62,7 +62,6 @@ int RegisterNewComponent(char componentName[25],void (*constructorFunc)(EntityID
 
 	ComponentType newType;
 	strncpy(newType.name,componentName,25);
-	newType.nameSize = strlen(componentName);
 	newType.constructor = constructorFunc;
 	newType.destructor = destructorFunc;
 
@@ -71,12 +70,13 @@ int RegisterNewComponent(char componentName[25],void (*constructorFunc)(EntityID
 	return GetLength(ECS.ComponentTypes)-1;
 }
 
-int RegisterNewSystem(unsigned priority, ComponentMask required, ComponentMask excluded, void (*initFunc)(System *systemObject), void (*updateFunc)(), void (*freeFunc)()){
+int RegisterNewSystem(char systemName[25], unsigned priority, ComponentMask required, ComponentMask excluded, void (*initFunc)(System *systemObject), void (*updateFunc)(), void (*freeFunc)()){
 	if(!initializedECS){
 		printf("ECS not initialized! Initialize ECS before registering the components and systems\n");
 		return -1;
 	}
-	System newSystem = (System){priority, required, excluded, initFunc, updateFunc, freeFunc};
+	System newSystem = (System){.priority = priority, .enabled = 1, .required = required, .excluded = excluded, .systemInit = initFunc, .systemUpdate = updateFunc, .systemFree = freeFunc};
+	strncpy(newSystem.name,systemName,25);
 
 	ListCellPointer current = GetLastCell(ECS.SystemList);
 	unsigned index = GetLength(ECS.SystemList);
@@ -97,14 +97,14 @@ ComponentID GetComponentID(char componentName[25]){
 	ListCellPointer current = GetFirstCell(ECS.ComponentTypes);
 	while(current){
 		ComponentType currType = *((ComponentType*)GetElement(*current));
-
+		int typeNameLength = strlen(currType.name);
 		//Compare only if equal, breaking if any difference appears
-		if(currType.nameSize == strlen(componentName)){
-			for(i=0;i<currType.nameSize;i++){
+		if(typeNameLength == strlen(componentName)){
+			for(i=0;i<typeNameLength;i++){
 				if(componentName[i]!=currType.name[i]) break;
 			}
 			//If no difference is found, return the current type index
-			if(i==currType.nameSize){
+			if(i==typeNameLength){
 				return index;
 			}
 		}
@@ -272,6 +272,43 @@ int MaskContainsComponent(ComponentMask mask, ComponentID component){
 
 ComponentMask IntersectComponentMasks(ComponentMask mask1, ComponentMask mask2){
 	return (ComponentMask){mask1.mask & mask2.mask};
+}
+
+SystemID GetSystemID(char systemName[25]){
+	int i,index = 0;
+	ListCellPointer current;
+	ListForEach(current,ECS.SystemList){
+		System currSys = GetElementAsType(current,System);
+		int systemNameLength = strlen(currSys.name);
+
+		//Compare only if equal, breaking if any difference appears
+		if(systemNameLength == strlen(systemName)){
+			for(i=0;i<systemNameLength;i++){
+				if(systemName[i]!=currSys.name[i]) break;
+			}
+			//If no difference is found, return the current type index
+			if(i==systemNameLength){
+				return index;
+			}
+		}
+		index++;
+	}
+	return -1;
+}
+
+void EnableSystem(SystemID system){
+	ListCellPointer sys = GetCellAt(ECS.SystemList,system);
+	GetElementAsType(sys,System).enabled = 1;
+}
+
+void DisableSystem(SystemID system){
+	ListCellPointer sys = GetCellAt(ECS.SystemList,system);
+	GetElementAsType(sys,System).enabled = 0;
+}
+
+int IsSystemEnabled(SystemID system){
+	ListCellPointer sys = GetCellAt(ECS.SystemList,system);
+	return GetElementAsType(sys,System).enabled;
 }
 
 //-------- Engine Functions -------------
@@ -481,9 +518,10 @@ void EngineUpdate(){
 
 	//Iterate through the systems list
 	ListCellPointer currentSystem = GetFirstCell(ECS.SystemList);
-	while(currentSystem){
-		((System*)GetElement(*currentSystem)) -> systemUpdate();
-		currentSystem = GetNextCell(currentSystem);
+	ListForEach(currentSystem,ECS.SystemList){
+		System sys = GetElementAsType(currentSystem,System);
+		if(!sys.enabled) continue;
+		sys.systemUpdate();
 	}
 
 }

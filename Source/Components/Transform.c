@@ -17,13 +17,19 @@ static ComponentID ThisComponentID(){
 
 extern engineECS ECS;
 
-void TransformConstructor(EntityID entity){
-    ECS.Components[ThisComponentID()][entity].data = calloc(1,sizeof(Transform));
+void TransformConstructor(void** data){
+    *data = calloc(1,sizeof(Transform));
 }
 
-void TransformDestructor(EntityID entity){
-    free(ECS.Components[ThisComponentID()][entity].data);
-    ECS.Components[ThisComponentID()][entity].data = NULL;
+void TransformDestructor(void** data){
+    free(*data);
+    *data = NULL;
+}
+
+void* TransformCopy(void* data){
+    Transform *newTransform = malloc(sizeof(Transform));
+    memcpy(newTransform,data,sizeof(Transform));
+	return newTransform;
 }
 
 Vector3 GetPosition(EntityID entity){

@@ -1,6 +1,9 @@
-#include "EditorGizmos.h"
+#include "Editor.h"
 
 static System *ThisSystem;
+
+static SystemID VoxRenderSystem ;
+static SystemID EditorSystem;
 
 extern engineECS ECS;
 extern engineScreen Screen;
@@ -31,7 +34,7 @@ SDL_Color fontColor = {255,255,255};
 TTF_Font* gizmosFont;
 TTF_Font* gizmosFontSmall;
 
-GLuint iconsTex[3];
+GLuint iconsTex[6];
 int iconsSize = 9;
 
 char *textFieldString = NULL;
@@ -53,57 +56,47 @@ Vector3 WorldVectorToScreenVector(Vector3 v);
 int IsSelected(EntityID entity);
 void RemoveFromSelected(EntityID entity);
 int DrawComponentHeader(ComponentID component, int* curHeight);
+void DrawRectangle(Vector3 min, Vector3 max, float r, float g, float b);
 void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,int x, int w, int fieldsSpacing, int* curField, int* curHeight);
+int PointButton(Vector3 pos,int iconID, int scale, Vector3 defaultColor, Vector3 mouseOverColor, Vector3 pressedColor);
+void LoadUITexture(char *path,int index);
 
 //Runs on engine start
-void EditorGizmosInit(System *systemObject){
-    ThisSystem = systemObject;
-
-    SelectedEntities = InitList(sizeof(EntityID));
+void EditorInit(System *systemObject){
+    ThisSystem = (System*)GetElementAt(ECS.SystemList,GetSystemID("Editor"));
 
     existingEntities = calloc(ECS.maxEntities,sizeof(int));
+    SelectedEntities = InitList(sizeof(EntityID));
 
+    VoxRenderSystem = GetSystemID("VoxelRenderer");
+    EditorSystem = GetSystemID("Editor");
+
+    //Disable all game systems, except the rendering
+    int i;
+    for(i=0;i<GetLength(ECS.SystemList);i++){
+        if(i != EditorSystem && i!= VoxRenderSystem){
+            DisableSystem(i);
+        }
+    }
+    
     gizmosFont = TTF_OpenFont("Interface/Fonts/gros/GROS.ttf",16);
 	if(!gizmosFont){
 		printf("Font: Error loading font!");
 	}
 
     gizmosFontSmall= TTF_OpenFont("Interface/Fonts/coolthre/COOLTHRE.ttf",12);
-    if(!gizmosFont){
+    if(!gizmosFontSmall){
 		printf("Font: Error loading small font!");
 	}
 
     //Load UI icons
-    glGenTextures(3, iconsTex);
-    //add
-    SDL_Surface *img = IMG_Load("Interface/IconsUI/add.png");
-    if(!img){ printf("Failed to load UI Icon! (add.png)\n"); return; }
-    iconsSize = img->w;
-
-    glBindTexture(GL_TEXTURE_2D, iconsTex[0]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->w, img->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, img->pixels);
-    
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    SDL_FreeSurface(img);
-    //remove
-    img = IMG_Load("Interface/IconsUI/remove.png");
-    if(!img){ printf("Failed to load UI Icon! (remove.png)\n"); return; }
-    glBindTexture(GL_TEXTURE_2D, iconsTex[1]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->w, img->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, img->pixels);
-    
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    SDL_FreeSurface(img);
-    //bin
-    img = IMG_Load("Interface/IconsUI/bin.png");
-    if(!img){ printf("Failed to load UI Icon! (bin.png)\n"); return; }
-    glBindTexture(GL_TEXTURE_2D, iconsTex[2]);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->w, img->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, img->pixels);
-    
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    SDL_FreeSurface(img);
+    glGenTextures(5, iconsTex);
+    LoadUITexture("Interface/IconsUI/add.png",0);
+    LoadUITexture("Interface/IconsUI/remove.png",1);
+    LoadUITexture("Interface/IconsUI/bin.png",2);
+    LoadUITexture("Interface/IconsUI/play.png",3);
+    LoadUITexture("Interface/IconsUI/pause.png",4);
+    LoadUITexture("Interface/IconsUI/stop.png",5);
 }
 
 int movingX = 0;
@@ -116,9 +109,14 @@ int componentStartHeight = 0;
 int movingScrollbar = 0;
 int editingField = -1;
 
+//0 = Editor, 1 = Play, 2 = Paused
+int playMode = 0;
+
 //Runs each GameLoop iteration
-void EditorGizmosUpdate(){
+void EditorUpdate(){
     EntityID entity;
+
+    //printf("%d\n",GetLength(SelectedEntities));
 
     //Update mouse data
     mousePos = (Vector3){Input.mouseX,Screen.windowHeight - Input.mouseY,0};
@@ -134,8 +132,6 @@ void EditorGizmosUpdate(){
         }
     }
 
-    glPointSize(5 * 2/Screen.gameScale);
-    glLineWidth(2* 2/Screen.gameScale);
     glClear(GL_DEPTH_BUFFER_BIT);
     //Render UI objects in the [0,0.01] depth range
     glDepthRange(0, 0.01);
@@ -143,7 +139,89 @@ void EditorGizmosUpdate(){
     glBindFramebuffer(GL_FRAMEBUFFER, Rendering.frameBuffer);
     glViewport(0,0,Screen.gameWidth,Screen.gameHeight);
 
+    //-------------------------- Play Mode --------------------------
+    Vector3 playBGMin = (Vector3){Screen.windowWidth/2 - iconsSize * 4 * 2/Screen.gameScale -2,  Screen.windowHeight-iconsSize * 4 * 2/Screen.gameScale -1 };
+    Vector3 playBGMax = (Vector3){Screen.windowWidth/2 + iconsSize * 4 * 2/Screen.gameScale +2,  Screen.windowHeight};
+
+    if(playMode == 1){
+        //Play mode
+        DrawRectangle(playBGMin,playBGMax,0.5,0.5,0.5);
+
+        //Pause button
+        if(1 == PointButton((Vector3){Screen.windowWidth/2 - iconsSize * 2 * 2/Screen.gameScale -2,  Screen.windowHeight-iconsSize * 2 * 2/Screen.gameScale -1 },4, 2, (Vector3){0.1,0.1,0.1}, (Vector3){1,1,1}, (Vector3){1,1,1})){
+            playMode = 2;
+
+            //Disable all game systems
+            int i;
+            for(i=0;i<GetLength(ECS.SystemList);i++){
+                if(i != EditorSystem && i!= VoxRenderSystem){
+                    DisableSystem(i);
+                }
+            }
+        }
+        //Stop button
+        if(1 == PointButton((Vector3){Screen.windowWidth/2 + iconsSize * 2 * 2/Screen.gameScale +2,  Screen.windowHeight-iconsSize * 2 * 2/Screen.gameScale -1 },5, 2, (Vector3){0.1,0.1,0.1}, (Vector3){1,1,1}, (Vector3){1,1,1})){
+            playMode = 0;
+
+            //Disable all game systems
+            int i;
+            for(i=0;i<GetLength(ECS.SystemList);i++){
+                if(i != EditorSystem && i!= VoxRenderSystem){
+                    DisableSystem(i);
+                }
+            }
+        }
+    }else if(playMode == 2){
+        //Paused
+        DrawRectangle(playBGMin,playBGMax,0.5,0.5,0.5);
+
+        //Play button
+        if(1 == PointButton((Vector3){Screen.windowWidth/2 - iconsSize * 2 * 2/Screen.gameScale -2,  Screen.windowHeight-iconsSize * 2 * 2/Screen.gameScale -1 },3, 2, (Vector3){0.1,0.1,0.1}, (Vector3){1,1,1}, (Vector3){1,1,1})){
+            playMode = 1;
+
+            //Enable all game systems
+            int i;
+            for(i=0;i<GetLength(ECS.SystemList);i++){
+                if(i != EditorSystem && i!= VoxRenderSystem){
+                    EnableSystem(i);
+                }
+            }
+        }
+        //Stop button enabled
+        if(1 == PointButton((Vector3){Screen.windowWidth/2 + iconsSize * 2 * 2/Screen.gameScale +2,  Screen.windowHeight-iconsSize * 2 * 2/Screen.gameScale -1 },5, 2, (Vector3){0.1,0.1,0.1}, (Vector3){1,1,1}, (Vector3){1,1,1})){
+            playMode = 0;
+
+            //Disable all game systems
+            int i;
+            for(i=0;i<GetLength(ECS.SystemList);i++){
+                if(i != EditorSystem && i!= VoxRenderSystem){
+                    DisableSystem(i);
+                }
+            }
+        }
+    }else{
+        //In editor
+        DrawRectangle(playBGMin,playBGMax,0.1,0.1,0.15);
+
+        //Play button
+        if(1 == PointButton((Vector3){Screen.windowWidth/2 - iconsSize * 2 * 2/Screen.gameScale -2,  Screen.windowHeight-iconsSize * 2 * 2/Screen.gameScale -1 },3, 2, (Vector3){0.7,0.7,0.7}, (Vector3){1,1,1}, (Vector3){1,1,1})){
+            playMode = 1;
+
+            //Enable all game systems
+            int i;
+            for(i=0;i<GetLength(ECS.SystemList);i++){
+                if(i != EditorSystem && i!= VoxRenderSystem){
+                    EnableSystem(i);
+                }
+            }
+        }
+        //Stop button disabled
+        PointButton((Vector3){Screen.windowWidth/2 + iconsSize * 2 * 2/Screen.gameScale +2,  Screen.windowHeight-iconsSize * 2 * 2/Screen.gameScale -1 },5, 2, (Vector3){0.2,0.2,0.2}, (Vector3){0.2,0.2,0.2}, (Vector3){0.2,0.2,0.2});
+    }
+
     //-------------------------- Transform gizmos --------------------------
+    glPointSize(5 * 2/Screen.gameScale);
+    glLineWidth(2* 2/Screen.gameScale);
 	for(entity = 0; entity <= ECS.maxUsedIndex; entity++){
         
         //Run for all entities with the transform component
@@ -363,10 +441,73 @@ void EditorGizmosUpdate(){
                             glVertex2f( Screen.windowWidth-componentWindowLength, componentHeight-95);
                         glEnd();
 
-                        static Vector3 test = {3.1415,1,2};
+                        int ommitPosX = 0, ommitPosY = 0, ommitPosZ = 0;
+                        int ommitRotX = 0, ommitRotY = 0, ommitRotZ = 0;
+                        ListCellPointer selEntity = GetFirstCell(SelectedEntities);
+                        Vector3 lastPos = GetPosition(GetElementAsType(selEntity,int));
+                        Vector3 lastRot = GetRotation(GetElementAsType(selEntity,int));
                         
-                        Vector3Field("position",&test,0,0,0,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1,4, &currentComponentField, &componentHeight);
-                        Vector3Field("rotation",&test,0,0,0,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1,4, &currentComponentField, &componentHeight);
+                        ListForEach(selEntity, SelectedEntities){
+                            Vector3 curPos = GetPosition(GetElementAsType(selEntity,int));
+                            Vector3 curRot = GetRotation(GetElementAsType(selEntity,int));
+                            if(curPos.x != lastPos.x){
+                                ommitPosX = 1;
+                                lastPos.x = 0;
+                            }
+                            if(curPos.y != lastPos.y){
+                                ommitPosY = 1;
+                                lastPos.y = 0;
+                            }
+                            if(curPos.z != lastPos.z){
+                                ommitPosZ = 1;
+                                lastPos.z = 0;
+                            }
+
+                            if(curRot.x != lastRot.x){
+                                ommitRotX = 1;
+                                lastRot.x = 0;
+                            }
+                            if(curRot.y != lastRot.y){
+                                ommitRotY = 1;
+                                lastRot.y = 0;
+                            }
+                            if(curRot.z != lastRot.z){
+                                ommitRotZ = 1;
+                                lastRot.z = 0;
+                            }
+                        }
+                        Vector3 newPos = lastPos;
+                        Vector3 newRot = lastRot;
+                        Vector3Field("position",&newPos,ommitPosX,ommitPosY,ommitPosZ,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1,4, &currentComponentField, &componentHeight);
+                        Vector3Field("rotation",&newRot,ommitRotX,ommitRotY,ommitRotZ,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1,4, &currentComponentField, &componentHeight);
+
+                        int changedPosX = 0, changedPosY = 0, changedPosZ = 0;
+                        int changedRotX = 0, changedRotY = 0, changedRotZ = 0;
+                        if(lastPos.x != newPos.x) changedPosX = 1;
+                        if(lastPos.y != newPos.y) changedPosY = 1;
+                        if(lastPos.z != newPos.z) changedPosZ = 1;
+
+                        if(lastRot.x != newRot.x) changedRotX = 1;
+                        if(lastRot.y != newRot.y) changedRotY = 1;
+                        if(lastRot.z != newRot.z) changedRotZ = 1;
+                        
+                        if(changedPosX || changedPosY || changedPosZ || changedRotX || changedRotY || changedRotZ){
+                            ListForEach(selEntity, SelectedEntities){
+                                Vector3 pos = GetPosition(GetElementAsType(selEntity,int));
+                                Vector3 rot = GetRotation(GetElementAsType(selEntity,int));
+
+                                if(changedPosX) pos.x = newPos.x;
+                                if(changedPosY) pos.y = newPos.y;
+                                if(changedPosZ) pos.z = newPos.z;
+
+                                if(changedRotX) rot.x = newRot.x;
+                                if(changedRotY) rot.y = newRot.y;
+                                if(changedRotZ) rot.z = newRot.z;
+
+                                SetPosition(GetElementAsType(selEntity,int),pos);
+                                SetRotation(GetElementAsType(selEntity,int),rot);
+                            }
+                        }
                         componentHeight -= 7;
                     }
                 }
@@ -474,6 +615,11 @@ void EditorGizmosUpdate(){
                             glColor3f(0.3,0.3,0.3);
                             if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
                                 RemoveFromSelected(entity);
+                            }
+                            if(GetMouseButtonDown(SDL_BUTTON_RIGHT)){
+                                EntityID newEntity = DuplicateEntity(entity);
+                                FreeList(&SelectedEntities);
+                                InsertListEnd(&SelectedEntities,&newEntity);
                             }
                         }else{
                             glColor3f(0.3,0.3,0.4);
@@ -620,7 +766,7 @@ void EditorGizmosUpdate(){
 }
 
 //Runs at engine finish
-void EditorGizmosFree(){
+void EditorFree(){
     FreeList(&SelectedEntities);
     free(existingEntities);
     TTF_CloseFont(gizmosFont);
@@ -685,43 +831,22 @@ int DrawComponentHeader(ComponentID component, int* curHeight){
 
 
     //Remove component button
-    glPointSize(iconsSize * 2/Screen.gameScale);
-    glEnable(GL_TEXTURE_2D);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glTexEnvf(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
-    glBindTexture(GL_TEXTURE_2D, iconsTex[2]);
-    glEnable(GL_POINT_SPRITE);
-
-    glBegin(GL_POINTS);
-        Vector3 removePos = {Screen.windowWidth-componentWindowWidthSpacing - (TTF_FontHeight(gizmosFont)-2)/2 -2,*curHeight - (TTF_FontHeight(gizmosFont))/2};
-        if(MouseOverPointGizmos(mousePos, removePos, iconsSize * 2/Screen.gameScale)){
-            glColor3f(1,0.2,0.2);
-
-            //Pressed to remove
-            if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
-                //Remove all components of this type from the selected entities
-                ListCellPointer comp;
-                ListForEach(comp,SelectedEntities){
-                    EntityID e = *((EntityID*)GetElement(*comp));
-                    RemoveComponentFromEntity(component,e);
-                    
-                }
-                *curHeight -= TTF_FontHeight(gizmosFont);
-                return 0;
-            }
-        }else{
-            glColor3f(0.9,0.9,0.9);
+    Vector3 removePos = {Screen.windowWidth-componentWindowWidthSpacing - (TTF_FontHeight(gizmosFont)-2)/2 -2,*curHeight - (TTF_FontHeight(gizmosFont))/2};
+    if(PointButton(removePos,2, 1, (Vector3){0.9,0.9,0.9}, (Vector3){1,0.2,0.2}, (Vector3){1,0.5,0.5}) == 1){
+        //Remove all components of this type from the selected entities
+        ListCellPointer comp;
+        ListForEach(comp,SelectedEntities){
+            EntityID e = *((EntityID*)GetElement(*comp));
+            RemoveComponentFromEntity(component,e);
         }
-        glVertex2f( roundf(removePos.x), roundf(removePos.y));
-    glEnd();
-    glDisable(GL_TEXTURE_2D);
-    glDisable(GL_BLEND);
+        *curHeight -= TTF_FontHeight(gizmosFont);
+        return 0;
+    }
 
     //Component Name
     ComponentType *type = ((ComponentType*)GetElementAt(ECS.ComponentTypes,component));
     //Cut names that are too big to be shown
-    if(type->nameSize>11){
+    if(strlen(type->name)>11){
         char cName[14] = "OOOOOOOOOO...";
         strncpy(cName,type->name,10);
         RenderText(cName, fontColor, Screen.windowWidth-componentWindowLength+componentNameLeftSpacing, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
@@ -733,6 +858,44 @@ int DrawComponentHeader(ComponentID component, int* curHeight){
     return 1;
 }
 
+//Returns 1 if pressed, 2 if mouse is over and 0 if neither case
+int PointButton(Vector3 pos,int iconID, int scale, Vector3 defaultColor, Vector3 mouseOverColor, Vector3 pressedColor){
+    int state = 0;
+
+    glPointSize(scale * iconsSize * 2/Screen.gameScale);
+    glEnable(GL_TEXTURE_2D);
+    glAlphaFunc (GL_NOTEQUAL, 0.0f);
+    glEnable(GL_ALPHA_TEST);
+    glTexEnvf(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
+    glBindTexture(GL_TEXTURE_2D, iconsTex[iconID]);
+    glEnable(GL_POINT_SPRITE);
+
+    glBegin(GL_POINTS);
+        if(MouseOverPointGizmos(mousePos, pos, scale * iconsSize * 2/Screen.gameScale)){
+            glColor3f(mouseOverColor.x,mouseOverColor.y,mouseOverColor.z);
+
+            //Pressed
+            if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
+                glColor3f(pressedColor.x,pressedColor.y,pressedColor.z);
+                state = 1;
+            }else{
+                //Mouse over only
+                glColor3f(mouseOverColor.x,mouseOverColor.y,mouseOverColor.z);
+                state = 2;
+            }
+        }else{
+            glColor3f(defaultColor.x,defaultColor.y,defaultColor.z);
+            state = 0;
+        }
+
+        glVertex2f( roundf(pos.x), roundf(pos.y));
+    glEnd();
+    glDisable(GL_TEXTURE_2D);
+    glDisable(GL_BLEND);
+
+    return state;
+}
+
 void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,int x, int w, int fieldsSpacing, int* curField, int* curHeight){
     *curHeight -= 2;
     RenderText(title, fontColor, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
@@ -740,26 +903,18 @@ void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,in
 
     int fieldW = w/3;
 
+    //1 is X field, 2 is Y field and 3 is Z field
     Vector3 min1 = { x,*curHeight-TTF_FontHeight(gizmosFont)-2,0};
     Vector3 max1 = { x+fieldW - fieldsSpacing,*curHeight,0};
-
     Vector3 min2 = { x+fieldW + fieldsSpacing,*curHeight-TTF_FontHeight(gizmosFont)-2,0};
     Vector3 max2 = { x+fieldW*2 - fieldsSpacing,*curHeight,0};
-
     Vector3 min3 = { x+fieldW*2 + fieldsSpacing,*curHeight-TTF_FontHeight(gizmosFont)-2,0};
     Vector3 max3 = { x+fieldW*3 - fieldsSpacing,*curHeight,0};
 
-    static char valueString[5] = "  0.0";
-    if(editingField == *curField)
+    if(editingField == *curField || editingField == (*curField)+1 || editingField == (*curField)+2)
     {
         //String edit field background
-        glColor3f(0.3,0.3,0.3);
-        glBegin(GL_QUADS);
-            glVertex2f( min1.x, max3.y);
-            glVertex2f( max3.x, max3.y);
-            glVertex2f( max3.x, min1.y);
-            glVertex2f( min1.x, min1.y);
-        glEnd();
+        DrawRectangle(min1,max3,0.3, 0.3, 0.3);
 
         //Get the cursor position by creating a string containing the characters until the cursor
         //and getting his size when rendered with the used font
@@ -778,156 +933,101 @@ void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,in
             glVertex2f( cursorPos, max1.y);
         glEnd();
 
-        //Pass the string as float data
-        data->x = strtof(textFieldString, NULL);
         //Render the string
         RenderText(textFieldString, fontColor, min1.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
-    }else if(editingField != (*curField)+1 && editingField != (*curField)+2){
-        glColor3f(0.2,0.2,0.2);
-        glBegin(GL_QUADS);
-            glVertex2f( min1.x, max1.y);
-            glVertex2f( max1.x, max1.y);
-            glVertex2f( max1.x, min1.y);
-            glVertex2f( min1.x, min1.y);
-        glEnd();
-
-        if(!ommitX)
-            snprintf(valueString,5,"%3.1f",data->x);
-        else
-            snprintf(valueString,5,"---");
-
-        RenderText(valueString, fontColor, min1.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
-
-        if(editingField<0){
-            if(MouseOverBox(mousePos,min1,max1,0) && GetMouseButtonDown(SDL_BUTTON_LEFT)){
-                textFieldString = (char*)calloc(13,sizeof(char));
-                snprintf(textFieldString, 12, "%6.6f", data->x);
-                GetTextInput(textFieldString, 12, strlen(textFieldString));
-                editingField = *curField;
-            }
-        }
-    }
-    *curField +=1;
-
-    if(editingField == *curField)
-    {
-        //String edit field background
-        glColor3f(0.3,0.3,0.3);
-        glBegin(GL_QUADS);
-            glVertex2f( min1.x, max3.y);
-            glVertex2f( max3.x, max3.y);
-            glVertex2f( max3.x, min1.y);
-            glVertex2f( min1.x, min1.y);
-        glEnd();
-
-        //Get the cursor position by creating a string containing the characters until the cursor
-        //and getting his size when rendered with the used font
-        char buff[13];
-        strncpy(buff,textFieldString,Input.textInputCursorPos);
-        memset(buff+Input.textInputCursorPos,'\0',1);
-        int cursorPos,h;
-        TTF_SizeText(gizmosFont,buff,&cursorPos,&h);
-        cursorPos+=min1.x;
-
-        //Cursor line
-        glColor3f(0.7,0.7,0.7);
-        glLineWidth(2/Screen.gameScale);
-        glBegin(GL_LINES);
-            glVertex2f( cursorPos, min1.y);
-            glVertex2f( cursorPos, max1.y);
-        glEnd();
-
         //Pass the string as float data
-        data->y = strtof(textFieldString, NULL);
-        //Render the string
-        RenderText(textFieldString, fontColor, min1.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+        if(editingField == *curField){
+            data->x = strtof(textFieldString, NULL);
+        }else if(editingField == (*curField)+1){
+            data->y = strtof(textFieldString, NULL);
+        }else{
+            data->z = strtof(textFieldString, NULL);
+        }
 
-    }else if(editingField != (*curField)-1 && editingField != (*curField)+1){
-        glColor3f(0.2,0.2,0.2);
-        glBegin(GL_QUADS);
-            glVertex2f( min2.x, max2.y);
-            glVertex2f( max2.x, max2.y);
-            glVertex2f( max2.x, min2.y);
-            glVertex2f( min2.x, min2.y);
-        glEnd();
+    }else{
+        //Not editing any of the three fields, just draw the three boxes and floats normally
+        static char valueString[5] = "  0.0";
 
-        if(!ommitY)
-            snprintf(valueString,5,"%3.1f",data->y);
-        else
-            snprintf(valueString,5,"---");
-
-        RenderText(valueString, fontColor, min2.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
-
-        if(editingField<0){
-            if(MouseOverBox(mousePos,min2,max2,0) && GetMouseButtonDown(SDL_BUTTON_LEFT)){
+        //Fields selection
+        if(editingField<0 && GetMouseButtonDown(SDL_BUTTON_LEFT)){
+            if(MouseOverBox(mousePos,min1,max1,0)){
                 textFieldString = (char*)calloc(13,sizeof(char));
-                snprintf(textFieldString, 12, "%6.6f", data->y);
+
+                if(!ommitX) snprintf(textFieldString, 12, "%6.6f", data->x);
+                else snprintf(textFieldString, 4, "0.0");
+                
                 GetTextInput(textFieldString, 12, strlen(textFieldString));
                 editingField = *curField;
             }
-        }
-    }
-    *curField +=1;
 
-    if(editingField == *curField)
-    {
-        //String edit field background
-        glColor3f(0.3,0.3,0.3);
-        glBegin(GL_QUADS);
-            glVertex2f( min1.x, max3.y);
-            glVertex2f( max3.x, max3.y);
-            glVertex2f( max3.x, min1.y);
-            glVertex2f( min1.x, min1.y);
-        glEnd();
-
-        //Get the cursor position by creating a string containing the characters until the cursor
-        //and getting his size when rendered with the used font
-        char buff[13];
-        strncpy(buff,textFieldString,Input.textInputCursorPos);
-        memset(buff+Input.textInputCursorPos,'\0',1);
-        int cursorPos,h;
-        TTF_SizeText(gizmosFont,buff,&cursorPos,&h);
-        cursorPos+=min1.x;
-
-        //Cursor line
-        glColor3f(0.7,0.7,0.7);
-        glLineWidth(2/Screen.gameScale);
-        glBegin(GL_LINES);
-            glVertex2f( cursorPos, min1.y);
-            glVertex2f( cursorPos, max1.y);
-        glEnd();
-
-        //Pass the string as float data
-        data->z = strtof(textFieldString, NULL);
-        //Render the string
-        RenderText(textFieldString, fontColor, min1.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
-
-    }else if(editingField != (*curField)-2 && editingField != (*curField)-1){
-        glColor3f(0.2,0.2,0.2);
-        glBegin(GL_QUADS);
-            glVertex2f( min3.x, max3.y);
-            glVertex2f( max3.x, max3.y);
-            glVertex2f( max3.x, min3.y);
-            glVertex2f( min3.x, min3.y);
-        glEnd();
-
-        if(!ommitZ)
-            snprintf(valueString,5,"%3.1f",data->z);
-        else
-            snprintf(valueString,5,"---");
-        RenderText(valueString, fontColor, min3.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
-
-        if(editingField<0){
-            if(MouseOverBox(mousePos,min3,max3,0) && GetMouseButtonDown(SDL_BUTTON_LEFT)){
+            if(MouseOverBox(mousePos,min2,max2,0)){
                 textFieldString = (char*)calloc(13,sizeof(char));
-                snprintf(textFieldString, 12, "%6.6f", data->z);
+                if(!ommitY) snprintf(textFieldString, 12, "%6.6f", data->y);
+                else snprintf(textFieldString, 4, "0.0");
+
                 GetTextInput(textFieldString, 12, strlen(textFieldString));
-                editingField = *curField;
+                editingField = (*curField)+1;
+            }
+
+            if(MouseOverBox(mousePos,min3,max3,0)){
+                textFieldString = (char*)calloc(13,sizeof(char));
+                if(!ommitX) snprintf(textFieldString, 12, "%6.6f", data->z);
+                else snprintf(textFieldString, 4, "0.0");
+
+                GetTextInput(textFieldString, 12, strlen(textFieldString));
+                editingField = (*curField)+2;
             }
         }
+
+        //Check if no field was selected before rendering the individual fields
+        if(editingField != *curField && editingField != (*curField)+1 && editingField != (*curField)+2){
+
+            //X field
+            DrawRectangle(min1,max1,0.2, 0.2, 0.2);
+            if(!ommitX) snprintf(valueString,5,"%3.1f",data->x);
+            else snprintf(valueString,5,"---");
+            RenderText(valueString, fontColor, min1.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+
+            //Y field
+            DrawRectangle(min2,max2,0.2, 0.2, 0.2);
+            if(!ommitY) snprintf(valueString,5,"%3.1f",data->y);
+            else snprintf(valueString,5,"---");
+            RenderText(valueString, fontColor, min2.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+
+            //Z field
+            DrawRectangle(min3,max3,0.2, 0.2, 0.2);
+            if(!ommitZ) snprintf(valueString,5,"%3.1f",data->z);
+            else snprintf(valueString,5,"---");
+            RenderText(valueString, fontColor, min3.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+        }
     }
-    *curField +=1;
+
+    //Mark as used ID fields
+    *curField +=3;
 
     *curHeight -= 2 + TTF_FontHeight(gizmosFont);
+}
+
+void DrawRectangle(Vector3 min, Vector3 max, float r, float g, float b){
+    glColor3f(r,g,b);
+    glBegin(GL_QUADS);
+        glVertex2f( min.x, max.y);
+        glVertex2f( max.x, max.y);
+        glVertex2f( max.x, min.y);
+        glVertex2f( min.x, min.y);
+    glEnd();
+}
+
+void LoadUITexture(char *path,int index){
+    SDL_Surface *img = IMG_Load(path);
+    if(!img){ printf("Failed to load UI Icon! (%s)\n",path); return; }
+    iconsSize = img->w;
+
+    glBindTexture(GL_TEXTURE_2D, iconsTex[index]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, img->w, img->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, img->pixels);
+    
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    SDL_FreeSurface(img);
 }

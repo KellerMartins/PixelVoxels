@@ -106,8 +106,9 @@ typedef int ComponentID;
 
 typedef struct ComponentType{
     char name[25];
-    void (*constructor)(EntityID entity);
-    void (*destructor)(EntityID entity);
+    void (*constructor)(void** data);
+    void (*destructor)(void** data);
+    void*(*copy)(void*);
 }ComponentType;
 
 typedef int SystemID;
@@ -121,7 +122,7 @@ typedef struct System{
     ComponentMask required;
     ComponentMask excluded;
 
-    void (*systemInit)(System *systemObject);
+    void (*systemInit)();
     void (*systemUpdate)();
     void (*systemFree)();
 }System;
@@ -147,8 +148,8 @@ typedef struct engineECS{
 //ECS functions
 int InitECS(unsigned max_entities);
 
-int RegisterNewComponent(char componentName[25],void (*constructorFunc)(EntityID entity),void (*destructorFunc)(EntityID entity));
-int RegisterNewSystem(char systemName[25], unsigned priority, ComponentMask required, ComponentMask excluded, void (*initFunc)(System *systemObject), void (*updateFunc)(), void (*freeFunc)());
+int RegisterNewComponent(char componentName[25],void (*constructorFunc)(void** data),void (*destructorFunc)(void** data),void*(*copyFunc)(void*));
+int RegisterNewSystem(char systemName[25], unsigned priority, ComponentMask required, ComponentMask excluded, void (*initFunc)(), void (*updateFunc)(), void (*freeFunc)());
 
 ComponentID GetComponentID(char componentName[25]);
 
@@ -161,6 +162,7 @@ EntityID CreateEntity();
 void DestroyEntity();
 void AddComponentToEntity(ComponentID component, EntityID entity);
 void RemoveComponentFromEntity(ComponentID component, EntityID entity);
+EntityID DuplicateEntity(EntityID entity);
 
 ComponentMask GetEntityComponents(EntityID entity);
 int IsEmptyComponentMask(ComponentMask mask);

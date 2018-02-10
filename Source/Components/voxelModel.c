@@ -12,22 +12,48 @@ static ComponentID ThisComponentID(){
 extern engineECS ECS;
 extern engineRendering Rendering;
 
-void VoxelModelConstructor(EntityID entity){
-    ECS.Components[ThisComponentID()][entity].data = calloc(1,sizeof(VoxelModel));
-    VoxelModel *obj = GetVoxelModelPointer(entity);
+void VoxelModelConstructor(void** data){
+    *data = calloc(1,sizeof(VoxelModel));
+    VoxelModel *obj = *data;
 
     *obj = (VoxelModel){1,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,0};
 }
-void VoxelModelDestructor(EntityID entity){
-    VoxelModel *obj = GetVoxelModelPointer(entity);
+void VoxelModelDestructor(void** data){
+    VoxelModel *obj = *data;
 
     free(obj->model);
     free(obj->lighting);
     free(obj->vertices);
     free(obj->vColors);
 
-    free(ECS.Components[ThisComponentID()][entity].data);
-    ECS.Components[ThisComponentID()][entity].data = NULL;
+    free(*data);
+    *data = NULL;
+}
+
+void* VoxelModelCopy(void* data){
+    VoxelModel *newVoxelModel = malloc(sizeof(VoxelModel));
+    memcpy(newVoxelModel,data,sizeof(VoxelModel));
+    newVoxelModel->dimension[0] = ((VoxelModel*)data)->dimension[0];
+    newVoxelModel->dimension[1] = ((VoxelModel*)data)->dimension[1];
+    newVoxelModel->dimension[2] = ((VoxelModel*)data)->dimension[2];
+
+    int sizeModel = newVoxelModel->dimension[0] * newVoxelModel->dimension[1] * newVoxelModel->dimension[2] * sizeof(unsigned char);
+    newVoxelModel->model = malloc(sizeModel);
+    newVoxelModel->lighting = malloc(sizeModel);
+    
+    int sizeVertices = newVoxelModel->numberOfVertices*3*sizeof(GLfloat);
+    newVoxelModel->vertices = malloc(sizeVertices);
+	newVoxelModel->vColors = malloc(sizeVertices);
+
+    
+    memcpy(newVoxelModel->model,((VoxelModel*)data)->model,sizeModel);
+    memcpy(newVoxelModel->lighting,((VoxelModel*)data)->lighting,sizeModel);
+
+    memcpy(newVoxelModel->vertices,((VoxelModel*)data)->vertices,sizeVertices);
+    memcpy(newVoxelModel->vColors,((VoxelModel*)data)->vColors,sizeVertices);
+    
+
+	return newVoxelModel;
 }
 
 VoxelModel* GetVoxelModelPointer(EntityID entity){

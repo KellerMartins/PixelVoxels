@@ -21,8 +21,8 @@ void SetGravity(double g){
     gravity = g;
 }
 
-void VoxelPhysicsInit(System *systemObject){
-    ThisSystem = systemObject;
+void VoxelPhysicsInit(){
+    ThisSystem = (System*)GetElementAt(ECS.SystemList,GetSystemID("VoxelPhysics"));
 
     VoxelModelID = GetComponentID("VoxelModel");
     RigidBodyID = GetComponentID("RigidBody");

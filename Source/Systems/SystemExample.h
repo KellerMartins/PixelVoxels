@@ -2,7 +2,7 @@
 #define SYSTEMEXAMPLE_H
 #include "../Engine.h"
 
-void SystemExampleInit(System *systemObject);
+void SystemExampleInit();
 void SystemExampleUpdate();
 void SystemExampleFree();
 

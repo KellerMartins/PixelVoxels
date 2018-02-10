@@ -11,21 +11,35 @@ static ComponentID ThisComponentID(){
 
 extern engineECS ECS;
 
-void ParentChildConstructor(EntityID entity){
-    ECS.Components[ThisComponentID()][entity].data = calloc(1,sizeof(ParentChild));
-    ParentChild *parent = ECS.Components[ThisComponentID()][entity].data;
+void ParentChildConstructor(void** data){
+    *data = calloc(1,sizeof(ParentChild));
+    ParentChild *parent = *data;
 
     parent->childs = InitList(sizeof(EntityID));
     parent->isParent = 0;
     parent->isChild = 0;
 }
 
-void ParentChildDestructor(EntityID entity){
-    ParentChild *parent = ECS.Components[ThisComponentID()][entity].data;
+void ParentChildDestructor(void** data){
+    ParentChild *parent = *data;
     FreeList(&parent->childs);
 
-    free(ECS.Components[ThisComponentID()][entity].data);
-    ECS.Components[ThisComponentID()][entity].data = NULL;
+    free(*data);
+    *data = NULL;
+}
+
+void* ParentChildCopy(void* data){
+    ParentChild *newParentChild = malloc(sizeof(ParentChild));
+    memcpy(newParentChild,data,sizeof(ParentChild));
+
+    newParentChild->childs = InitList(sizeof(EntityID));
+
+    ListCellPointer cell;
+    ListForEach(cell,((ParentChild*)data)->childs){
+        InsertListEnd(&newParentChild->childs,GetElement(*cell));
+    }
+
+	return newParentChild;
 }
 
 int IsParent(EntityID entity){

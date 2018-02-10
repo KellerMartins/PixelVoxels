@@ -6,7 +6,7 @@ extern engineECS ECS;
 
 //Runs on engine start
 void SystemExampleInit(System *systemObject){
-    ThisSystem = systemObject;
+    ThisSystem = (System*)GetElementAt(ECS.SystemList,GetSystemID("SystemExample"));
 }
 
 //Runs each GameLoop iteration

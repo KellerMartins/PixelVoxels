@@ -14,8 +14,9 @@ typedef struct ParentChild{
 
 }ParentChild;
 
-void ParentChildConstructor(EntityID entity);
-void ParentChildDestructor(EntityID entity);
+void ParentChildConstructor(void** data);
+void ParentChildDestructor(void** data);
+void* ParentChildCopy(void* data);
 
 int IsParent(EntityID entity);
 int IsChild(EntityID entity);

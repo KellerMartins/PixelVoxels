@@ -11,12 +11,23 @@ static ComponentID ThisComponentID(){
 
 extern engineECS ECS;
 
-//Runs on AddComponentToEntity
-void ComponentExampleConstructor(EntityID entity){
+typedef struct ExampleDataType{
+    char example;
+}ExampleDataType;
 
+//Runs on AddComponentToEntity
+void ComponentExampleConstructor(void** data){
+    *data = calloc(1,sizeof(ExampleDataType));
 }
 
 //Runs on RemoveComponentFromEntity
-void ComponentExampleDestructor(EntityID entity){
-    
+void ComponentExampleDestructor(void** data){
+    free(*data);
+    *data = NULL;
+}
+
+void* ComponentExampleCopy(void* data){
+    ExampleDataType *newExampleDataType = malloc(sizeof(ExampleDataType));
+    memcpy(newExampleDataType,data,sizeof(ExampleDataType));
+	return newExampleDataType;
 }

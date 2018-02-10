@@ -5,8 +5,8 @@ static ComponentID VoxelModelID = -1;
 
 extern engineECS ECS;
 
-void VoxelModificationInit(System *systemObject){
-    ThisSystem = systemObject;
+void VoxelModificationInit(){
+    ThisSystem = (System*)GetElementAt(ECS.SystemList,GetSystemID("VoxelModification"));
 
     VoxelModelID = GetComponentID("VoxelModel");
 }

@@ -46,7 +46,7 @@ int InitECS(unsigned max_entities){
 	return 1;
 }
 
-int RegisterNewComponent(char componentName[25],void (*constructorFunc)(EntityID entity),void (*destructorFunc)(EntityID entity)){
+int RegisterNewComponent(char componentName[25],void (*constructorFunc)(void** data),void (*destructorFunc)(void** data),void*(*copyFunc)(void*)){
 	if(!initializedECS){
 		printf("ECS not initialized! Initialize ECS before registering the components and systems\n");
 		return -1;
@@ -64,13 +64,14 @@ int RegisterNewComponent(char componentName[25],void (*constructorFunc)(EntityID
 	strncpy(newType.name,componentName,25);
 	newType.constructor = constructorFunc;
 	newType.destructor = destructorFunc;
+	newType.copy = copyFunc;
 
 	InsertListEnd(&ECS.ComponentTypes,(void*)&newType);
 
 	return GetLength(ECS.ComponentTypes)-1;
 }
 
-int RegisterNewSystem(char systemName[25], unsigned priority, ComponentMask required, ComponentMask excluded, void (*initFunc)(System *systemObject), void (*updateFunc)(), void (*freeFunc)()){
+int RegisterNewSystem(char systemName[25], unsigned priority, ComponentMask required, ComponentMask excluded, void (*initFunc)(), void (*updateFunc)(), void (*freeFunc)()){
 	if(!initializedECS){
 		printf("ECS not initialized! Initialize ECS before registering the components and systems\n");
 		return -1;
@@ -210,7 +211,7 @@ void AddComponentToEntity(ComponentID component, EntityID entity){
 	//Get the component type
 	ListCellPointer compType = GetCellAt(ECS.ComponentTypes,component);
 	//Call the component constructor
-	((ComponentType*)(GetElement(*compType)))->constructor(entity);
+	((ComponentType*)(GetElement(*compType)))->constructor(&ECS.Components[component][entity].data);
 }
 
 void RemoveComponentFromEntity(ComponentID component, EntityID entity){
@@ -232,7 +233,23 @@ void RemoveComponentFromEntity(ComponentID component, EntityID entity){
 	ListCellPointer compType = GetCellAt(ECS.ComponentTypes,component);
 
 	//Call the component destructor
-	((ComponentType*)(GetElement(*compType)))->destructor(entity);
+	((ComponentType*)(GetElement(*compType)))->destructor(&ECS.Components[component][entity].data);
+}
+
+EntityID DuplicateEntity(EntityID entity){
+	EntityID newEntity = CreateEntity();
+	
+	int compIndex = 0;
+	ListCellPointer compCell;
+	ListForEach(compCell,ECS.ComponentTypes){
+		if(EntityContainsComponent(entity,compIndex)){
+			ECS.Components[compIndex][newEntity].data = GetElementAsType(compCell,ComponentType).copy(ECS.Components[compIndex][entity].data);
+		}
+		compIndex++;
+	}
+	ECS.Entities[newEntity].mask.mask = ECS.Entities[entity].mask.mask;
+
+	return newEntity;
 }
 
 ComponentMask GetEntityComponents(EntityID entity){
@@ -490,8 +507,7 @@ int InitEngine(){
 	ListCellPointer current = GetFirstCell(ECS.SystemList);
 	while(current){
 		System *curSystem = ((System *)GetElement(*current));
-		curSystem->systemInit(curSystem);
-
+		curSystem->systemInit();
 		current = GetNextCell(current);
 	}
 
@@ -601,8 +617,8 @@ int GameExited(){
 
 Vector3 PositionToGameScreenCoords(Vector3 position){
 	Vector3 screenPos;
-	screenPos.x = (int)(((position.x) - (position.y))*2 + floorf(-Rendering.cameraPosition.x)) + 0.375;
-    screenPos.y = (int)(((position.x) + (position.y)) + (position.z + Rendering.cameraPosition.z )*2 + floorf(-Rendering.cameraPosition.y)) + 0.375;
+	screenPos.x = (int)(((position.x) - (position.y))*2 + roundf(-Rendering.cameraPosition.x)) + 0.375;
+    screenPos.y = (int)(((position.x) + (position.y)) + (position.z + Rendering.cameraPosition.z )*2 + roundf(-Rendering.cameraPosition.y)) + 0.375;
 	screenPos.z = (position.z)/256.0;
 
 	return screenPos;

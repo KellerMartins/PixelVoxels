@@ -2,8 +2,9 @@
 #define RIGIDBODY_H
 #include "../Engine.h"
 
-void RigidBodyConstructor(EntityID entity);
-void RigidBodyDestructor(EntityID entity);
+void RigidBodyConstructor(void** data);
+void RigidBodyDestructor(void** data);
+void* RigidBodyCopy(void* data);
 
 Vector3 GetVelocity(EntityID entity);
 Vector3 GetAcceleration(EntityID entity);

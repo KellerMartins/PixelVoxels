@@ -3,7 +3,7 @@
 #include "../Engine.h"
 #include "../Components/VoxelModel.h"
 
-void VoxelRendererInit(System *systemObject);
+void VoxelRendererInit();
 void VoxelRendererUpdate();
 void VoxelRendererFree();
 

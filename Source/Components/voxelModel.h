@@ -31,8 +31,9 @@ typedef struct VoxelModel{
 	Vector3 center;
 }VoxelModel;
 
-void VoxelModelConstructor(EntityID entity);
-void VoxelModelDestructor(EntityID entity);
+void VoxelModelConstructor(void** data);
+void VoxelModelDestructor(void** data);
+void* VoxelModelCopy(void* data);
 
 VoxelModel* GetVoxelModelPointer(EntityID entity);
 

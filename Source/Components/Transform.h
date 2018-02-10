@@ -3,8 +3,9 @@
 #include "../Engine.h"
 #include "ParentChild.h"
 
-void TransformConstructor(EntityID entity);
-void TransformDestructor(EntityID entity);
+void TransformConstructor(void** data);
+void TransformDestructor(void** data);
+void* TransformCopy(void* data);
 
 Vector3 GetPosition(EntityID entity);
 Vector3 GetRotation(EntityID entity);

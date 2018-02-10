@@ -77,7 +77,6 @@ typedef struct Pixel{
 //Generic list implementation
 //In this implementation, every new element added is copied to the list, not just referenced
 //If there is the need to use this list to reference an variable, initialize the list as a pointers list
-//Untested for now
 
 typedef struct ListCell* ListCellPointer;
 typedef struct ListCell{
@@ -120,7 +119,7 @@ ListCellPointer GetCellAt(List list,int index);
 unsigned GetElementSize(List list);
 unsigned GetLength(List list);
 
-#define ListForEach(element,list) for(element = GetFirstCell(list); element != NULL; element = GetNextCell(element))
+#define ListForEach(cellPointer,list) for(cellPointer = GetFirstCell(list); cellPointer != NULL; cellPointer = GetNextCell(cellPointer))
 #define GetElementAsType(cellPointer, type)  (*((type*)GetElement(*cellPointer)))
 
 

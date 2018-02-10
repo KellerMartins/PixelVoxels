@@ -22,13 +22,19 @@ static ComponentID ThisComponentID(){
 
 extern engineECS ECS;
 
-void RigidBodyConstructor(EntityID entity){
-    ECS.Components[ThisComponentID()][entity].data = calloc(1,sizeof(RigidBody));
+void RigidBodyConstructor(void** data){
+    *data = calloc(1,sizeof(RigidBody));
 }
 
-void RigidBodyDestructor(EntityID entity){
-    free(ECS.Components[ThisComponentID()][entity].data);
-    ECS.Components[ThisComponentID()][entity].data = NULL;
+void RigidBodyDestructor(void** data){
+    free(*data);
+    *data = NULL;
+}
+
+void* RigidBodyCopy(void* data){
+    RigidBody *newRigidBody = malloc(sizeof(RigidBody));
+    memcpy(newRigidBody,data,sizeof(RigidBody));
+	return newRigidBody;
 }
 
 Vector3 GetVelocity(EntityID entity){

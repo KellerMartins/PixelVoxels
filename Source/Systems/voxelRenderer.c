@@ -14,8 +14,8 @@ int cubeTexDimension = 1;
 GLuint CubeTex[1] = {0};
 
 
-void VoxelRendererInit(System *systemObject){
-    ThisSystem = systemObject;
+void VoxelRendererInit(){
+    ThisSystem = (System*)GetElementAt(ECS.SystemList,GetSystemID("VoxelRenderer"));
 
     VoxelModelID = GetComponentID("VoxelModel");
 

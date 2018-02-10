@@ -2,7 +2,8 @@
 #define COMPONENTEXAMPLE_H
 #include "../Engine.h"
 
-void ComponentExampleConstructor(EntityID entity);
-void ComponentExampleDestructor(EntityID entity);
+void ComponentExampleConstructor(void** data);
+void ComponentExampleDestructor(void** data);
+void* ComponentExampleCopy(void* data);
 
 #endif

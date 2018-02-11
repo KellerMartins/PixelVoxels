@@ -17,16 +17,19 @@ typedef struct ExampleDataType{
 
 //Runs on AddComponentToEntity
 void ComponentExampleConstructor(void** data){
+    if(!data) return;
     *data = calloc(1,sizeof(ExampleDataType));
 }
 
 //Runs on RemoveComponentFromEntity
 void ComponentExampleDestructor(void** data){
+    if(!data) return;
     free(*data);
     *data = NULL;
 }
 
 void* ComponentExampleCopy(void* data){
+    if(!data) return NULL;
     ExampleDataType *newExampleDataType = malloc(sizeof(ExampleDataType));
     memcpy(newExampleDataType,data,sizeof(ExampleDataType));
 	return newExampleDataType;

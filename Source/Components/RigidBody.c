@@ -23,15 +23,18 @@ static ComponentID ThisComponentID(){
 extern engineECS ECS;
 
 void RigidBodyConstructor(void** data){
+    if(!data) return;
     *data = calloc(1,sizeof(RigidBody));
 }
 
 void RigidBodyDestructor(void** data){
+    if(!data) return;
     free(*data);
     *data = NULL;
 }
 
 void* RigidBodyCopy(void* data){
+    if(!data) return NULL;
     RigidBody *newRigidBody = malloc(sizeof(RigidBody));
     memcpy(newRigidBody,data,sizeof(RigidBody));
 	return newRigidBody;

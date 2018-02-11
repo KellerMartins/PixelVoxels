@@ -18,15 +18,18 @@ static ComponentID ThisComponentID(){
 extern engineECS ECS;
 
 void TransformConstructor(void** data){
+    if(!data) return;
     *data = calloc(1,sizeof(Transform));
 }
 
 void TransformDestructor(void** data){
+    if(!data) return;
     free(*data);
     *data = NULL;
 }
 
 void* TransformCopy(void* data){
+    if(!data) return NULL;
     Transform *newTransform = malloc(sizeof(Transform));
     memcpy(newTransform,data,sizeof(Transform));
 	return newTransform;

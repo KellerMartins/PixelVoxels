@@ -563,7 +563,8 @@ void EndEngine(int errorOcurred){
 	int i,j;
 	for(i=0;i<GetLength(ECS.ComponentTypes);i++){
 		for(j=0;j<ECS.maxEntities;j++){
-			free(ECS.Components[i][j].data);
+			if(ECS.Components[i][j].data)
+			((ComponentType*)(GetElementAt(ECS.ComponentTypes,i)))->destructor(&ECS.Components[i][j].data);
 		}
 		free(ECS.Components[i]);
 	}

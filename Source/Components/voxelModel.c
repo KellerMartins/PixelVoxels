@@ -13,12 +13,14 @@ extern engineECS ECS;
 extern engineRendering Rendering;
 
 void VoxelModelConstructor(void** data){
+    if(!data) return;
     *data = calloc(1,sizeof(VoxelModel));
     VoxelModel *obj = *data;
 
     *obj = (VoxelModel){1,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,0};
 }
 void VoxelModelDestructor(void** data){
+    if(!data) return;
     VoxelModel *obj = *data;
 
     free(obj->model);
@@ -31,6 +33,8 @@ void VoxelModelDestructor(void** data){
 }
 
 void* VoxelModelCopy(void* data){
+    if(!data) return NULL;
+
     VoxelModel *newVoxelModel = malloc(sizeof(VoxelModel));
     memcpy(newVoxelModel,data,sizeof(VoxelModel));
     newVoxelModel->dimension[0] = ((VoxelModel*)data)->dimension[0];

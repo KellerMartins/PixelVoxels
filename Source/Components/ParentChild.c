@@ -12,6 +12,7 @@ static ComponentID ThisComponentID(){
 extern engineECS ECS;
 
 void ParentChildConstructor(void** data){
+    if(!data) return;
     *data = calloc(1,sizeof(ParentChild));
     ParentChild *parent = *data;
 
@@ -21,6 +22,7 @@ void ParentChildConstructor(void** data){
 }
 
 void ParentChildDestructor(void** data){
+    if(!data) return;
     ParentChild *parent = *data;
     FreeList(&parent->childs);
 
@@ -29,6 +31,7 @@ void ParentChildDestructor(void** data){
 }
 
 void* ParentChildCopy(void* data){
+    if(!data) return NULL;
     ParentChild *newParentChild = malloc(sizeof(ParentChild));
     memcpy(newParentChild,data,sizeof(ParentChild));
 

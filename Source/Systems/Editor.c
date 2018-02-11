@@ -47,6 +47,8 @@ static Vector3 deltaMousePos = {0,0,0};
 List SelectedEntities;
 //Array of existing entities
 int *existingEntities = NULL;
+//Copy of the components data to be reseted when exiting play mode
+Component** componentsPlaymodeCopy;
 
 //Internal functions
 int MouseOverLineGizmos(Vector3 mousePos, Vector3 originPos, Vector3 handlePos,int mouseOverDistance);
@@ -61,18 +63,26 @@ void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,in
 int PointButton(Vector3 pos,int iconID, int scale, Vector3 defaultColor, Vector3 mouseOverColor, Vector3 pressedColor);
 void LoadUITexture(char *path,int index);
 
+void EnterPlayMode();
+void ExitPlayMode();
+
 //Runs on engine start
 void EditorInit(System *systemObject){
     ThisSystem = (System*)GetElementAt(ECS.SystemList,GetSystemID("Editor"));
 
     existingEntities = calloc(ECS.maxEntities,sizeof(int));
     SelectedEntities = InitList(sizeof(EntityID));
+    int i;
+    //Allocate the playmode components copy
+    componentsPlaymodeCopy = malloc(GetLength(ECS.ComponentTypes) * sizeof(Component*));
+    for(i=0;i<GetLength(ECS.ComponentTypes);i++){
+        componentsPlaymodeCopy[i] = calloc(ECS.maxEntities,sizeof(Component));
+    }
 
     VoxRenderSystem = GetSystemID("VoxelRenderer");
     EditorSystem = GetSystemID("Editor");
 
     //Disable all game systems, except the rendering
-    int i;
     for(i=0;i<GetLength(ECS.SystemList);i++){
         if(i != EditorSystem && i!= VoxRenderSystem){
             DisableSystem(i);
@@ -162,7 +172,7 @@ void EditorUpdate(){
         //Stop button
         if(1 == PointButton((Vector3){Screen.windowWidth/2 + iconsSize * 2 * 2/Screen.gameScale +2,  Screen.windowHeight-iconsSize * 2 * 2/Screen.gameScale -1 },5, 2, (Vector3){0.1,0.1,0.1}, (Vector3){1,1,1}, (Vector3){1,1,1})){
             playMode = 0;
-
+            ExitPlayMode();
             //Disable all game systems
             int i;
             for(i=0;i<GetLength(ECS.SystemList);i++){
@@ -178,7 +188,6 @@ void EditorUpdate(){
         //Play button
         if(1 == PointButton((Vector3){Screen.windowWidth/2 - iconsSize * 2 * 2/Screen.gameScale -2,  Screen.windowHeight-iconsSize * 2 * 2/Screen.gameScale -1 },3, 2, (Vector3){0.1,0.1,0.1}, (Vector3){1,1,1}, (Vector3){1,1,1})){
             playMode = 1;
-
             //Enable all game systems
             int i;
             for(i=0;i<GetLength(ECS.SystemList);i++){
@@ -190,6 +199,7 @@ void EditorUpdate(){
         //Stop button enabled
         if(1 == PointButton((Vector3){Screen.windowWidth/2 + iconsSize * 2 * 2/Screen.gameScale +2,  Screen.windowHeight-iconsSize * 2 * 2/Screen.gameScale -1 },5, 2, (Vector3){0.1,0.1,0.1}, (Vector3){1,1,1}, (Vector3){1,1,1})){
             playMode = 0;
+            ExitPlayMode();
 
             //Disable all game systems
             int i;
@@ -206,7 +216,7 @@ void EditorUpdate(){
         //Play button
         if(1 == PointButton((Vector3){Screen.windowWidth/2 - iconsSize * 2 * 2/Screen.gameScale -2,  Screen.windowHeight-iconsSize * 2 * 2/Screen.gameScale -1 },3, 2, (Vector3){0.7,0.7,0.7}, (Vector3){1,1,1}, (Vector3){1,1,1})){
             playMode = 1;
-
+            EnterPlayMode();
             //Enable all game systems
             int i;
             for(i=0;i<GetLength(ECS.SystemList);i++){
@@ -769,6 +779,20 @@ void EditorUpdate(){
 void EditorFree(){
     FreeList(&SelectedEntities);
     free(existingEntities);
+    
+    int c=0,i;
+    ListCellPointer comp;
+    ListForEach(comp,ECS.ComponentTypes){
+        for(i=0;i<ECS.maxEntities;i++){
+            if(EntityContainsComponent(i,c) && componentsPlaymodeCopy[c][i].data){
+                GetElementAsType(comp,ComponentType).destructor(&componentsPlaymodeCopy[c][i].data);
+            }
+        }
+        free(componentsPlaymodeCopy[c]);
+        c++;
+    }
+    free(componentsPlaymodeCopy);
+
     TTF_CloseFont(gizmosFont);
 }
 
@@ -1030,4 +1054,52 @@ void LoadUITexture(char *path,int index){
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     SDL_FreeSurface(img);
+}
+
+void EnterPlayMode(){
+    int c=0,i;
+    ListCellPointer comp;
+    ListForEach(comp,ECS.ComponentTypes){
+        for(i=0;i<=ECS.maxUsedIndex;i++){
+            if(ECS.Components[c][i].data){
+                componentsPlaymodeCopy[c][i].data = GetElementAsType(comp,ComponentType).copy(ECS.Components[c][i].data);
+            }
+        }
+        c++;
+    }
+}
+
+void ExitPlayMode(){
+    int c,i;
+    for(i=0;i<ECS.maxEntities;i++){
+        //Destroy game modified entity before recreate
+        if(existingEntities[i]){
+            DestroyEntity(i);
+        }
+
+        c=0;
+        ListCellPointer comp;
+        ListForEach(comp,ECS.ComponentTypes){
+            if(componentsPlaymodeCopy[c][i].data){
+                //Copy the backup data
+                ECS.Components[c][i].data = GetElementAsType(comp,ComponentType).copy(componentsPlaymodeCopy[c][i].data);
+                ECS.Entities[i].mask.mask |= (1<<c);
+
+                ListCellPointer ent;
+                int indx = 0;
+                ListForEach(ent,ECS.AvaliableEntitiesIndexes){
+                    if(GetElementAsType(ent,EntityID) == i){
+                        RemoveListIndex(&ECS.AvaliableEntitiesIndexes,indx);
+                        break;
+                    }
+                    indx++;
+                }
+
+                //Destroy backup
+                GetElementAsType(comp,ComponentType).destructor(&componentsPlaymodeCopy[c][i].data);
+            }
+            c++;
+        }
+        
+    }
 }

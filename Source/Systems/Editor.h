@@ -2,6 +2,8 @@
 #define EDITOR_H
 #include "../Engine.h"
 #include "../Components/VoxelModel.h"
+#include "../Components/RigidBody.h"
+#include "../Libs/tinydir.h"
 
 void EditorInit();
 void EditorUpdate();

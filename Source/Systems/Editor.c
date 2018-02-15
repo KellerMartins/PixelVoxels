@@ -20,7 +20,7 @@ static const float lineGizmosMouseMovement = 4.50;
 static float componentWindowLength = 200;
 static float componentWindowWidthSpacing = 14;
 static float componentNameLeftSpacing = 5;
-static float componentBetweenSpacing = 5;
+static float componentBetweenSpacing = 3;
 
 static float entityWindowLength = 100;
 static float entityWindowWidthSpacing = 14;
@@ -30,14 +30,31 @@ static float entityBetweenSpacing = 2;
 
 static int scrollbarMouseWheelSpeed = 25;
 
-SDL_Color fontColor = {255,255,255};
+Vector3 bgPanelColor = {0.02,0.02,0.05};
+
+SDL_Color brightWhite = {250,250,250};
+SDL_Color lightWhite = {200,200,200};
 TTF_Font* gizmosFont;
 TTF_Font* gizmosFontSmall;
 
-GLuint iconsTex[6];
+GLuint iconsTex[17];
 int iconsSize = 9;
 
 char *textFieldString = NULL;
+
+//File browser data;
+//Lists of tinydir_file
+List Folders;
+List Files;
+//List of char*
+List Paths;
+int indexPath;
+char filePath[_TINYDIR_PATH_MAX];
+char fileName[_TINYDIR_FILENAME_MAX];
+//File browser open status (0 = not opened, 1 = opened valid folder, -1 failed to open)
+int fileBrowserOpened = 0;
+//Line of items scrolled
+int fbItemsScroll = 0;
 
 //Input data
 static Vector3 mousePos = {0,0,0};
@@ -59,9 +76,14 @@ int IsSelected(EntityID entity);
 void RemoveFromSelected(EntityID entity);
 int DrawComponentHeader(ComponentID component, int* curHeight);
 void DrawRectangle(Vector3 min, Vector3 max, float r, float g, float b);
+void DrawPointIcon(Vector3 pos,int iconID, int scale, Vector3 color);
 void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,int x, int w, int fieldsSpacing, int* curField, int* curHeight);
+void FloatField(char *title, float *data,int ommit,int x, int w, int* curField, int* curHeight);
 int PointButton(Vector3 pos,int iconID, int scale, Vector3 defaultColor, Vector3 mouseOverColor, Vector3 pressedColor);
+int PointToggle(int *data,Vector3 pos,int onIconID, int offIconID, int undefinedIconID, int scale, Vector3 onColor, Vector3 offColor, Vector3 undefinedColor, Vector3 mouseOverColor);
 void LoadUITexture(char *path,int index);
+void OpenFileBrowser(char *initialPath);
+void CloseFileBrowser();
 
 void EnterPlayMode();
 void ExitPlayMode();
@@ -100,13 +122,24 @@ void EditorInit(System *systemObject){
 	}
 
     //Load UI icons
-    glGenTextures(5, iconsTex);
+    glGenTextures(17, iconsTex);
     LoadUITexture("Interface/IconsUI/add.png",0);
     LoadUITexture("Interface/IconsUI/remove.png",1);
     LoadUITexture("Interface/IconsUI/bin.png",2);
     LoadUITexture("Interface/IconsUI/play.png",3);
     LoadUITexture("Interface/IconsUI/pause.png",4);
     LoadUITexture("Interface/IconsUI/stop.png",5);
+    LoadUITexture("Interface/IconsUI/home.png",6);
+    LoadUITexture("Interface/IconsUI/reload.png",7);
+    LoadUITexture("Interface/IconsUI/next.png",8);
+    LoadUITexture("Interface/IconsUI/previous.png",9);
+    LoadUITexture("Interface/IconsUI/folder.png",10);
+    LoadUITexture("Interface/IconsUI/file.png",11);
+    LoadUITexture("Interface/IconsUI/up.png",12);
+    LoadUITexture("Interface/IconsUI/down.png",13);
+    LoadUITexture("Interface/IconsUI/toggleOn.png",14);
+    LoadUITexture("Interface/IconsUI/toggleOff.png",15);
+    LoadUITexture("Interface/IconsUI/toggleUndefined.png",16);
 }
 
 int movingX = 0;
@@ -119,14 +152,14 @@ int componentStartHeight = 0;
 int movingScrollbar = 0;
 int editingField = -1;
 
+
+
 //0 = Editor, 1 = Play, 2 = Paused
 int playMode = 0;
 
 //Runs each GameLoop iteration
 void EditorUpdate(){
     EntityID entity;
-
-    //printf("%d\n",GetLength(SelectedEntities));
 
     //Update mouse data
     mousePos = (Vector3){Input.mouseX,Screen.windowHeight - Input.mouseY,0};
@@ -150,15 +183,15 @@ void EditorUpdate(){
     glViewport(0,0,Screen.gameWidth,Screen.gameHeight);
 
     //-------------------------- Play Mode --------------------------
-    Vector3 playBGMin = (Vector3){Screen.windowWidth/2 - iconsSize * 4 * 2/Screen.gameScale -2,  Screen.windowHeight-iconsSize * 4 * 2/Screen.gameScale -1 };
-    Vector3 playBGMax = (Vector3){Screen.windowWidth/2 + iconsSize * 4 * 2/Screen.gameScale +2,  Screen.windowHeight};
+    Vector3 playBGMin = (Vector3){Screen.windowWidth/2 - iconsSize * 4  -2,  Screen.windowHeight-iconsSize * 4  -1 };
+    Vector3 playBGMax = (Vector3){Screen.windowWidth/2 + iconsSize * 4  +2,  Screen.windowHeight};
 
     if(playMode == 1){
         //Play mode
         DrawRectangle(playBGMin,playBGMax,0.5,0.5,0.5);
 
         //Pause button
-        if(1 == PointButton((Vector3){Screen.windowWidth/2 - iconsSize * 2 * 2/Screen.gameScale -2,  Screen.windowHeight-iconsSize * 2 * 2/Screen.gameScale -1 },4, 2, (Vector3){0.1,0.1,0.1}, (Vector3){1,1,1}, (Vector3){1,1,1})){
+        if(1 == PointButton((Vector3){Screen.windowWidth/2 - iconsSize * 2 -2,  Screen.windowHeight-iconsSize * 2 -1 },4, 2, (Vector3){0.1,0.1,0.1}, (Vector3){1,1,1}, (Vector3){1,1,1})){
             playMode = 2;
 
             //Disable all game systems
@@ -170,7 +203,7 @@ void EditorUpdate(){
             }
         }
         //Stop button
-        if(1 == PointButton((Vector3){Screen.windowWidth/2 + iconsSize * 2 * 2/Screen.gameScale +2,  Screen.windowHeight-iconsSize * 2 * 2/Screen.gameScale -1 },5, 2, (Vector3){0.1,0.1,0.1}, (Vector3){1,1,1}, (Vector3){1,1,1})){
+        if(1 == PointButton((Vector3){Screen.windowWidth/2 + iconsSize * 2 +2,  Screen.windowHeight-iconsSize * 2 -1 },5, 2, (Vector3){0.1,0.1,0.1}, (Vector3){1,1,1}, (Vector3){1,1,1})){
             playMode = 0;
             ExitPlayMode();
             //Disable all game systems
@@ -186,7 +219,7 @@ void EditorUpdate(){
         DrawRectangle(playBGMin,playBGMax,0.5,0.5,0.5);
 
         //Play button
-        if(1 == PointButton((Vector3){Screen.windowWidth/2 - iconsSize * 2 * 2/Screen.gameScale -2,  Screen.windowHeight-iconsSize * 2 * 2/Screen.gameScale -1 },3, 2, (Vector3){0.1,0.1,0.1}, (Vector3){1,1,1}, (Vector3){1,1,1})){
+        if(1 == PointButton((Vector3){Screen.windowWidth/2 - iconsSize * 2 -2,  Screen.windowHeight-iconsSize * 2 -1 },3, 2, (Vector3){0.1,0.1,0.1}, (Vector3){1,1,1}, (Vector3){1,1,1})){
             playMode = 1;
             //Enable all game systems
             int i;
@@ -197,7 +230,7 @@ void EditorUpdate(){
             }
         }
         //Stop button enabled
-        if(1 == PointButton((Vector3){Screen.windowWidth/2 + iconsSize * 2 * 2/Screen.gameScale +2,  Screen.windowHeight-iconsSize * 2 * 2/Screen.gameScale -1 },5, 2, (Vector3){0.1,0.1,0.1}, (Vector3){1,1,1}, (Vector3){1,1,1})){
+        if(1 == PointButton((Vector3){Screen.windowWidth/2 + iconsSize * 2 +2,  Screen.windowHeight-iconsSize * 2 -1 },5, 2, (Vector3){0.1,0.1,0.1}, (Vector3){1,1,1}, (Vector3){1,1,1})){
             playMode = 0;
             ExitPlayMode();
 
@@ -214,7 +247,7 @@ void EditorUpdate(){
         DrawRectangle(playBGMin,playBGMax,0.1,0.1,0.15);
 
         //Play button
-        if(1 == PointButton((Vector3){Screen.windowWidth/2 - iconsSize * 2 * 2/Screen.gameScale -2,  Screen.windowHeight-iconsSize * 2 * 2/Screen.gameScale -1 },3, 2, (Vector3){0.7,0.7,0.7}, (Vector3){1,1,1}, (Vector3){1,1,1})){
+        if(1 == PointButton((Vector3){Screen.windowWidth/2 - iconsSize * 2 -2,  Screen.windowHeight-iconsSize * 2 -1 },3, 2, (Vector3){0.7,0.7,0.7}, (Vector3){1,1,1}, (Vector3){1,1,1})){
             playMode = 1;
             EnterPlayMode();
             //Enable all game systems
@@ -226,7 +259,7 @@ void EditorUpdate(){
             }
         }
         //Stop button disabled
-        PointButton((Vector3){Screen.windowWidth/2 + iconsSize * 2 * 2/Screen.gameScale +2,  Screen.windowHeight-iconsSize * 2 * 2/Screen.gameScale -1 },5, 2, (Vector3){0.2,0.2,0.2}, (Vector3){0.2,0.2,0.2}, (Vector3){0.2,0.2,0.2});
+        PointButton((Vector3){Screen.windowWidth/2 + iconsSize * 2 +2,  Screen.windowHeight-iconsSize * 2 -1 },5, 2, (Vector3){0.2,0.2,0.2}, (Vector3){0.2,0.2,0.2}, (Vector3){0.2,0.2,0.2});
     }
 
     //-------------------------- Transform gizmos --------------------------
@@ -404,7 +437,7 @@ void EditorUpdate(){
                 }
                 //int w, h;
                 //TTF_SizeText(gizmosFont,"Some random text",&w,&h);
-                //RenderText("Some random text", fontColor, screenPos.x-w/2, screenPos.y-h*1.5,gizmosDepth, gizmosFont);  
+                //RenderText("Some random text", lightWhite, screenPos.x-w/2, screenPos.y-h*1.5,gizmosDepth, gizmosFont);  
             }
         }
     }
@@ -424,7 +457,7 @@ void EditorUpdate(){
 
         //Panel background
         glBegin(GL_QUADS);
-            glColor3f(0.02,0.02,0.05);
+            glColor3f(bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
             glVertex2f( Screen.windowWidth-componentWindowLength,  Screen.windowHeight);
             glVertex2f( Screen.windowWidth,  Screen.windowHeight);
             glVertex2f( Screen.windowWidth, 0);
@@ -519,6 +552,157 @@ void EditorUpdate(){
                             }
                         }
                         componentHeight -= 7;
+                    }else if(c == GetComponentID("RigidBody")){
+                        
+                        //Check if the selected entities are static and use gravity
+                        ListCellPointer selEntity = GetFirstCell(SelectedEntities);
+                        int isStatic = IsStaticRigidbody(GetElementAsType(selEntity,int));
+                        int useGravity = UsesGravity(GetElementAsType(selEntity,int)); 
+                        ListForEach(selEntity, SelectedEntities){
+                            if(IsStaticRigidbody(GetElementAsType(selEntity,int)) != isStatic){
+                                isStatic = -1;
+                            }
+                            if(UsesGravity(GetElementAsType(selEntity,int)) != useGravity){
+                                useGravity = -1;
+                            }
+                            if(isStatic == -1 && useGravity == -1) break;
+                        }
+
+                        if(!isStatic){
+                            glBegin(GL_QUADS);
+                                //Component background
+                                glColor3f(0.1,0.1,0.15);
+                                glVertex2f( Screen.windowWidth-componentWindowLength,  componentHeight);
+                                glVertex2f( Screen.windowWidth-componentWindowWidthSpacing,  componentHeight);
+                                glVertex2f( Screen.windowWidth-componentWindowWidthSpacing, componentHeight-225);
+                                glVertex2f( Screen.windowWidth-componentWindowLength, componentHeight-225);
+                            glEnd();
+                            if(1 == PointToggle(&isStatic,(Vector3){Screen.windowWidth-componentWindowLength + 12,componentHeight - 10},14,15,16,1, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1})){
+                                ListForEach(selEntity, SelectedEntities){
+                                    SetStaticRigidbody(GetElementAsType(selEntity,int),isStatic);
+                                }
+                            }
+                            RenderText("Is Static", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+                            componentHeight-=20;
+
+                            if(1 == PointToggle(&useGravity,(Vector3){Screen.windowWidth-componentWindowLength + 12,componentHeight - 10},14,15,16,1, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1})){
+                                ListForEach(selEntity, SelectedEntities){
+                                    SetUseGravity(GetElementAsType(selEntity,int),useGravity);
+                                }
+                            }
+                            RenderText("use gravity", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+                            componentHeight-=20;
+
+                            int ommitVelX = 0, ommitVelY = 0, ommitVelZ = 0;
+                            int ommitAccelX = 0, ommitAccelY = 0, ommitAccelZ = 0;
+                            int ommitBounc = 0, ommitMass = 0;
+
+                            selEntity = GetFirstCell(SelectedEntities);
+                            Vector3 lastVel = GetVelocity(GetElementAsType(selEntity,int));
+                            Vector3 lastAccel = GetAcceleration(GetElementAsType(selEntity,int));
+                            float lastBounc = GetBounciness(GetElementAsType(selEntity,int));
+                            float lastMass = GetMass(GetElementAsType(selEntity,int));
+                            
+                            ListForEach(selEntity, SelectedEntities){
+                                Vector3 curVel = GetVelocity(GetElementAsType(selEntity,int));
+                                Vector3 curAccel = GetAcceleration(GetElementAsType(selEntity,int));
+                                float curBounc = GetBounciness(GetElementAsType(selEntity,int));
+                                float curMass = GetMass(GetElementAsType(selEntity,int));
+
+                                if(curVel.x != lastVel.x){
+                                    ommitVelX = 1;
+                                    lastVel.x = 0;
+                                }
+                                if(curVel.y != lastVel.y){
+                                    ommitVelY = 1;
+                                    lastVel.y = 0;
+                                }
+                                if(curVel.z != lastVel.z){
+                                    ommitVelZ = 1;
+                                    lastVel.z = 0;
+                                }
+
+                                if(curAccel.x != lastAccel.x){
+                                    ommitAccelX = 1;
+                                    lastAccel.x = 0;
+                                }
+                                if(curAccel.y != lastAccel.y){
+                                    ommitAccelY = 1;
+                                    lastAccel.y = 0;
+                                }
+                                if(curBounc != lastBounc){
+                                    ommitBounc = 1;
+                                    lastBounc = 0;
+                                }
+                                if(curMass != lastMass){
+                                    ommitMass = 1;
+                                    lastMass = 0;
+                                }
+                            }
+                            Vector3 newVel = lastVel;
+                            Vector3 newAccel = lastAccel;
+                            float newBounc = lastBounc;
+                            float newMass = lastMass;
+
+                            FloatField("mass",&newMass,ommitMass,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
+                            FloatField("bounciness",&newBounc,ommitBounc,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
+                            Vector3Field("initial velocity",&newVel,ommitVelX,ommitVelY,ommitVelZ,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1,4, &currentComponentField, &componentHeight);
+                            Vector3Field("const. accel.",&newAccel,ommitAccelX,ommitAccelY,ommitAccelZ,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1,4, &currentComponentField, &componentHeight);
+
+                            int changedVelX = 0, changedVelY = 0, changedVelZ = 0;
+                            int changedAccelX = 0, changedAccelY = 0, changedAccelZ = 0;
+                            int changedBounc = 0, changedMass = 0;
+
+                            if(lastVel.x != newVel.x) changedVelX = 1;
+                            if(lastVel.y != newVel.y) changedVelY = 1;
+                            if(lastVel.z != newVel.z) changedVelZ = 1;
+
+                            if(lastAccel.x != newAccel.x) changedAccelX = 1;
+                            if(lastAccel.y != newAccel.y) changedAccelY = 1;
+                            if(lastAccel.z != newAccel.z) changedAccelZ = 1;
+
+                            if(lastBounc != newBounc) changedBounc = 1;
+                            if(lastMass != newMass) changedMass = 1;
+                            
+                            if(changedVelX || changedVelY || changedVelZ || changedAccelX || changedAccelY || changedAccelZ || changedBounc || changedMass){
+                                ListForEach(selEntity, SelectedEntities){
+                                    Vector3 pos = GetVelocity(GetElementAsType(selEntity,int));
+                                    Vector3 rot = GetAcceleration(GetElementAsType(selEntity,int));
+
+                                    if(changedVelX) pos.x = newVel.x;
+                                    if(changedVelY) pos.y = newVel.y;
+                                    if(changedVelZ) pos.z = newVel.z;
+
+                                    if(changedAccelX) rot.x = newAccel.x;
+                                    if(changedAccelY) rot.y = newAccel.y;
+                                    if(changedAccelZ) rot.z = newAccel.z;
+
+                                    SetVelocity(GetElementAsType(selEntity,int),pos);
+                                    SetAcceleration(GetElementAsType(selEntity,int),rot);
+
+                                    if(changedBounc) SetBounciness(GetElementAsType(selEntity,int),newBounc);
+                                    if(changedMass) SetMass(GetElementAsType(selEntity,int),newMass);
+                                }
+                            }
+                            componentHeight -= 7;
+                        }else{
+                            glBegin(GL_QUADS);
+                                //Component background
+                                glColor3f(0.1,0.1,0.15);
+                                glVertex2f( Screen.windowWidth-componentWindowLength,  componentHeight);
+                                glVertex2f( Screen.windowWidth-componentWindowWidthSpacing,  componentHeight);
+                                glVertex2f( Screen.windowWidth-componentWindowWidthSpacing, componentHeight-22);
+                                glVertex2f( Screen.windowWidth-componentWindowLength, componentHeight-22);
+                            glEnd();
+
+                            if(1 == PointToggle(&isStatic,(Vector3){Screen.windowWidth-componentWindowLength + 12,componentHeight - 10},14,15,16,1, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1})){
+                                ListForEach(selEntity, SelectedEntities){
+                                    SetStaticRigidbody(GetElementAsType(selEntity,int),isStatic);
+                                }
+                            }
+                            RenderText("Is Static", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+                            componentHeight-=20;
+                        }
                     }
                 }
                 componentHeight -= componentBetweenSpacing;
@@ -594,7 +778,7 @@ void EditorUpdate(){
 
     //Entities Panel background
     glBegin(GL_QUADS);
-        glColor3f(0.02,0.02,0.05);
+        glColor3f(bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
         glVertex2f( entityWindowLength,  Screen.windowHeight);
         glVertex2f( 0,  Screen.windowHeight);
         glVertex2f( 0, 0);
@@ -656,7 +840,7 @@ void EditorUpdate(){
                 glEnd();
                 static char entityName[12];
                 snprintf(entityName,11,"%d",entity);
-                RenderText(entityName, fontColor, entityNameLeftSpacing, entityHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+                RenderText(entityName, lightWhite, entityNameLeftSpacing, entityHeight - TTF_FontHeight(gizmosFont), gizmosFont);
             }
             entityHeight -= TTF_FontHeight(gizmosFont)+2 + entityBetweenSpacing;
         }
@@ -729,7 +913,7 @@ void EditorUpdate(){
 
     //New Entity button
     glLineWidth(2 * 2/Screen.gameScale);
-    glColor3f(0.02,0.02,0.05);
+    glColor3f(bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
     glBegin(GL_LINES);  
         //Line separating new entity button from the entities and the scrollbar
         glVertex2f(0,Screen.windowHeight-entityWindowTopHeightSpacing);
@@ -753,8 +937,232 @@ void EditorUpdate(){
         glVertex2f( bMin.x, bMin.y);
         glVertex2f( bMax.x, bMin.y);
     glEnd();
+    RenderText("+ Entity", brightWhite, 5, Screen.windowHeight-(entityWindowTopHeightSpacing)+5, gizmosFont);
 
-    RenderText("+ Entity", fontColor, 5, Screen.windowHeight-(entityWindowTopHeightSpacing)+5, gizmosFont);
+    //-------------------------- File browser --------------------------
+    if(fileBrowserOpened){
+        int w,h;
+        //Backgrounds
+        Vector3 fbMin = {Screen.windowWidth/2 -300,Screen.windowHeight/2 -200};
+        Vector3 fbMax = {Screen.windowWidth/2 +300,Screen.windowHeight/2 +200};
+        Vector3 fbFootMin = {Screen.windowWidth/2 -299,Screen.windowHeight/2 -199};
+        Vector3 fbFootMax = {Screen.windowWidth/2 +299,Screen.windowHeight/2 -150};
+        Vector3 fbHeaderMin = {Screen.windowWidth/2 -299,Screen.windowHeight/2 +169};
+        Vector3 fbHeaderMax = {Screen.windowWidth/2 +299,Screen.windowHeight/2 +199};
+
+        DrawRectangle(fbMin,fbMax,bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
+        DrawRectangle(fbFootMin,fbFootMax,0.1,0.1,0.15);
+        DrawRectangle(fbHeaderMin,fbHeaderMax,0.1,0.1,0.15);
+
+        //Header
+        Vector3 filepathBgMin = {Screen.windowWidth/2-180,Screen.windowHeight/2 +172};
+        Vector3 filepathBgMax = {Screen.windowWidth/2 +297,Screen.windowHeight/2 +195};
+        DrawRectangle(filepathBgMin,filepathBgMax,0.2, 0.2, 0.2);
+
+        //Header buttons
+        //Previous button
+        if(indexPath>0){
+            if(PointButton((Vector3){fbHeaderMin.x+ iconsSize * 2 ,fbHeaderMin.y+(fbHeaderMax.y - fbHeaderMin.y)/2,0},9, 1, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){0.5,0.5,0.5}) == 1){
+                indexPath--;
+                OpenFileBrowser(*((char**)GetElementAt(Paths,indexPath)));
+            }
+        }else{
+            PointButton((Vector3){fbHeaderMin.x+ iconsSize * 2 ,fbHeaderMin.y+(fbHeaderMax.y - fbHeaderMin.y)/2,0},9, 1, (Vector3){0.25,0.25,0.25}, (Vector3){0.25,0.25,0.25}, (Vector3){0.25,0.25,0.25});
+        }
+        //Next button
+        if(indexPath<GetLength(Paths)-1){
+            if(PointButton((Vector3){fbHeaderMin.x+ iconsSize * 6 ,fbHeaderMin.y+(fbHeaderMax.y - fbHeaderMin.y)/2,0},8, 1, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){0.5,0.5,0.5}) == 1){
+                indexPath++;
+                OpenFileBrowser(*((char**)GetElementAt(Paths,indexPath)));
+            }
+        }else{
+            PointButton((Vector3){fbHeaderMin.x+ iconsSize * 6 ,fbHeaderMin.y+(fbHeaderMax.y - fbHeaderMin.y)/2,0},8, 1, (Vector3){0.25,0.25,0.25}, (Vector3){0.25,0.25,0.25}, (Vector3){0.25,0.25,0.25});
+        }
+        //Home
+        if(PointButton((Vector3){fbHeaderMin.x+ iconsSize * 10,fbHeaderMin.y+(fbHeaderMax.y - fbHeaderMin.y)/2,0},6, 1, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){0.5,0.5,0.5})==1){
+            OpenFileBrowser(NULL);
+        }
+        //File path
+        if(strlen(filePath)>34){
+            char minifiedPath[] = "0000000000000000000000000000000000...";
+            memcpy(minifiedPath,filePath,34*sizeof(char));
+            TTF_SizeText(gizmosFont,minifiedPath,&w,&h);
+            RenderText(minifiedPath, lightWhite, filepathBgMin.x + 6, filepathBgMin.y+ ((filepathBgMax.y-filepathBgMin.y)-h)/2 -1, gizmosFont);    
+        }else{
+            TTF_SizeText(gizmosFont,filePath,&w,&h);
+            RenderText(filePath, lightWhite, filepathBgMin.x + 6, filepathBgMin.y+ ((filepathBgMax.y-filepathBgMin.y)-h)/2 -1, gizmosFont);    
+        }
+
+
+        //Foot
+        //Cancel Button
+        Vector3 cancelButtonMin = {Screen.windowWidth/2 +207,Screen.windowHeight/2 -197};
+        Vector3 cancelButtonMax = {Screen.windowWidth/2 +297,Screen.windowHeight/2 -152};
+        if(MouseOverBox(mousePos,cancelButtonMin,cancelButtonMax,0)){
+            DrawRectangle(cancelButtonMin,cancelButtonMax,0.3,0.3,0.45);
+            if(GetMouseButtonUp(SDL_BUTTON_LEFT)){
+                CloseFileBrowser();
+            }
+        }else{
+            DrawRectangle(cancelButtonMin,cancelButtonMax,0.2,0.2,0.35);
+        }
+        TTF_SizeText(gizmosFont,"Cancel",&w,&h);
+        RenderText("Cancel", lightWhite, cancelButtonMin.x + ((cancelButtonMax.x-cancelButtonMin.x)-w)/2, cancelButtonMin.y+ ((cancelButtonMax.y-cancelButtonMin.y)-h)/2, gizmosFont);
+        //Open button
+        Vector3 openButtonMin = {Screen.windowWidth/2 +207 - (cancelButtonMax.x-cancelButtonMin.x) - 10,Screen.windowHeight/2 -197};
+        Vector3 openButtonMax = {Screen.windowWidth/2 +297 - (cancelButtonMax.x-cancelButtonMin.x) - 10,Screen.windowHeight/2 -152};
+        if(!strcmp(fileName,"")){
+            DrawRectangle(openButtonMin,openButtonMax,0.1,0.1,0.1);
+        }else{
+            if(MouseOverBox(mousePos,openButtonMin,openButtonMax,0)){
+                DrawRectangle(openButtonMin,openButtonMax,0.3,0.3,0.45);
+                if(GetMouseButtonUp(SDL_BUTTON_LEFT)){
+                    CloseFileBrowser();
+                }
+            }else{
+                DrawRectangle(openButtonMin,openButtonMax,0.2,0.2,0.35);
+            }
+        }
+        TTF_SizeText(gizmosFont,"Open",&w,&h);
+        RenderText("Open", lightWhite, openButtonMin.x + ((openButtonMax.x-openButtonMin.x)-w)/2, openButtonMin.y+ ((openButtonMax.y-openButtonMin.y)-h)/2, gizmosFont);
+        //File name
+        Vector3 filenameBgMin = {Screen.windowWidth/2 -295,Screen.windowHeight/2 -195};
+        Vector3 filenameBgMax = {openButtonMin.x -10,Screen.windowHeight/2 -164};
+        DrawRectangle(filenameBgMin,filenameBgMax,0.2, 0.2, 0.2);
+        RenderText("file name", lightWhite, filenameBgMin.x, filenameBgMax.y +1, gizmosFontSmall);
+        TTF_SizeText(gizmosFont,fileName,&w,&h);
+        RenderText(fileName, lightWhite, filenameBgMin.x + 5, filenameBgMin.y+ ((filenameBgMax.y-filenameBgMin.y)-h)/2 +1, gizmosFont);
+
+        //Browser Items
+        if(fileBrowserOpened == 1){
+            int i=0,startx = fbHeaderMin.x + iconsSize * 3 + 12,starty = fbHeaderMin.y - iconsSize*3 -28;
+            int x = startx, y = starty;
+            ListCellPointer cell;
+            //Folders
+            ListForEach(cell,Folders){
+                tinydir_file file = GetElementAsType(cell,tinydir_file);
+                if(!strcmp(file.name,".") || !strcmp(file.name,"..")) continue;
+
+                if((i - 7*fbItemsScroll)<0 || (i - 7*fbItemsScroll)>=(7 * 3)){
+                    i++;
+                    continue;
+                }
+
+                //Only jump if not the first line (end of the line, not the first item to render)
+                if(i%7==0 && (i - 7*fbItemsScroll)!=0){
+                    x = startx;
+                    y-= iconsSize * 6 + 40;
+                }
+                //Folder icon/button
+                if(PointButton((Vector3){x,y,0},10,3, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){0.5,0.5,0.5}) == 1){
+                    char *path = calloc(_TINYDIR_PATH_MAX,sizeof(char));
+                    strncpy(path,file.path,_TINYDIR_PATH_MAX);
+
+                    OpenFileBrowser(path);
+                    memcpy(filePath,path,_TINYDIR_PATH_MAX*sizeof(char));
+
+                    //If there is any folder as next folder, remove from the list before adding the new folder
+                    while(indexPath+1 < GetLength(Paths)){
+                        RemoveListEnd(&Paths);
+                    }
+
+                    InsertListEnd(&Paths,&path);
+                    indexPath++;
+                }
+                if(strlen(file.name)>6){
+                    char minifiedName[] = "00000...";
+                    memcpy(minifiedName,file.name,5*sizeof(char));
+                    TTF_SizeText(gizmosFont,minifiedName,&w,&h);
+                    RenderText(minifiedName, lightWhite, x-(iconsSize * 3) +((iconsSize * 6) - w)/2, y - (iconsSize * 3) - h, gizmosFont);
+                }else{
+                    TTF_SizeText(gizmosFont,file.name,&w,&h);
+                    RenderText(file.name, lightWhite, x-(iconsSize * 3) +((iconsSize * 6) - w)/2, y - (iconsSize * 3) - h, gizmosFont);
+                }
+                x += iconsSize * 6 + 30;
+                i++;
+            }
+
+            //Files
+            ListForEach(cell,Files){
+                if((i - 7*fbItemsScroll)<0 || (i - 7*fbItemsScroll)>=(7 * 3)){
+                    i++;
+                    continue;
+                }
+                tinydir_file file = GetElementAsType(cell,tinydir_file);
+
+                //Only jump if not the first line (end of the line, not the first item to render)
+                if(i%7==0 && (i - 7*fbItemsScroll)!=0){
+                    x = startx;
+                    y-= iconsSize * 6 + 40;
+                }
+                if(PointButton((Vector3){x,y,0},11,3, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){0.5,0.5,0.5}) == 1){
+                    memcpy(fileName,file.name,_TINYDIR_FILENAME_MAX*sizeof(char));
+                }
+                if(strlen(file.name)>6){
+                    char minifiedName[] = "00000...";
+                    memcpy(minifiedName,file.name,5*sizeof(char));
+                    TTF_SizeText(gizmosFont,minifiedName,&w,&h);
+                    RenderText(minifiedName, lightWhite, x-(iconsSize * 3) +((iconsSize * 6) - w)/2, y - (iconsSize * 3) - h, gizmosFont);
+                }else{
+                    TTF_SizeText(gizmosFont,file.name,&w,&h);
+                    RenderText(file.name, lightWhite, x-(iconsSize * 3) +((iconsSize * 6) - w)/2, y - (iconsSize * 3) - h, gizmosFont);
+                }
+                x += iconsSize * 6 + 30;
+                i++;
+            }
+
+            //Scrollbar
+            //'i' is now the number of items
+            if( i/(7*3) > 0){
+                Vector3 scrollbarDownMin = {fbMin.x+1,fbFootMax.y+2};
+                Vector3 scrollbarDownMax = {fbMax.x-1,fbFootMax.y+22};
+                Vector3 scrollbarUpMin = {fbMin.x+1,fbHeaderMin.y-22};
+                Vector3 scrollbarUpMax = {fbMax.x-1,fbHeaderMin.y-2};
+
+                if(fbItemsScroll<(i/7)-2){
+                    if(MouseOverBox(mousePos,scrollbarDownMin,scrollbarDownMax,0)){
+                        DrawRectangle(scrollbarDownMin,scrollbarDownMax,0.1,0.1,0.125);
+                        if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
+                            fbItemsScroll++;
+                        }
+                    }else{
+                        DrawRectangle(scrollbarDownMin,scrollbarDownMax,0.05,0.05,0.075);
+                    }
+                    DrawPointIcon((Vector3){scrollbarDownMin.x + (scrollbarDownMax.x - scrollbarDownMin.x)/2 - 1,
+                                            scrollbarDownMin.y + (scrollbarDownMax.y - scrollbarDownMin.y)/2},13, 1, (Vector3){0.2,0.2,0.2});
+
+                    //Mouse scroll
+                    if(Input.mouseWheelY<0){
+                        fbItemsScroll++;
+                    }
+                }
+                if(fbItemsScroll>0){
+                    if(MouseOverBox(mousePos,scrollbarUpMin,scrollbarUpMax,0)){
+                        DrawRectangle(scrollbarUpMin,scrollbarUpMax,0.1,0.1,0.125);
+                        if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
+                            fbItemsScroll--;
+                        }
+                    }else{
+                        DrawRectangle(scrollbarUpMin,scrollbarUpMax,0.05,0.05,0.075);
+                    }
+                    DrawPointIcon((Vector3){scrollbarUpMin.x + (scrollbarUpMax.x - scrollbarUpMin.x)/2 - 1,
+                                            scrollbarUpMin.y + (scrollbarUpMax.y - scrollbarUpMin.y)/2},12, 1, (Vector3){0.2,0.2,0.2});
+                    //Mouse scroll
+                    if(Input.mouseWheelY>0){
+                        fbItemsScroll--;
+                    }
+                }    
+                
+            }else{
+                fbItemsScroll = 0;
+            }
+        }else if (fileBrowserOpened == -1){
+            //Invalid folder message
+            TTF_SizeText(gizmosFont,"Invalid or nonexistent path!",&w,&h);
+            RenderText("Invalid or nonexistent path!", lightWhite, fbMin.x+ ((fbMax.x-fbMin.x)-w)/2, fbMin.y+ ((fbMax.y-fbMin.y)-h)/2, gizmosFont);
+        }
+    }
+    //-------------------------- Shortcuts --------------------------
 
     //Delete shortcut
     if(GetKeyDown(SDL_SCANCODE_DELETE) && editingField<0){
@@ -768,6 +1176,10 @@ void EditorUpdate(){
     //Pan shortcut
     if(GetMouseButton(SDL_BUTTON_RIGHT)){
         MoveCamera(-Input.deltaMouseX/(Time.deltaTime * Screen.gameScale),Input.deltaMouseY/(Time.deltaTime * Screen.gameScale),0);
+    }
+
+    if(GetMouseButtonDown(SDL_BUTTON_MIDDLE)){
+        fileBrowserOpened? CloseFileBrowser():OpenFileBrowser(NULL);
     }
 
     //Return depth to default values
@@ -873,12 +1285,12 @@ int DrawComponentHeader(ComponentID component, int* curHeight){
     if(strlen(type->name)>11){
         char cName[14] = "OOOOOOOOOO...";
         strncpy(cName,type->name,10);
-        RenderText(cName, fontColor, Screen.windowWidth-componentWindowLength+componentNameLeftSpacing, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+        RenderText(cName, brightWhite, Screen.windowWidth-componentWindowLength+componentNameLeftSpacing, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
     }else{
-        RenderText(type->name, fontColor, Screen.windowWidth-componentWindowLength+componentNameLeftSpacing, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+        RenderText(type->name, brightWhite, Screen.windowWidth-componentWindowLength+componentNameLeftSpacing, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
     }
 
-    *curHeight -= TTF_FontHeight(gizmosFont);
+    *curHeight -= TTF_FontHeight(gizmosFont)+2;
     return 1;
 }
 
@@ -895,7 +1307,7 @@ int PointButton(Vector3 pos,int iconID, int scale, Vector3 defaultColor, Vector3
     glEnable(GL_POINT_SPRITE);
 
     glBegin(GL_POINTS);
-        if(MouseOverPointGizmos(mousePos, pos, scale * iconsSize * 2/Screen.gameScale)){
+        if(MouseOverPointGizmos(mousePos, pos, scale * iconsSize)){
             glColor3f(mouseOverColor.x,mouseOverColor.y,mouseOverColor.z);
 
             //Pressed
@@ -920,9 +1332,72 @@ int PointButton(Vector3 pos,int iconID, int scale, Vector3 defaultColor, Vector3
     return state;
 }
 
+//Returns 1 if pressed, 2 if mouse is over and 0 if neither case
+int PointToggle(int *data,Vector3 pos,int onIconID, int offIconID, int undefinedIconID, int scale, Vector3 onColor, Vector3 offColor, Vector3 undefinedColor, Vector3 mouseOverColor){
+    int state = 0;
+
+    glPointSize(scale * iconsSize * 2/Screen.gameScale);
+    glEnable(GL_TEXTURE_2D);
+    glAlphaFunc (GL_NOTEQUAL, 0.0f);
+    glEnable(GL_ALPHA_TEST);
+    glTexEnvf(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
+    if(*data == 1){
+        glColor3f(onColor.x,onColor.y,onColor.z);
+        glBindTexture(GL_TEXTURE_2D, iconsTex[onIconID]);
+    }else if(*data == -1){
+        glColor3f(offColor.x,offColor.y,offColor.z);
+        glBindTexture(GL_TEXTURE_2D, iconsTex[undefinedIconID]);
+    }else{
+        glColor3f(offColor.x,offColor.y,offColor.z);
+        glBindTexture(GL_TEXTURE_2D, iconsTex[offIconID]);
+    }
+    glEnable(GL_POINT_SPRITE);
+
+    glBegin(GL_POINTS);
+        if(MouseOverPointGizmos(mousePos, pos, scale * iconsSize)){
+            glColor3f(mouseOverColor.x,mouseOverColor.y,mouseOverColor.z);
+
+            //Pressed
+            if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
+                state = 1;
+                *data = *data<0? 1:!(*data);
+            }else{
+                //Mouse over only
+                state = 2;
+            }
+        }else{
+            //Mouse not over
+            state = 0;
+        }
+
+        glVertex2f( roundf(pos.x), roundf(pos.y));
+    glEnd();
+    glDisable(GL_TEXTURE_2D);
+    glDisable(GL_BLEND);
+
+    return state;
+}
+
+void DrawPointIcon(Vector3 pos,int iconID, int scale, Vector3 color){
+    glPointSize(scale * iconsSize * 2/Screen.gameScale);
+    glEnable(GL_TEXTURE_2D);
+    glAlphaFunc (GL_NOTEQUAL, 0.0f);
+    glEnable(GL_ALPHA_TEST);
+    glTexEnvf(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
+    glBindTexture(GL_TEXTURE_2D, iconsTex[iconID]);
+    glEnable(GL_POINT_SPRITE);
+
+    glBegin(GL_POINTS);
+        glColor3f(color.x,color.y,color.z);
+        glVertex2f( roundf(pos.x), roundf(pos.y));
+    glEnd();
+    glDisable(GL_TEXTURE_2D);
+    glDisable(GL_BLEND);
+}
+
 void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,int x, int w, int fieldsSpacing, int* curField, int* curHeight){
     *curHeight -= 2;
-    RenderText(title, fontColor, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+    RenderText(title, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
     *curHeight -= 2 + TTF_FontHeight(gizmosFontSmall);
 
     int fieldW = w/3;
@@ -958,7 +1433,7 @@ void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,in
         glEnd();
 
         //Render the string
-        RenderText(textFieldString, fontColor, min1.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+        RenderText(textFieldString, lightWhite, min1.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
         //Pass the string as float data
         if(editingField == *curField){
@@ -1011,24 +1486,91 @@ void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,in
             DrawRectangle(min1,max1,0.2, 0.2, 0.2);
             if(!ommitX) snprintf(valueString,5,"%3.1f",data->x);
             else snprintf(valueString,5,"---");
-            RenderText(valueString, fontColor, min1.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+            RenderText(valueString, lightWhite, min1.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
             //Y field
             DrawRectangle(min2,max2,0.2, 0.2, 0.2);
             if(!ommitY) snprintf(valueString,5,"%3.1f",data->y);
             else snprintf(valueString,5,"---");
-            RenderText(valueString, fontColor, min2.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+            RenderText(valueString, lightWhite, min2.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
             //Z field
             DrawRectangle(min3,max3,0.2, 0.2, 0.2);
             if(!ommitZ) snprintf(valueString,5,"%3.1f",data->z);
             else snprintf(valueString,5,"---");
-            RenderText(valueString, fontColor, min3.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+            RenderText(valueString, lightWhite, min3.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
         }
     }
 
     //Mark as used ID fields
     *curField +=3;
+
+    *curHeight -= 2 + TTF_FontHeight(gizmosFont);
+}
+
+void FloatField(char *title, float *data,int ommit,int x, int w, int* curField, int* curHeight){
+    *curHeight -= 4;
+    RenderText(title, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+    *curHeight -= 2 + TTF_FontHeight(gizmosFontSmall);
+
+    Vector3 min = { x,*curHeight-TTF_FontHeight(gizmosFont)-2,0};
+    Vector3 max = { x+w,*curHeight,0};
+
+    if(editingField == *curField)
+    {
+        //Field background
+        DrawRectangle(min,max,0.3, 0.3, 0.3);
+
+        //Get the cursor position by creating a string containing the characters until the cursor
+        //and getting his size when rendered with the used font
+        char buff[13];
+        strncpy(buff,textFieldString,Input.textInputCursorPos);
+        memset(buff+Input.textInputCursorPos,'\0',1);
+        int cursorPos,h;
+        TTF_SizeText(gizmosFont,buff,&cursorPos,&h);
+        cursorPos+=min.x;
+
+        //Cursor line
+        glColor3f(0.7,0.7,0.7);
+        glLineWidth(2/Screen.gameScale);
+        glBegin(GL_LINES);
+            glVertex2f( cursorPos, min.y);
+            glVertex2f( cursorPos, max.y);
+        glEnd();
+
+        //Render the string
+        RenderText(textFieldString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+
+        //Pass the string as float data
+        *data = strtof(textFieldString, NULL);
+
+    }else{
+        //Not editing, just draw the box and float normally
+        static char valueString[12] = "  0.0";
+
+        //Field background
+        DrawRectangle(min,max,0.2, 0.2, 0.2);
+        //Data text
+        if(!ommit) snprintf(valueString,12,"%6.6f",*data);
+        else snprintf(valueString,4,"---");
+        RenderText(valueString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+
+        //Fields selection
+        if(editingField<0 && GetMouseButtonDown(SDL_BUTTON_LEFT)){
+            if(MouseOverBox(mousePos,min,max,0)){
+                textFieldString = (char*)calloc(13,sizeof(char));
+
+                if(!ommit) snprintf(textFieldString, 12, "%6.6f", *data);
+                else snprintf(textFieldString, 4, "0.0");
+                
+                GetTextInput(textFieldString, 12, strlen(textFieldString));
+                editingField = *curField;
+            }
+        }
+    }
+
+    //Mark as used ID field
+    *curField +=1;
 
     *curHeight -= 2 + TTF_FontHeight(gizmosFont);
 }
@@ -1053,6 +1595,9 @@ void LoadUITexture(char *path,int index){
     
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
     SDL_FreeSurface(img);
 }
 
@@ -1102,4 +1647,73 @@ void ExitPlayMode(){
         }
         
     }
+}
+
+void OpenFileBrowser(char *initialPath){
+    //Free the folder and files lists before opening another path
+    if(fileBrowserOpened){
+        FreeList(&Folders);
+        FreeList(&Files);
+    }
+    
+    Folders = InitList(sizeof(tinydir_file));
+    Files = InitList(sizeof(tinydir_file));
+    if(initialPath){
+        memcpy(filePath,initialPath,_TINYDIR_PATH_MAX*sizeof(char));
+    }else{
+        char DefaultPath[] = "Assets";
+        memcpy(filePath,DefaultPath,sizeof(DefaultPath));
+
+        if(fileBrowserOpened){
+            //Free the paths list when returning to default path
+            ListCellPointer cell;
+            ListForEach(cell,Paths){
+                free(GetElement(*cell));
+            }
+            FreeList(&Paths);
+        }
+    }
+    //Insert the initial path to the list when opening/returning to default path
+    if(!fileBrowserOpened || !initialPath){
+        Paths = InitList(sizeof(char*));
+        char *firstPath = malloc(_TINYDIR_PATH_MAX*sizeof(char));
+        memcpy(firstPath,filePath,_TINYDIR_PATH_MAX*sizeof(char));
+        InsertListEnd(&Paths,&firstPath);
+        indexPath = 0;
+    }
+    memset(fileName,'\0',_TINYDIR_FILENAME_MAX*sizeof(char));
+
+    tinydir_dir dir;
+    if(tinydir_open(&dir, filePath) < 0){
+        //Set as invalid folder path
+        fileBrowserOpened = -1;
+        return;
+    }
+    while(dir.has_next){
+        tinydir_file file;
+        tinydir_readfile(&dir, &file);
+        if (file.is_dir)
+        {
+            InsertListEnd(&Folders,&file);
+        }else{
+            InsertListEnd(&Files,&file);
+        }
+
+        tinydir_next(&dir);
+    }
+    tinydir_close(&dir);
+
+    fileBrowserOpened = 1;
+}
+
+void CloseFileBrowser(){
+    fileBrowserOpened = 0;
+    FreeList(&Folders);
+    FreeList(&Files);
+
+    ListCellPointer cell;
+    ListForEach(cell,Paths){
+        free(*((char**)GetElement(*cell)));
+    }
+    FreeList(&Paths);
 }

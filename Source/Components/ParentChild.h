@@ -18,10 +18,10 @@ void ParentChildConstructor(void** data);
 void ParentChildDestructor(void** data);
 void* ParentChildCopy(void* data);
 
-int IsParent(EntityID entity);
-int IsChild(EntityID entity);
+int EntityIsParent(EntityID entity);
+int EntityIsChild(EntityID entity);
 
-void SetParent(EntityID child, EntityID parent);
+void SetEntityParent(EntityID child, EntityID parent);
 int UnsetParent(EntityID child);
 
 #endif

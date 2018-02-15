@@ -78,16 +78,18 @@ void VoxelPhysicsUpdate(){
             }
         }
         
-
-        SetVelocity(entity,Add(GetVelocity(entity),ScalarMult(GetAcceleration(entity),moveDelta)));
-        if(UsesGravity(entity)){
-            if(!collided)
-                SetAcceleration(entity,(Vector3){0,0,-GetGravity()});
-            else{
-                SetAcceleration(entity,VECTOR3_ZERO);
-            }  
+        Vector3 posDelta;
+        
+        if(!collided){
+            Vector3 accel = GetAcceleration(entity);
+            if(UsesGravity(entity)){
+                accel = Add(accel, (Vector3){0,0,-GetGravity()});   
+            }
+            posDelta = ScalarMult(Add(ScalarMult(GetVelocity(entity),moveDelta) , ScalarMult(accel,0.5 * moveDelta * moveDelta)),WORLD_SCALE);  
+            SetVelocity(entity,Add(GetVelocity(entity),ScalarMult(accel,moveDelta)));
+        }else{
+            posDelta = ScalarMult(ScalarMult(GetVelocity(entity),moveDelta),WORLD_SCALE);   
         }
-        Vector3 posDelta = ScalarMult(Add(ScalarMult(GetVelocity(entity),moveDelta) , ScalarMult(GetAcceleration(entity),0.5 * moveDelta * moveDelta)),WORLD_SCALE);
 
         Vector3 pos = Add(GetPosition(entity),posDelta);
         SetPosition(entity,pos);

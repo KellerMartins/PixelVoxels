@@ -2,6 +2,9 @@
 #define RIGIDBODY_H
 #include "../Engine.h"
 
+#define MASS_MIN 0.000000001
+#define STATIC_OBJECT_MASS 100000000000
+
 void RigidBodyConstructor(void** data);
 void RigidBodyDestructor(void** data);
 void* RigidBodyCopy(void* data);

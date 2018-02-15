@@ -1,5 +1,4 @@
 #include "RigidBody.h"
-#define STATIC_OBJECT_MASS 100000000000
 
 //Can't exist without being an component from an entity
 typedef struct RigidBody{
@@ -100,7 +99,7 @@ void SetMass(EntityID entity, float mass){
         return;
     }
     RigidBody *rb = (RigidBody *)ECS.Components[ThisComponentID()][entity].data;
-    rb->mass = mass;
+    rb->mass = clamp(mass,MASS_MIN,INFINITY);
 }
 
 void SetBounciness(EntityID entity, float bounciness){

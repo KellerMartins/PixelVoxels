@@ -64,7 +64,7 @@ void SetPosition(EntityID entity, Vector3 pos){
 
     //Modify childs position too
     if(EntityContainsComponent(entity, GetComponentID("ParentChild"))){
-        if(IsParent(entity)){
+        if(EntityIsParent(entity)){
             Vector3 deltaPos = Subtract(transform->position,oldPos);
             
             ParentChild *parentComp = ECS.Components[GetComponentID("ParentChild")][entity].data;

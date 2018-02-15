@@ -45,7 +45,7 @@ void* ParentChildCopy(void* data){
 	return newParentChild;
 }
 
-int IsParent(EntityID entity){
+int EntityIsParent(EntityID entity){
     if(!EntityContainsComponent(entity, ThisComponentID())){
         printf("IsParent: Entity doesn't have a ParentChild component. (%d)\n",entity);
         return 0;
@@ -54,7 +54,7 @@ int IsParent(EntityID entity){
     return parent->isParent;
 }
 
-int IsChild(EntityID entity){
+int EntityIsChild(EntityID entity){
     if(!EntityContainsComponent(entity, ThisComponentID())){
         printf("IsChild: Entity doesn't have a ParentChild component. (%d)\n",entity);
         return 0;
@@ -63,7 +63,7 @@ int IsChild(EntityID entity){
     return child->isChild;
 }
 
-void SetParent(EntityID child, EntityID parent){
+void SetEntityParent(EntityID child, EntityID parent){
 
     //If the future child doesn't have this component, add to it
     if(!EntityContainsComponent(child, ThisComponentID())){
@@ -73,7 +73,7 @@ void SetParent(EntityID child, EntityID parent){
     ParentChild *childComp = (ParentChild *)ECS.Components[ThisComponentID()][child].data;
 
     //If is already a child of another parent, remove it first
-    if(IsChild(child)){
+    if(EntityIsChild(child)){
         UnsetParent(child);
     }
 
@@ -96,7 +96,7 @@ int UnsetParent(EntityID child){
         printf("UnsetParent: Child doesn't have a ParentChild component. (%d)\n",child);
         return 0;
     }
-    if(!IsChild(child)){
+    if(!EntityIsChild(child)){
         printf("UnsetParent: Entity is not anyone's child. (%d)\n",child);
         return 0;
     }

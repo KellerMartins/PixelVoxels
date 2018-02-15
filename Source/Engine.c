@@ -679,7 +679,7 @@ void RenderText(char *text, SDL_Color color, int x, int y, TTF_Font* font)
 	if(text[0] == '\0') return;
 
     SDL_Surface * originalFont = TTF_RenderText_Solid(font, text, color);
-	SDL_Surface * sFont = SDL_ConvertSurfaceFormat(originalFont,SDL_PIXELFORMAT_RGBA8888,0);
+	SDL_Surface * sFont = SDL_ConvertSurfaceFormat(originalFont,SDL_PIXELFORMAT_ARGB8888,0);
 
 	SDL_FreeSurface(originalFont);
     if(!sFont){printf("Failed to render text!\n"); return;}
@@ -714,9 +714,9 @@ void RenderText(char *text, SDL_Color color, int x, int y, TTF_Font* font)
     glBegin(GL_QUADS);
     {
         glTexCoord2f(0,1); glVertex2f(x, y);
-        glTexCoord2f(1,1); glVertex2f(x + sFont->w, y);
-        glTexCoord2f(1,0); glVertex2f(x + sFont->w, y + sFont->h);
-        glTexCoord2f(0,0); glVertex2f(x, y + sFont->h);
+        glTexCoord2f(1,1); glVertex2f(x + sFont->w + 0.375, y);
+        glTexCoord2f(1,0); glVertex2f(x + sFont->w + 0.375, y + sFont->h + 0.375);
+        glTexCoord2f(0,0); glVertex2f(x, y + sFont->h + 0.375);
     }
     glEnd();
     glDisable(GL_BLEND);

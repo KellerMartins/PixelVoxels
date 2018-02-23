@@ -105,8 +105,12 @@ int VoxelModelVsVoxelModelCollision(EntityID entityA, EntityID entityB,Vector3 *
     VoxelModel *objA = GetVoxelModelPointer(entityA);
     VoxelModel *objB = GetVoxelModelPointer(entityB);
 
-    Vector3 posA = GetPosition(entityA);
-    Vector3 posB = GetPosition(entityB);
+    if(!objA->model || !objB->model){
+        return 0;
+    }
+
+    Vector3 posA = Add(GetPosition(entityA),GetVoxelModelCenter(entityA));
+    Vector3 posB =  Add(GetPosition(entityB),GetVoxelModelCenter(entityB));
     //Vector3 rotA = GetRotation(entityA);
     //Vector3 rotB = GetRotation(entityB);
 

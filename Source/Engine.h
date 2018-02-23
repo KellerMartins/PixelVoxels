@@ -92,11 +92,18 @@ typedef struct ComponentMask{
     unsigned long mask;
 }ComponentMask;
 
+typedef int EntityID;
+
 typedef struct Entity{
     ComponentMask mask;
+    int isSpawned;
+    int isParent;
+    int isChild;
+    //If parent: List of his child EntityIDs
+    List childs;
+    //If child: ID of his parent
+    EntityID parent;
 }Entity;
-
-typedef int EntityID;
 
 typedef struct Component{
     void *data;
@@ -160,6 +167,7 @@ ComponentMask CreateComponentMaskByID(int numComp, ...);
 
 EntityID CreateEntity();
 void DestroyEntity();
+int IsValidEntity(EntityID entity);
 void AddComponentToEntity(ComponentID component, EntityID entity);
 void RemoveComponentFromEntity(ComponentID component, EntityID entity);
 EntityID DuplicateEntity(EntityID entity);
@@ -170,6 +178,13 @@ int EntityContainsMask(EntityID entity, ComponentMask mask);
 int EntityContainsComponent(EntityID entity, ComponentID component);
 int MaskContainsComponent(ComponentMask mask, ComponentID component);
 ComponentMask IntersectComponentMasks(ComponentMask mask1, ComponentMask mask2);
+
+int EntityIsParent(EntityID entity);
+int EntityIsChild(EntityID entity);
+void SetEntityParent(EntityID child, EntityID parent);
+EntityID GetEntityParent(EntityID entity);
+List* GetChildsList(EntityID parent);
+int UnsetParent(EntityID child);
 
 SystemID GetSystemID(char systemName[25]);
 void EnableSystem(SystemID system);

@@ -93,25 +93,24 @@ int RegisterNewSystem(char systemName[25], unsigned priority, ComponentMask requ
 	return GetLength(ECS.SystemList)-1;
 }
 
+//-- Component functions --
 ComponentID GetComponentID(char componentName[25]){
 	int i,index = 0;
 	ListCellPointer current = GetFirstCell(ECS.ComponentTypes);
 	while(current){
 		ComponentType currType = *((ComponentType*)GetElement(*current));
-		int typeNameLength = strlen(currType.name);
+
+		int isEqual = 1;
 		//Compare only if equal, breaking if any difference appears
-		if(typeNameLength == strlen(componentName)){
-			for(i=0;i<typeNameLength;i++){
-				if(componentName[i]!=currType.name[i]) break;
-			}
-			//If no difference is found, return the current type index
-			if(i==typeNameLength){
-				return index;
-			}
+		for(i=0;i<25 && currType.name[i] != '\0';i++){
+			if(componentName[i]!=currType.name[i]){isEqual = 0; break;}
 		}
+		if(isEqual) return index;
+
 		index++;
 		current = GetNextCell(current);
 	}
+	printf("NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO (%s)",componentName);
 	return -1;
 }
 
@@ -125,7 +124,7 @@ ComponentMask CreateComponentMaskByName(int numComp, ...){
 	for(i=0;i<numComp;i++){
 		int index = GetComponentID(va_arg(args,char *));
 		if(index<0 || index>31){
-			printf("Component index out of range! (%d)\n",index);
+			printf("CreateComponentMaskByName: Component index out of range! (%d)\n",index);
 			continue;
 		}
 
@@ -146,7 +145,7 @@ ComponentMask CreateComponentMaskByID(int numComp, ...){
 	for(i=0;i<numComp;i++){
 		int index = va_arg(args,int);
 		if(index<0 || index>31){
-			printf("Component index out of range!\n");
+			printf("CreateComponentMaskByID: Component index out of range! (%d)\n",index);
 			continue;
 		}
 
@@ -157,6 +156,7 @@ ComponentMask CreateComponentMaskByID(int numComp, ...){
 	return newMask;
 }
 
+//-- Entity functions --
 EntityID CreateEntity(){
 	int *avaliableIndex = (int *)GetFirstElement(ECS.AvaliableEntitiesIndexes);
 	if(avaliableIndex){
@@ -164,17 +164,19 @@ EntityID CreateEntity(){
 		if(index>ECS.maxUsedIndex) ECS.maxUsedIndex = index;
 		//Clear the entity before returning
 		ECS.Entities[index].mask = CreateComponentMaskByID(0);
+		ECS.Entities[index].isSpawned = 1;
+		ECS.Entities[index].childs = InitList(sizeof(EntityID));
 
 		RemoveListStart(&ECS.AvaliableEntitiesIndexes);
 		return index;
 	}
-	printf("No entity avaliable to spawn!\n");
+	printf("CreateEntity: No entity avaliable to spawn! (Max %d)\n",ECS.maxEntities);
 	return -1;
 }
 
 void DestroyEntity(EntityID entity){
-	if(entity<0 || entity>=ECS.maxEntities){
-		printf("DestroyEntity: Entity index out of range!(%d)\n",entity);
+	if(!IsValidEntity(entity)){
+		printf("DestroyEntity: Entity is not spawned or out of range!(%d)\n",entity);
 		return;
 	}
 
@@ -188,12 +190,22 @@ void DestroyEntity(EntityID entity){
 	}
 
 	ECS.Entities[entity].mask.mask = 0;
+	ECS.Entities[entity].isSpawned = 0;
+	FreeList(&ECS.Entities[entity].childs);
+	ECS.Entities[entity].isChild = 0;
+	ECS.Entities[entity].isParent = 0;
+
 	InsertListStart(&ECS.AvaliableEntitiesIndexes, (void*)&entity);
 }
 
+int IsValidEntity(EntityID entity){
+	if(entity<0 || entity>=ECS.maxEntities) return 0;
+	return ECS.Entities[entity].isSpawned;
+}
+
 void AddComponentToEntity(ComponentID component, EntityID entity){
-	if(entity<0 || entity>=ECS.maxEntities){
-		printf("AddComponentToEntity: Entity index out of range!(%d)\n",entity);
+	if(!IsValidEntity(entity)){
+		printf("AddComponentToEntity: Entity is not spawned or out of range!(%d)\n",entity);
 		return;
 	}
 	if(component<0 || component>=GetLength(ECS.ComponentTypes)){
@@ -215,8 +227,8 @@ void AddComponentToEntity(ComponentID component, EntityID entity){
 }
 
 void RemoveComponentFromEntity(ComponentID component, EntityID entity){
-	if(entity<0 || entity>=ECS.maxEntities){
-		printf("RemoveComponentToEntity: Entity index out of range!(%d)\n",entity);
+	if(!IsValidEntity(entity)){
+		printf("RemoveComponentToEntity: Entity is not spawned or out of range!(%d)\n",entity);
 		return;
 	}
 	if(component<0 || component>=GetLength(ECS.ComponentTypes)){
@@ -237,6 +249,11 @@ void RemoveComponentFromEntity(ComponentID component, EntityID entity){
 }
 
 EntityID DuplicateEntity(EntityID entity){
+	if(!IsValidEntity(entity)){
+		printf("DuplicateEntity: Entity is not spawned or out of range!(%d)\n",entity);
+		return -1;
+	}
+
 	EntityID newEntity = CreateEntity();
 	
 	int compIndex = 0;
@@ -249,12 +266,20 @@ EntityID DuplicateEntity(EntityID entity){
 	}
 	ECS.Entities[newEntity].mask.mask = ECS.Entities[entity].mask.mask;
 
+	if(EntityIsParent(entity)){
+		ListCellPointer childCell;
+		ListForEach(childCell,ECS.Entities[entity].childs){
+			EntityID newChild = DuplicateEntity(GetElementAsType(childCell, EntityID));
+			SetEntityParent(newChild, newEntity);
+		}
+	}
+
 	return newEntity;
 }
 
 ComponentMask GetEntityComponents(EntityID entity){
-	if(entity<0 || entity>=ECS.maxEntities){
-		printf("GetEntityComponents: Entity index out of range!(%d)\n",entity);
+	if(!IsValidEntity(entity)){
+		printf("GetEntityComponents: Entity is not spawned or out of range!(%d)\n",entity);
 		return (ComponentMask){0};
 	}
 	return ECS.Entities[entity].mask;
@@ -270,6 +295,10 @@ int EntityContainsMask(EntityID entity, ComponentMask mask){
 }
 
 int EntityContainsComponent(EntityID entity, ComponentID component){
+	if(!IsValidEntity(entity)){
+		printf("EntityContainsComponent: Entity is not spawned or out of range!(%d)\n",entity);
+		return 0;
+	}
 	if(component<0 || component>GetLength(ECS.ComponentTypes)){
 		printf("EntityContainsComponent: Component index out of range!(%d)\n",component);
 		return 0;
@@ -291,23 +320,121 @@ ComponentMask IntersectComponentMasks(ComponentMask mask1, ComponentMask mask2){
 	return (ComponentMask){mask1.mask & mask2.mask};
 }
 
+
+//-- Parenting functions --
+int EntityIsParent(EntityID entity){
+    if(!IsValidEntity(entity)){
+        printf("EntityIsParent: Entity is not spawned or out of range!(%d)\n",entity);
+        return 0;
+    }
+    return ECS.Entities[entity].isParent;
+}
+
+int EntityIsChild(EntityID entity){
+    if(!IsValidEntity(entity)){
+        printf("EntityIsChild: Entity is not spawned or out of range!(%d)\n",entity);
+        return 0;
+    }
+    return ECS.Entities[entity].isChild;
+}
+
+void SetEntityParent(EntityID child, EntityID parent){
+    if(child == parent){
+        printf("SetEntityParent: Child and parent can't be the same! (%d) (%d)\n",child,parent);
+        return;
+    }
+	if(!IsValidEntity(child)){
+        printf("EntityIsParent: Child is not spawned or out of range!(%d)\n",child);
+        return;
+    }
+	if(!IsValidEntity(parent)){
+        printf("EntityIsParent: Parent is not spawned or out of range!(%d)\n",parent);
+        return;
+    }
+
+    //If is already a child of another parent, remove it first
+    if(EntityIsChild(child)){
+        UnsetParent(child);
+    }
+
+    InsertListEnd(&ECS.Entities[parent].childs, &child);
+    ECS.Entities[child].parent = parent;
+
+    ECS.Entities[child].isChild = 1;
+    ECS.Entities[parent].isParent = 1;
+}
+
+EntityID GetEntityParent(EntityID entity){
+	if(!IsValidEntity(entity)){
+        printf("GetEntityParent: Entity is not spawned or out of range!(%d)\n",entity);
+        return 0;
+    }
+    return ECS.Entities[entity].isChild? ECS.Entities[entity].parent:-1;
+}
+
+List* GetChildsList(EntityID parent){
+	if(!IsValidEntity(parent)){
+        printf("GetChildsList: Parent is not spawned or out of range!(%d)\n",parent);
+        return NULL;
+    }
+    return ECS.Entities[parent].isParent? &ECS.Entities[parent].childs : NULL;
+}
+
+int UnsetParent(EntityID child){
+	if(!IsValidEntity(child)){
+        printf("UnsetParent: Child is not spawned or out of range!(%d)\n",child);
+        return 0;
+    }
+    if(!EntityIsChild(child)){
+        printf("UnsetParent: Entity is not anyone's child. (%d)\n",child);
+        return 0;
+    }
+
+    EntityID parentID = GetEntityParent(child);
+
+    //Find the index of the child in the list of childs
+    int index = 0;
+    ListCellPointer current = GetFirstCell(ECS.Entities[parentID].childs);
+    while(current){
+        EntityID cID = *((EntityID*) GetElement(*current));
+
+        //If found
+        if(cID == child){
+            RemoveListIndex(&ECS.Entities[parentID].childs,index);
+
+            ECS.Entities[child].isChild = 0;
+
+            //If his old parent has an empty list of childs, set isParent to zero
+            if(IsListEmpty(ECS.Entities[parentID].childs)){
+                ECS.Entities[parentID].isParent = 0;
+            }
+
+            return 1;
+        }
+        current = GetNextCell(current);
+        index++;
+    }
+
+    //Return zero if can't find the child's index in the list (Indicative of implementation error)
+    printf("RemoveChild: Child is not an parent's child (Shouldn't happen). (P:%d  C:%d)\n",parentID,child);
+    return 0;
+}
+
+
+//-- System functions --
 SystemID GetSystemID(char systemName[25]){
 	int i,index = 0;
 	ListCellPointer current;
 	ListForEach(current,ECS.SystemList){
 		System currSys = GetElementAsType(current,System);
-		int systemNameLength = strlen(currSys.name);
 
+		int isEqual = 1;
 		//Compare only if equal, breaking if any difference appears
-		if(systemNameLength == strlen(systemName)){
-			for(i=0;i<systemNameLength;i++){
-				if(systemName[i]!=currSys.name[i]) break;
-			}
-			//If no difference is found, return the current type index
-			if(i==systemNameLength){
-				return index;
-			}
+		for(i=0;i<25 && currSys.name[i] != '\0';i++){
+			if(systemName[i]!=currSys.name[i]){isEqual = 0; break;}
 		}
+		if(isEqual) return index;
+		
 		index++;
 	}
 	return -1;

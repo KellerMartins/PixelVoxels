@@ -3,7 +3,6 @@
 #include "Components/VoxelModel.h"
 #include "Components/Transform.h"
 #include "Components/Rigidbody.h"
-#include "Components/ParentChild.h"
 #include "Systems/VoxelRenderer.h"
 #include "Systems/VoxelModification.h"
 #include "Systems/VoxelPhysics.h"
@@ -28,7 +27,6 @@ int main(int argc, char *argv[]){
 	ComponentID transformComponent = RegisterNewComponent("Transform", &TransformConstructor, &TransformDestructor,&TransformCopy);
 	ComponentID voxelModelComponent = RegisterNewComponent("VoxelModel", &VoxelModelConstructor, &VoxelModelDestructor,&VoxelModelCopy);
 	ComponentID rigidBodyComponent = RegisterNewComponent("RigidBody", &RigidBodyConstructor, &RigidBodyDestructor,&RigidBodyCopy);
-	ComponentID parentChildComponent = RegisterNewComponent("ParentChild", &ParentChildConstructor, &ParentChildDestructor,&ParentChildCopy);
 
 	if(RegisterNewSystem("VoxelPhysics",1,CreateComponentMaskByID(3,transformComponent, voxelModelComponent,rigidBodyComponent),(ComponentMask){0},&VoxelPhysicsInit,&VoxelPhysicsUpdate,&VoxelPhysicsFree) < 0) printf("Failed to register VoxelPhysics system!\n");
 	if(RegisterNewSystem("VoxelRenderer",0,CreateComponentMaskByID(2,transformComponent, voxelModelComponent),(ComponentMask){0},&VoxelRendererInit,&VoxelRendererUpdate,&VoxelRendererFree) < 0) printf("Failed to register VoxelRender system!\n");
@@ -49,13 +47,13 @@ int main(int argc, char *argv[]){
 
 	static EntityID e = -1;
 	e = CreateEntity();
-	LoadVoxelModel(e,"Models/dune.vox");
+	LoadVoxelModel(e,"Models/","dune.vox");
 	AddComponentToEntity(GetComponentID("RigidBody"),e);
 	SetStaticRigidbody(e,1);
 
 	static EntityID e1 = -1;
 	e1 = CreateEntity();
-	LoadVoxelModel(e1,"Models/bullet.vox");
+	LoadVoxelModel(e1,"Models/","bullet.vox");
 	AddComponentToEntity(GetComponentID("RigidBody"),e1);
 	SetUseGravity(e1,1);
 	SetPosition(e1,(Vector3){5,50,80});

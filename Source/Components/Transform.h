@@ -1,7 +1,6 @@
 #ifndef TRANSFORM_H
 #define TRANSFORM_H
 #include "../Engine.h"
-#include "ParentChild.h"
 
 void TransformConstructor(void** data);
 void TransformDestructor(void** data);

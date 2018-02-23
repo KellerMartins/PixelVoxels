@@ -58,6 +58,9 @@ void VoxelRendererUpdate(){
         if(!IsEmptyComponentMask(ThisSystem->excluded) && EntityContainsMask(entity,ThisSystem->excluded) ) continue;
 
         VoxelModel *obj = GetVoxelModelPointer(entity);
+        if(!obj->model || !obj->enabled){
+            continue;
+        }
         Vector3 position = GetPosition(entity);
         Vector3 rotation = GetRotation(entity);
         //Configure OpenGL parameters to render point sprites

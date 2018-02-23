@@ -22,15 +22,14 @@ float round(float f){
 }
 
 void main(void) {
-    vec3 rotPos = (in_Position-centerPos) * rotation;
-    rotPos += centerPos;
+    vec3 rotPos = (in_Position+centerPos) * rotation;
     float px = rotPos.x;
     float py = rotPos.y;
     float pz = rotPos.z;
 
     vec4 pixelPos = vec4( floor(((px + objPos.x) - (py + objPos.y))*spriteScale*2 + round(-camPos.x) + 0.375),
                           floor(((px + objPos.x) + (py + objPos.y))*spriteScale + (pz + objPos.z + camPos.z )*spriteScale*2 + round(-camPos.y) + 0.375),
-                          (pz-(py+px)/126.0 + objPos.z) , 1);
+                          (pz + objPos.z)-(py+px + objPos.y+objPos.x)/2 , 1);
 
     gl_Position = projection * pixelPos;
     

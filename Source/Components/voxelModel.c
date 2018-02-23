@@ -17,7 +17,7 @@ void VoxelModelConstructor(void** data){
     *data = calloc(1,sizeof(VoxelModel));
     VoxelModel *obj = *data;
 
-    *obj = (VoxelModel){1,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,0};
+    *obj = (VoxelModel){0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,0};
 }
 void VoxelModelDestructor(void** data){
     if(!data) return;
@@ -41,27 +41,73 @@ void* VoxelModelCopy(void* data){
     newVoxelModel->dimension[1] = ((VoxelModel*)data)->dimension[1];
     newVoxelModel->dimension[2] = ((VoxelModel*)data)->dimension[2];
 
-    int sizeModel = newVoxelModel->dimension[0] * newVoxelModel->dimension[1] * newVoxelModel->dimension[2] * sizeof(unsigned char);
-    newVoxelModel->model = malloc(sizeModel);
-    newVoxelModel->lighting = malloc(sizeModel);
-    
-    int sizeVertices = newVoxelModel->numberOfVertices*3*sizeof(GLfloat);
-    newVoxelModel->vertices = malloc(sizeVertices);
-	newVoxelModel->vColors = malloc(sizeVertices);
+    if(((VoxelModel*)data)->model){
+        int sizeModel = newVoxelModel->dimension[0] * newVoxelModel->dimension[1] * newVoxelModel->dimension[2] * sizeof(unsigned char);
+        newVoxelModel->model = malloc(sizeModel);
+        newVoxelModel->lighting = malloc(sizeModel);
+        
+        int sizeVertices = newVoxelModel->numberOfVertices*3*sizeof(GLfloat);
+        newVoxelModel->vertices = malloc(sizeVertices);
+        newVoxelModel->vColors = malloc(sizeVertices);
 
-    
-    memcpy(newVoxelModel->model,((VoxelModel*)data)->model,sizeModel);
-    memcpy(newVoxelModel->lighting,((VoxelModel*)data)->lighting,sizeModel);
+        
+        memcpy(newVoxelModel->model,((VoxelModel*)data)->model,sizeModel);
+        memcpy(newVoxelModel->lighting,((VoxelModel*)data)->lighting,sizeModel);
 
-    memcpy(newVoxelModel->vertices,((VoxelModel*)data)->vertices,sizeVertices);
-    memcpy(newVoxelModel->vColors,((VoxelModel*)data)->vColors,sizeVertices);
-    
+        memcpy(newVoxelModel->vertices,((VoxelModel*)data)->vertices,sizeVertices);
+        memcpy(newVoxelModel->vColors,((VoxelModel*)data)->vColors,sizeVertices);
+    }else{
+        newVoxelModel->model = NULL;
+        newVoxelModel->lighting = NULL;
+        newVoxelModel->vertices = NULL;
+        newVoxelModel->vColors = NULL;
+    }
 
 	return newVoxelModel;
 }
 
 VoxelModel* GetVoxelModelPointer(EntityID entity){
+    if(!EntityContainsComponent(entity, ThisComponentID())){
+        printf("GetVoxelModelPointer: Entity doesn't have a VoxelModel component. (%d)\n",entity);
+        return NULL;
+    }
     return (VoxelModel *) ECS.Components[ThisComponentID()][entity].data;
+}
+
+Vector3 GetVoxelModelCenter(EntityID entity){
+    if(!EntityContainsComponent(entity, ThisComponentID())){
+        printf("GetVoxelModelCenter: Entity doesn't have a VoxelModel component. (%d)\n",entity);
+        return VECTOR3_ZERO;
+    }
+    VoxelModel *m = GetVoxelModelPointer(entity);
+    return m->center;
+}
+
+void SetVoxelModelCenter(EntityID entity, Vector3 center){
+    if(!EntityContainsComponent(entity, ThisComponentID())){
+        printf("SetVoxelModelCenter: Entity doesn't have a VoxelModel component. (%d)\n",entity);
+        return;
+    }
+    VoxelModel *m = GetVoxelModelPointer(entity);
+    m->center = center;
+}
+
+int IsVoxelModelEnabled(EntityID entity){
+    if(!EntityContainsComponent(entity, ThisComponentID())){
+        printf("IsVoxelModelEnabled: Entity doesn't have a VoxelModel component. (%d)\n",entity);
+        return 0;
+    }
+    VoxelModel *m = GetVoxelModelPointer(entity);
+    return m->enabled;
+}
+
+void SetVoxelModelEnabled(EntityID entity, int booleanVal){
+    if(!EntityContainsComponent(entity, ThisComponentID())){
+        printf("SetVoxelModelEnabled: Entity doesn't have a VoxelModel component. (%d)\n",entity);
+        return;
+    }
+    VoxelModel *m = GetVoxelModelPointer(entity);
+    m->enabled = booleanVal? 1: 0;
 }
 
 //MagicaVoxel Voxel structure, used only to load data
@@ -75,7 +121,7 @@ typedef struct Voxel
 
 //Load a single Voxel model from a .vox file.
 //Receives the path to the file as a string (Ex: "path/model.vox")
-void LoadVoxelModel(EntityID entity, char modelPath[])
+void LoadVoxelModel(EntityID entity, char modelPath[], char modelName[])
 {
     if(entity<0 || entity>=ECS.maxEntities){
 		printf("LoadVoxelModel: Entity index out of range!(%d)\n",entity);
@@ -93,18 +139,25 @@ void LoadVoxelModel(EntityID entity, char modelPath[])
         AddComponentToEntity(GetComponentID("Transform"), entity);
     }
 
-    
-
     VoxelModel *obj = GetVoxelModelPointer(entity);
-
-    printf("\nLoading model: %s\n",modelPath);
-    FILE* file = fopen(modelPath,"rb");
+    
+    char fullPath[512+256];
+    strncpy(fullPath,modelPath,512);
+    if(modelPath[strlen(modelPath)-1] != '/'){
+        strcat(fullPath,"/");
+    }
+    strcat(fullPath,modelName);
+    printf("\nLoading model: (%s)(%s)(%s)\n",modelPath,modelName,fullPath);
+    FILE* file = fopen(fullPath,"rb");
 
     if(file == NULL){
 	    perror("LoadVoxelModel");
         //Return an empty VoxelObject in case of failure
         return;
     }
+    strncpy(obj->modelPath,modelPath,512);
+    strncpy(obj->modelName,modelName,256);
+    obj->enabled = 1;
 
     Voxel *voxelData = NULL;
 
@@ -234,10 +287,7 @@ void LoadVoxelModel(EntityID entity, char modelPath[])
     obj->voxelCount = numVoxels;
     obj->voxelsRemaining = numVoxels;
 
-    SetPosition(entity, (Vector3){0,0,0});
-    SetRotation(entity, (Vector3){0,0,0});
-
-    obj->center = (Vector3){obj->dimension[0]/2,obj->dimension[1]/2,obj->dimension[2]/2};
+    obj->center = VECTOR3_ZERO;
 
     obj->modificationStartX = 0;
     obj->modificationEndX = obj->dimension[0]-1;
@@ -272,7 +322,7 @@ void CalculateRendered(EntityID entity){
     VoxelModel *obj = GetVoxelModelPointer(entity);
 
 
-    if(obj->modificationStartZ <0 || obj->modificationEndZ <0 ){
+    if(obj->modificationStartZ <0 || obj->modificationEndZ <0 || !obj->model){
         return;
     }
 
@@ -300,8 +350,8 @@ void CalculateRendered(EntityID entity){
     }
     
     for(z = zLimitE; z>=zLimitS ;z--){
-        for(y = yLimitE; y>=yLimitS; y--){
-            for(x = xLimitE; x>=xLimitS; x--){
+        for(y = yLimitS; y<=yLimitE; y++){
+            for(x = xLimitS; x<=xLimitE; x++){
                 occ = 0;
 
                 index = (x + z * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);
@@ -405,6 +455,9 @@ void CalculateRendered(EntityID entity){
 //Calculate the basic lighting and self shadowing and put into a GLint color array inside the component
 void CalculateLighting(EntityID entity){
     VoxelModel *obj = GetVoxelModelPointer(entity);
+    if(!obj->model){
+        return;
+    }
 
     int y,x,z,index,dir;
     int occlusion,lightAir,lightBlock;

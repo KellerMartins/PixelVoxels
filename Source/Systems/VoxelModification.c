@@ -24,7 +24,7 @@ void VoxelModificationUpdate(){
 
         VoxelModel *obj = GetVoxelModelPointer(entity);
 
-        if(obj->modificationStartZ >=0){
+        if(obj->model && obj->modificationStartZ >=0){
             CalculateRendered(entity);
             CalculateLighting(entity);
 

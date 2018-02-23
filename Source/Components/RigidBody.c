@@ -24,6 +24,9 @@ extern engineECS ECS;
 void RigidBodyConstructor(void** data){
     if(!data) return;
     *data = calloc(1,sizeof(RigidBody));
+    ((RigidBody*) *data)->mass = 1;
+    ((RigidBody*) *data)->useGravity = 1;
+    ((RigidBody*) *data)->bounciness = 0.2;
 }
 
 void RigidBodyDestructor(void** data){

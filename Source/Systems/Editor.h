@@ -4,6 +4,7 @@
 #include "../Components/VoxelModel.h"
 #include "../Components/RigidBody.h"
 #include "../Libs/tinydir.h"
+#include <ctype.h>
 
 void EditorInit();
 void EditorUpdate();

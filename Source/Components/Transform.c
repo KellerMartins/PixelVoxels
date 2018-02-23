@@ -63,21 +63,17 @@ void SetPosition(EntityID entity, Vector3 pos){
     transform->position = pos;
 
     //Modify childs position too
-    if(EntityContainsComponent(entity, GetComponentID("ParentChild"))){
-        if(EntityIsParent(entity)){
-            Vector3 deltaPos = Subtract(transform->position,oldPos);
-            
-            ParentChild *parentComp = ECS.Components[GetComponentID("ParentChild")][entity].data;
-            
-            ListCellPointer current = GetFirstCell(parentComp->childs);
-            while(current){
-                EntityID child = *((EntityID*) GetElement(*current));
+    if(EntityIsParent(entity)){
+        Vector3 deltaPos = Subtract(transform->position,oldPos);
+        
+        ListCellPointer current = GetFirstCell(ECS.Entities[entity].childs);
+        while(current){
+            EntityID child = *((EntityID*) GetElement(*current));
 
-                if(EntityContainsComponent(child, ThisComponentID())){
-                    SetPosition(child, Add(GetPosition(child),deltaPos));
-                }
-                current = GetNextCell(current);
+            if(EntityContainsComponent(child, ThisComponentID())){
+                SetPosition(child, Add(GetPosition(child),deltaPos));
             }
+            current = GetNextCell(current);
         }
     }
 }

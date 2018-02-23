@@ -29,6 +29,9 @@ typedef struct VoxelModel{
 	unsigned int voxelsRemaining;
 
 	Vector3 center;
+
+	char modelPath[512];
+	char modelName[256];
 }VoxelModel;
 
 void VoxelModelConstructor(void** data);
@@ -37,7 +40,12 @@ void* VoxelModelCopy(void* data);
 
 VoxelModel* GetVoxelModelPointer(EntityID entity);
 
-void LoadVoxelModel(EntityID entity, char modelPath[]);
+Vector3 GetVoxelModelCenter(EntityID entity);
+void SetVoxelModelCenter(EntityID entity, Vector3 center);
+int IsVoxelModelEnabled(EntityID entity);
+void SetVoxelModelEnabled(EntityID entity, int booleanVal);
+
+void LoadVoxelModel(EntityID entity, char modelPath[], char modelName[]);
 void CalculateRendered(EntityID entity);
 void CalculateLighting(EntityID entity);
 //void LoadMultiVoxelModel(EntityID entity, char modelPath[]);

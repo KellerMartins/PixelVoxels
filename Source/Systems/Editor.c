@@ -66,7 +66,6 @@ static Vector3 deltaMousePos = {0,0,0};
 //List of selected EntityIDs
 List SelectedEntities;
 //Array of existing entities
-int *existingEntities = NULL;
 //Copy of the components and entities data to be reseted when exiting play mode
 Component** componentsPlaymodeCopy;
 Entity* entitiesPlaymodeCopy;
@@ -101,7 +100,6 @@ void ExitPlayMode();
 void EditorInit(System *systemObject){
     ThisSystem = (System*)GetElementAt(ECS.SystemList,GetSystemID("Editor"));
 
-    existingEntities = calloc(ECS.maxEntities,sizeof(int));
     SelectedEntities = InitList(sizeof(EntityID));
     int i;
 
@@ -284,7 +282,7 @@ void EditorUpdate(){
         for(entity = 0; entity <= ECS.maxUsedIndex; entity++){
             
             //Run for all entities with the transform component
-            if(EntityContainsComponent(entity,GetComponentID("Transform"))){
+            if(IsValidEntity(entity) && EntityContainsComponent(entity,GetComponentID("Transform"))){
 
                 Vector3 position = GetPosition(entity);
                 Vector3 screenPos = PositionToGameScreenCoords(position);
@@ -1012,17 +1010,10 @@ void EditorUpdate(){
         glVertex2f( entityWindowLength, 0);
     glEnd();
 
-    //Update array of instantiated entities
-    memset(existingEntities, 1, ECS.maxEntities * sizeof(int));
-    ListCellPointer curEntity;
-    ListForEach(curEntity,ECS.AvaliableEntitiesIndexes){
-        EntityID id = GetElementAsType(curEntity,EntityID);
-        existingEntities[id] = 0;
-    }
 
     int entityHeight = Screen.windowHeight + entityStartHeight-entityWindowTopHeightSpacing;
     for(entity=0;entity<=ECS.maxUsedIndex;entity++){
-        if(existingEntities[entity]){
+        if(IsValidEntity(entity)){
 
             if(entityHeight>0 && entityHeight<Screen.windowHeight-entityWindowTopHeightSpacing+TTF_FontHeight(gizmosFont)+2){
 
@@ -1424,9 +1415,7 @@ void EditorUpdate(){
     if(GetKeyDown(SDL_SCANCODE_P)){
         ListCellPointer cellp = GetFirstCell(SelectedEntities);
         while(cellp != GetLastCell(SelectedEntities)){
-            printf("Parenting");
             SetEntityParent(GetElementAsType(cellp,EntityID),GetElementAsType(GetLastCell(SelectedEntities),EntityID));
-            printf("Parented");
             cellp = GetNextCell(cellp);
         }
     }
@@ -1439,7 +1428,6 @@ void EditorUpdate(){
 //Runs at engine finish
 void EditorFree(){
     FreeList(&SelectedEntities);
-    free(existingEntities);
 
     if(fileBrowserOpened) CloseFileBrowser();
     

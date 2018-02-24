@@ -123,7 +123,7 @@ typedef int SystemID;
 typedef struct System System;
 typedef struct System{
     char name[25];
-    unsigned priority;
+    int priority;
     int enabled;
 
     ComponentMask required;
@@ -156,7 +156,7 @@ typedef struct engineECS{
 int InitECS(unsigned max_entities);
 
 int RegisterNewComponent(char componentName[25],void (*constructorFunc)(void** data),void (*destructorFunc)(void** data),void*(*copyFunc)(void*));
-int RegisterNewSystem(char systemName[25], unsigned priority, ComponentMask required, ComponentMask excluded, void (*initFunc)(), void (*updateFunc)(), void (*freeFunc)());
+int RegisterNewSystem(char systemName[25], int priority, ComponentMask required, ComponentMask excluded, void (*initFunc)(), void (*updateFunc)(), void (*freeFunc)());
 
 ComponentID GetComponentID(char componentName[25]);
 

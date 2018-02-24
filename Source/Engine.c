@@ -71,7 +71,7 @@ int RegisterNewComponent(char componentName[25],void (*constructorFunc)(void** d
 	return GetLength(ECS.ComponentTypes)-1;
 }
 
-int RegisterNewSystem(char systemName[25], unsigned priority, ComponentMask required, ComponentMask excluded, void (*initFunc)(), void (*updateFunc)(), void (*freeFunc)()){
+int RegisterNewSystem(char systemName[25], int priority, ComponentMask required, ComponentMask excluded, void (*initFunc)(), void (*updateFunc)(), void (*freeFunc)()){
 	if(!initializedECS){
 		printf("ECS not initialized! Initialize ECS before registering the components and systems\n");
 		return -1;
@@ -178,6 +178,13 @@ void DestroyEntity(EntityID entity){
 	if(!IsValidEntity(entity)){
 		printf("DestroyEntity: Entity is not spawned or out of range!(%d)\n",entity);
 		return;
+	}
+
+	if(EntityIsParent(entity)){
+		ListCellPointer childCell;
+		ListForEach(childCell,ECS.Entities[entity].childs){
+			DestroyEntity(GetElementAsType(childCell, EntityID));
+		}
 	}
 
 	int i, mask = ECS.Entities[entity].mask.mask;
@@ -657,7 +664,25 @@ void EngineUpdate(){
 	InputUpdate();
 
 	//Run systems updates
-	
+
+	//Remove missing child connections from parents
+	int e;
+	for(e=0;e<=ECS.maxUsedIndex;e++){
+		if(IsValidEntity(e) && EntityIsParent(e)){
+			int i = 0;
+			ListCellPointer child = GetFirstCell(*GetChildsList(e));
+			while(child){
+				if(!IsValidEntity(GetElementAsType(child, EntityID))){
+					child = GetNextCell(child);
+					RemoveListIndex(GetChildsList(e),i);
+				}else{
+					i++;
+					child = GetNextCell(child);
+				}
+				
+			}
+		}
+	}
 
 	//Iterate through the systems list
 	ListCellPointer currentSystem = GetFirstCell(ECS.SystemList);

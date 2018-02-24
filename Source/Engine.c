@@ -281,6 +281,10 @@ EntityID DuplicateEntity(EntityID entity){
 		}
 	}
 
+	if(EntityIsChild(entity)){
+		SetEntityParent(newEntity, GetEntityParent(entity));
+	}
+
 	return newEntity;
 }
 

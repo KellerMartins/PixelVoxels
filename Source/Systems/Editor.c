@@ -78,6 +78,7 @@ Vector3 WorldVectorToScreenVector(Vector3 v);
 int IsSelected(EntityID entity);
 void RemoveFromSelected(EntityID entity);
 int DrawComponentHeader(ComponentID component, int* curHeight);
+void DrawEntityElement(EntityID entity, int *entityHeight, int depth);
 void DrawRectangle(Vector3 min, Vector3 max, float r, float g, float b);
 void DrawPointIcon(Vector3 pos,int iconID, int scale, Vector3 color);
 void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,int x, int w, int fieldsSpacing, int* curField, int* curHeight);
@@ -1013,51 +1014,8 @@ void EditorUpdate(){
 
     int entityHeight = Screen.windowHeight + entityStartHeight-entityWindowTopHeightSpacing;
     for(entity=0;entity<=ECS.maxUsedIndex;entity++){
-        if(IsValidEntity(entity)){
-
-            if(entityHeight>0 && entityHeight<Screen.windowHeight-entityWindowTopHeightSpacing+TTF_FontHeight(gizmosFont)+2){
-
-                int isSelected = IsSelected(entity);
-                Vector3 elMin = {entityWindowWidthSpacing,entityHeight-TTF_FontHeight(gizmosFont)-2,0};
-                Vector3 elMax = {entityWindowLength,entityHeight,0};
-                
-                //Entity element
-                if(MouseOverBox(mousePos, elMin, elMax,0)){
-                    if(isSelected){
-                        DrawRectangle(elMin,elMax,0.3,0.3,0.3);
-
-                        if(GetMouseButtonDown(SDL_BUTTON_LEFT) && !fileBrowserOpened){
-                            RemoveFromSelected(entity);
-                        }
-                        if(GetMouseButtonDown(SDL_BUTTON_RIGHT) && !fileBrowserOpened){
-                            EntityID newEntity = DuplicateEntity(entity);
-                            FreeList(&SelectedEntities);
-                            InsertListEnd(&SelectedEntities,&newEntity);
-                        }
-                    }else{
-                        DrawRectangle(elMin,elMax,0.3,0.3,0.4);
-
-                        if(GetMouseButtonDown(SDL_BUTTON_LEFT) && !fileBrowserOpened){
-                            if(GetKey(SDL_SCANCODE_LSHIFT)){
-                                InsertListEnd(&SelectedEntities,&entity);
-                            }else{
-                                FreeList(&SelectedEntities);
-                                InsertListEnd(&SelectedEntities,&entity);
-                            }
-                        }
-                    }
-                }else{
-                    if(isSelected){
-                        DrawRectangle(elMin,elMax,0.35,0.35,0.5);
-                    }else{
-                        DrawRectangle(elMin,elMax,0.2,0.2,0.35);
-                    }
-                }
-                static char entityName[12];
-                snprintf(entityName,11,"%d",entity);
-                RenderText(entityName, lightWhite, entityNameLeftSpacing, entityHeight - TTF_FontHeight(gizmosFont), gizmosFont);
-            }
-            entityHeight -= TTF_FontHeight(gizmosFont)+2 + entityBetweenSpacing;
+        if(IsValidEntity(entity) && !EntityIsChild(entity)){
+            DrawEntityElement(entity, &entityHeight,0);
         }
     }
 
@@ -1537,6 +1495,65 @@ int DrawComponentHeader(ComponentID component, int* curHeight){
 
     *curHeight -= TTF_FontHeight(gizmosFont)+2;
     return 1;
+}
+
+void DrawEntityElement(EntityID entity, int *entityHeight, int depth){
+    if((*entityHeight)>0 && (*entityHeight)<Screen.windowHeight-entityWindowTopHeightSpacing+TTF_FontHeight(gizmosFont)+2){
+
+        int isSelected = IsSelected(entity);
+        Vector3 elMin = {entityWindowWidthSpacing +depth*10,(*entityHeight)-TTF_FontHeight(gizmosFont)-2,0};
+        Vector3 elMax = {entityWindowLength,(*entityHeight),0};
+        
+        //Entity element
+        if(MouseOverBox(mousePos, elMin, elMax,0)){
+            if(isSelected){
+                DrawRectangle(elMin,elMax,0.3,0.3,0.3);
+
+                if(GetMouseButtonDown(SDL_BUTTON_LEFT) && !fileBrowserOpened){
+                    RemoveFromSelected(entity);
+                }
+                if(GetMouseButtonDown(SDL_BUTTON_RIGHT) && !fileBrowserOpened){
+                    EntityID newEntity = DuplicateEntity(entity);
+                    FreeList(&SelectedEntities);
+                    InsertListEnd(&SelectedEntities,&newEntity);
+                }
+            }else{
+                DrawRectangle(elMin,elMax,0.3,0.3,0.4);
+
+                if(GetMouseButtonDown(SDL_BUTTON_LEFT) && !fileBrowserOpened){
+                    if(GetKey(SDL_SCANCODE_LSHIFT)){
+                        InsertListEnd(&SelectedEntities,&entity);
+                    }else{
+                        FreeList(&SelectedEntities);
+                        InsertListEnd(&SelectedEntities,&entity);
+                    }
+                }
+            }
+        }else{
+            if(isSelected){
+                DrawRectangle(elMin,elMax,0.35,0.35,0.5);
+            }else{
+                DrawRectangle(elMin,elMax,clamp(0.2 - depth*0.05,0.05,0.2),clamp(0.2 - depth*0.05,0.05,0.2),clamp(0.35 - depth*0.05,0.05,0.35));
+            }
+        }
+        static char entityName[12];
+        snprintf(entityName,11,"%d",entity);
+        int w,h;
+        TTF_SizeText(gizmosFont,entityName,&w,&h);
+        if(entityWindowLength - (entityNameLeftSpacing +depth*10)>= w){
+            RenderText(entityName, lightWhite, entityNameLeftSpacing +depth*10, (*entityHeight) - TTF_FontHeight(gizmosFont), gizmosFont);
+        }
+        (*entityHeight) -= TTF_FontHeight(gizmosFont)+2 + entityBetweenSpacing;
+
+        if(EntityIsParent(entity)){
+            ListCellPointer childCell;
+            ListForEach(childCell, *GetChildsList(entity)){
+                    DrawEntityElement(GetElementAsType(childCell,EntityID), entityHeight, depth+1);
+            }
+        }
+    }else{
+        (*entityHeight) -= TTF_FontHeight(gizmosFont)+2 + entityBetweenSpacing;
+    }
 }
 
 //Returns 1 if pressed, 2 if mouse is over and 0 if neither case

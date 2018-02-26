@@ -5,5 +5,7 @@
 void ComponentExampleConstructor(void** data);
 void ComponentExampleDestructor(void** data);
 void* ComponentExampleCopy(void* data);
+cJSON* ComponentExampleEncode(void** data);
+void* ComponentExampleDecode(cJSON **data);
 
 #endif

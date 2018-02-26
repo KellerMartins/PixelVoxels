@@ -21,10 +21,10 @@ void VoxelModificationUpdate(){
         //Check if entity doesn't contains the excluded components
         //If there is no restriction, run all with the required components
         if(!IsEmptyComponentMask(ThisSystem->excluded) && EntityContainsMask(entity,ThisSystem->excluded) ) continue;
-
         VoxelModel *obj = GetVoxelModelPointer(entity);
 
         if(obj->model && obj->modificationStartZ >=0){
+            
             CalculateRendered(entity);
             CalculateLighting(entity);
 

@@ -46,7 +46,7 @@ int InitECS(unsigned max_entities){
 	return 1;
 }
 
-int RegisterNewComponent(char componentName[25],void (*constructorFunc)(void** data),void (*destructorFunc)(void** data),void*(*copyFunc)(void*)){
+int RegisterNewComponent(char componentName[25],void (*constructorFunc)(void** data),void (*destructorFunc)(void** data),void*(*copyFunc)(void*),cJSON*(*encodeFunc)(void** data),void* (*decodeFunc)(cJSON** data)){
 	if(!initializedECS){
 		printf("ECS not initialized! Initialize ECS before registering the components and systems\n");
 		return -1;
@@ -65,6 +65,8 @@ int RegisterNewComponent(char componentName[25],void (*constructorFunc)(void** d
 	newType.constructor = constructorFunc;
 	newType.destructor = destructorFunc;
 	newType.copy = copyFunc;
+	newType.encode = encodeFunc;
+	newType.decode = decodeFunc;
 
 	InsertListEnd(&ECS.ComponentTypes,(void*)&newType);
 
@@ -286,6 +288,156 @@ EntityID DuplicateEntity(EntityID entity){
 	}
 
 	return newEntity;
+}
+
+int ExportEntityPrefab(EntityID entity, char path[], char name[]){
+	cJSON *entityObj = cJSON_CreateObject();
+
+	ListCellPointer compCell;
+	ComponentID compID = 0;
+	ListForEach(compCell,ECS.ComponentTypes){
+		if(EntityContainsComponent(entity, compID)){
+			ComponentType compType = GetElementAsType(compCell,ComponentType);
+			cJSON_AddItemToObject(entityObj, compType.name, compType.encode(&ECS.Components[compID][entity].data));
+		}
+		compID++;
+	}
+
+	char fullPath[512+256];
+    strncpy(fullPath,path,512);
+    if(path[strlen(path)-1] != '/'){
+        strcat(fullPath,"/");
+    }
+    strcat(fullPath,name);
+	strcat(fullPath,".prefab");
+    printf("Saving prefab: (%s)\n",fullPath);
+    FILE* file = fopen(fullPath,"w");
+
+	if(file){
+		char *jsonString = cJSON_Print(entityObj);
+		fprintf(file,"%s",jsonString);
+		free(jsonString);
+		fclose(file);
+
+		return 1;
+	}else{
+		printf("ExportEntityPrefab: Failed to create/open json file!\n");
+		return 0;
+	}
+	
+	cJSON_Delete(entityObj);
+}
+
+EntityID ImportEntityPrefab(char path[], char name[]){
+
+	char fullPath[512+256];
+    strncpy(fullPath,path,512);
+    if(path[strlen(path)-1] != '/'){
+        strcat(fullPath,"/");
+    }
+    strcat(fullPath,name);
+    printf("Opening prefab: (%s)\n",fullPath);
+    FILE* file = fopen(fullPath,"rb");
+
+	if(file){
+		fseek(file,0,SEEK_END);
+		unsigned size = ftell(file);
+		rewind(file);
+
+		char *jsonString = malloc(size * sizeof(char));
+		fread(jsonString, sizeof(char), size, file);
+		jsonString[size] = '\0';
+		fclose(file);
+
+		cJSON *entityObj = cJSON_Parse(jsonString);
+		if (!entityObj)
+		{
+			//Error treatment
+			const char *error_ptr = cJSON_GetErrorPtr();
+			if (error_ptr != NULL)
+			{
+				fprintf(stderr, "ImportEntityPrefab: JSON error: %s\n", error_ptr);
+			}
+			free(jsonString);
+			return -1;
+
+		}else{
+			free(jsonString);
+			//Entity construction
+
+			EntityID newEntity = CreateEntity();
+
+			ListCellPointer compCell;
+			ComponentID compID = 0;
+			cJSON *comp = NULL;
+			ListForEach(compCell,ECS.ComponentTypes){
+				ComponentType compType = GetElementAsType(compCell,ComponentType);
+
+				comp = cJSON_GetObjectItemCaseSensitive(entityObj, compType.name);
+				if(comp){
+					ECS.Components[compID][newEntity].data = compType.decode(&comp);
+					ECS.Entities[newEntity].mask.mask |= 1<<compID;
+				}
+				compID++;
+			}
+
+			cJSON_Delete(entityObj);
+
+			return newEntity;
+		}
+		
+	}else{
+		printf("ExportEntityPrefab: Failed to create/open json file!\n");
+	}
+	return -1;
+}
+
+int ExportScene(char path[], char name[]){
+
+	cJSON *sceneObj = cJSON_CreateObject();
+	cJSON *entitiesArray = cJSON_AddArrayToObject(sceneObj, "entities");
+
+	int i;
+	for(i=0;i<=ECS.maxUsedIndex;i++){
+		if(IsValidEntity(i)){
+			cJSON *entityObj = cJSON_CreateObject();
+
+			ListCellPointer compCell;
+			ComponentID compID = 0;
+			ListForEach(compCell,ECS.ComponentTypes){
+				if(EntityContainsComponent(i, compID)){
+					ComponentType compType = GetElementAsType(compCell,ComponentType);
+					cJSON_AddItemToObject(entityObj, compType.name, compType.encode(&ECS.Components[compID][i].data));
+				}
+				compID++;
+			}
+
+			cJSON_AddItemToArray(entitiesArray, entityObj);
+		}
+	}
+
+	char fullPath[512+256];
+    strncpy(fullPath,path,512);
+    if(path[strlen(path)-1] != '/'){
+        strcat(fullPath,"/");
+    }
+    strcat(fullPath,name);
+	strcat(fullPath,".scene");
+    printf("Saving scene: (%s)\n",fullPath);
+    FILE* file = fopen(fullPath,"w");
+
+	if(file){
+		char *jsonString = cJSON_Print(sceneObj);
+		fprintf(file,"%s",jsonString);
+		free(jsonString);
+		fclose(file);
+		return 1;
+	}else{
+		printf("ExportScene: Failed to create/open json file!\n");
+		return 0;
+	}
+	
+	cJSON_Delete(sceneObj);
 }
 
 ComponentMask GetEntityComponents(EntityID entity){

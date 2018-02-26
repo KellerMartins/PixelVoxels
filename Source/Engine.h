@@ -7,7 +7,8 @@
 #include <time.h>
 #include <string.h>
 
-#include "soloud_c.h"
+#include <soloud_c.h>
+#include "Libs/cJSON.h"
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -116,6 +117,9 @@ typedef struct ComponentType{
     void (*constructor)(void** data);
     void (*destructor)(void** data);
     void*(*copy)(void*);
+
+    cJSON*(*encode)(void** data);
+    void* (*decode)(cJSON** data);
 }ComponentType;
 
 typedef int SystemID;
@@ -155,7 +159,7 @@ typedef struct engineECS{
 //ECS functions
 int InitECS(unsigned max_entities);
 
-int RegisterNewComponent(char componentName[25],void (*constructorFunc)(void** data),void (*destructorFunc)(void** data),void*(*copyFunc)(void*));
+int RegisterNewComponent(char componentName[25],void (*constructorFunc)(void** data),void (*destructorFunc)(void** data),void*(*copyFunc)(void*),cJSON*(*encodeFunc)(void** data),void* (*decodeFunc)(cJSON** data));
 int RegisterNewSystem(char systemName[25], int priority, ComponentMask required, ComponentMask excluded, void (*initFunc)(), void (*updateFunc)(), void (*freeFunc)());
 
 ComponentID GetComponentID(char componentName[25]);
@@ -190,6 +194,11 @@ SystemID GetSystemID(char systemName[25]);
 void EnableSystem(SystemID system);
 void DisableSystem(SystemID system);
 int IsSystemEnabled(SystemID system);
+
+int ExportEntityPrefab(EntityID entity, char path[], char name[]);
+int ExportScene(char path[], char name[]);
+
+EntityID ImportEntityPrefab(char path[], char name[]);
 
 //Engine functions
 int InitEngine();

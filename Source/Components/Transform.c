@@ -35,6 +35,38 @@ void* TransformCopy(void* data){
 	return newTransform;
 }
 
+cJSON* TransformEncode(void** data){
+    Transform *tr = *data; 
+    cJSON *obj = cJSON_CreateObject();
+
+    cJSON *position = cJSON_AddArrayToObject(obj,"position");
+    cJSON_AddItemToArray(position, cJSON_CreateNumber(tr->position.x));
+    cJSON_AddItemToArray(position, cJSON_CreateNumber(tr->position.y));
+    cJSON_AddItemToArray(position, cJSON_CreateNumber(tr->position.z));
+
+    cJSON *rotation = cJSON_AddArrayToObject(obj,"rotation");
+    cJSON_AddItemToArray(rotation, cJSON_CreateNumber(tr->rotation.x));
+    cJSON_AddItemToArray(rotation, cJSON_CreateNumber(tr->rotation.y));
+    cJSON_AddItemToArray(rotation, cJSON_CreateNumber(tr->rotation.z));
+
+    return obj;
+}
+
+void* TransformDecode(cJSON **data){
+    Transform *tr = malloc(sizeof(Transform));
+    cJSON *pos = cJSON_GetObjectItem(*data,"position");
+    tr->position = (Vector3){(cJSON_GetArrayItem(pos,0))->valuedouble,
+                             (cJSON_GetArrayItem(pos,1))->valuedouble,
+                             (cJSON_GetArrayItem(pos,2))->valuedouble};
+
+    cJSON *rot = cJSON_GetObjectItem(*data,"rotation");
+    tr->rotation = (Vector3){(cJSON_GetArrayItem(rot,0))->valuedouble,
+                             (cJSON_GetArrayItem(rot,1))->valuedouble,
+                             (cJSON_GetArrayItem(rot,2))->valuedouble};
+
+    return tr;
+}
+
 Vector3 GetPosition(EntityID entity){
     if(!EntityContainsComponent(entity, ThisComponentID())){
         printf("GetPosition: Entity doesn't have a Transform component. (%d)\n",entity);

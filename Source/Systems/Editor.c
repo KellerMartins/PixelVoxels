@@ -3,7 +3,9 @@
 static System *ThisSystem;
 
 static SystemID VoxRenderSystem ;
+static SystemID VoxModifSystem;
 static SystemID EditorSystem;
+
 
 extern engineECS ECS;
 extern engineScreen Screen;
@@ -113,11 +115,12 @@ void EditorInit(System *systemObject){
     entitiesPlaymodeCopy = calloc(ECS.maxEntities,sizeof(Entity));
 
     VoxRenderSystem = GetSystemID("VoxelRenderer");
+    VoxModifSystem = GetSystemID("VoxelModification");
     EditorSystem = GetSystemID("Editor");
 
     //Disable all game systems, except the rendering
     for(i=0;i<GetLength(ECS.SystemList);i++){
-        if(i != EditorSystem && i!= VoxRenderSystem){
+        if(i != EditorSystem && i!= VoxRenderSystem && i!= VoxModifSystem){
             DisableSystem(i);
         }
     }
@@ -211,7 +214,7 @@ void EditorUpdate(){
             //Disable all game systems
             int i;
             for(i=0;i<GetLength(ECS.SystemList);i++){
-                if(i != EditorSystem && i!= VoxRenderSystem){
+                if(i != EditorSystem && i!= VoxRenderSystem && i!= VoxModifSystem){
                     DisableSystem(i);
                 }
             }
@@ -223,7 +226,7 @@ void EditorUpdate(){
             //Disable all game systems
             int i;
             for(i=0;i<GetLength(ECS.SystemList);i++){
-                if(i != EditorSystem && i!= VoxRenderSystem){
+                if(i != EditorSystem && i!= VoxRenderSystem && i!= VoxModifSystem){
                     DisableSystem(i);
                 }
             }
@@ -238,7 +241,7 @@ void EditorUpdate(){
             //Enable all game systems
             int i;
             for(i=0;i<GetLength(ECS.SystemList);i++){
-                if(i != EditorSystem && i!= VoxRenderSystem){
+                if(i != EditorSystem && i!= VoxRenderSystem && i!= VoxModifSystem){
                     EnableSystem(i);
                 }
             }
@@ -251,7 +254,7 @@ void EditorUpdate(){
             //Disable all game systems
             int i;
             for(i=0;i<GetLength(ECS.SystemList);i++){
-                if(i != EditorSystem && i!= VoxRenderSystem){
+                if(i != EditorSystem && i!= VoxRenderSystem && i!= VoxModifSystem){
                     DisableSystem(i);
                 }
             }
@@ -267,7 +270,7 @@ void EditorUpdate(){
             //Enable all game systems
             int i;
             for(i=0;i<GetLength(ECS.SystemList);i++){
-                if(i != EditorSystem && i!= VoxRenderSystem){
+                if(i != EditorSystem && i!= VoxRenderSystem && i!= VoxModifSystem){
                     EnableSystem(i);
                 }
             }
@@ -749,23 +752,26 @@ void EditorUpdate(){
                             RenderText("Enabled", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
                             componentHeight-=22;
 
-                            if(1 == PointButton((Vector3){Screen.windowWidth-componentWindowLength + 15,componentHeight - 10},10,1, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){0.8,0.8,0.8})){
-                                if(!fileBrowserOpened){
-                                    if(m->modelPath[0] != '\0'){
-                                        OpenFileBrowser(GetVoxelModelPointer(GetElementAsType(selEntity,EntityID))->modelPath,LoadModel);
-                                    }else{
-                                        OpenFileBrowser(NULL,LoadModel);
+                            //Only show the model load button and name if only one entity is selected
+                            if(GetLength(SelectedEntities)==1){
+                                if(1 == PointButton((Vector3){Screen.windowWidth-componentWindowLength + 15,componentHeight - 10},10,1, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){0.8,0.8,0.8})){
+                                    if(!fileBrowserOpened){
+                                        if(m->modelPath[0] != '\0'){
+                                            OpenFileBrowser(GetVoxelModelPointer(GetElementAsType(selEntity,EntityID))->modelPath,LoadModel);
+                                        }else{
+                                            OpenFileBrowser(NULL,LoadModel);
+                                        }
+                                        FileBrowserExtension("vox");
                                     }
-                                    FileBrowserExtension("vox");
                                 }
+                                
+                                if(m->modelName[0] != '\0'){
+                                    RenderText(m->modelName, lightWhite, Screen.windowWidth-componentWindowLength + 28, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+                                }else{
+                                    RenderText("No model", lightWhite, Screen.windowWidth-componentWindowLength + 28, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+                                }
+                                componentHeight-=22;
                             }
-                            
-                            if(m->modelName[0] != '\0'){
-                                RenderText(m->modelName, lightWhite, Screen.windowWidth-componentWindowLength + 28, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
-                            }else{
-                                RenderText("No model", lightWhite, Screen.windowWidth-componentWindowLength + 28, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
-                            }
-                            componentHeight-=22;
                             
                             //Center field
                             int ommitCenterX = 0, ommitCenterY = 0, ommitCenterZ = 0;
@@ -1365,11 +1371,6 @@ void EditorUpdate(){
         MoveCamera(-Input.deltaMouseX/(Time.deltaTime * Screen.gameScale),Input.deltaMouseY/(Time.deltaTime * Screen.gameScale),0);
     }
 
-    if(GetMouseButtonDown(SDL_BUTTON_MIDDLE)){
-        fileBrowserOpened? CloseFileBrowser():OpenFileBrowser(NULL,NULL);
-        FileBrowserExtension(NULL);
-    }
-
     if(GetKeyDown(SDL_SCANCODE_P)){
         ListCellPointer cellp = GetFirstCell(SelectedEntities);
         while(cellp != GetLastCell(SelectedEntities)){
@@ -1377,6 +1378,24 @@ void EditorUpdate(){
             cellp = GetNextCell(cellp);
         }
     }
+
+    if(GetKeyDown(SDL_SCANCODE_E)){
+        if(GetLength(SelectedEntities) == 1){
+            ListCellPointer cellp = GetFirstCell(SelectedEntities);
+            ExportEntityPrefab(GetElementAsType(cellp,EntityID), "Assets", "newPrefab");
+        }
+    }
+
+    if(GetKeyDown(SDL_SCANCODE_F)){
+        EntityID newEntity = ImportEntityPrefab("Assets", "newPrefab.prefab");
+        FreeList(&SelectedEntities);
+        InsertListEnd(&SelectedEntities,&newEntity);
+        printf("Created entity %d!\n",newEntity);
+    }
+
+    //if(GetKeyDown(SDL_SCANCODE_F)){
+    //    ExportScene("Assets", "newScene");
+    //}
 
     //Return depth to default values
     glDepthRange(0, 1.0);

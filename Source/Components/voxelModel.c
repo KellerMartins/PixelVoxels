@@ -12,6 +12,8 @@ static ComponentID ThisComponentID(){
 extern engineECS ECS;
 extern engineRendering Rendering;
 
+void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char modelName[]);
+
 void VoxelModelConstructor(void** data){
     if(!data) return;
     *data = calloc(1,sizeof(VoxelModel));
@@ -64,6 +66,33 @@ void* VoxelModelCopy(void* data){
     }
 
 	return newVoxelModel;
+}
+
+cJSON* VoxelModelEncode(void** data){
+    VoxelModel *v = *data; 
+    cJSON *obj = cJSON_CreateObject();
+
+    cJSON_AddStringToObject(obj, "modelPath", v->modelPath);
+    cJSON_AddStringToObject(obj, "modelName", v->modelName);
+
+    cJSON *center = cJSON_AddArrayToObject(obj,"center");
+    cJSON_AddItemToArray(center, cJSON_CreateNumber(v->center.x));
+    cJSON_AddItemToArray(center, cJSON_CreateNumber(v->center.y));
+    cJSON_AddItemToArray(center, cJSON_CreateNumber(v->center.z));
+
+    return obj;
+}
+
+void* VoxelModelDecode(cJSON **data){
+    VoxelModel *v = malloc(sizeof(VoxelModel));
+
+    InternalLoadVoxelModel(&v, cJSON_GetObjectItem(*data, "modelPath")->valuestring, cJSON_GetObjectItem(*data, "modelName")->valuestring);
+
+    cJSON *center = cJSON_GetObjectItem(*data,"center");
+    v->center = (Vector3){(cJSON_GetArrayItem(center,0))->valuedouble,
+                          (cJSON_GetArrayItem(center,1))->valuedouble,
+                          (cJSON_GetArrayItem(center,2))->valuedouble};
+    return v;
 }
 
 VoxelModel* GetVoxelModelPointer(EntityID entity){
@@ -140,7 +169,12 @@ void LoadVoxelModel(EntityID entity, char modelPath[], char modelName[])
     }
 
     VoxelModel *obj = GetVoxelModelPointer(entity);
+    InternalLoadVoxelModel(&obj, modelPath, modelName);
     
+}
+
+void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char modelName[]){
+    VoxelModel *obj = *modelPointer;
     char fullPath[512+256];
     strncpy(fullPath,modelPath,512);
     if(modelPath[strlen(modelPath)-1] != '/'){
@@ -297,18 +331,6 @@ void LoadVoxelModel(EntityID entity, char modelPath[], char modelName[])
 
     obj->modificationStartZ = 0;
     obj->modificationEndZ = obj->dimension[2]-1;
-    
-    CalculateRendered(entity);
-    CalculateLighting(entity);
-
-    obj->modificationStartX = -1;
-    obj->modificationEndX = -1;
-
-    obj->modificationStartY = -1;
-    obj->modificationEndY = -1;
-
-    obj->modificationStartZ = -1;
-    obj->modificationEndZ = -1;
 
     obj->enabled = 1;
 

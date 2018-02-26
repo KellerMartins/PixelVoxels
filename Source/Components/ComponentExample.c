@@ -34,3 +34,21 @@ void* ComponentExampleCopy(void* data){
     memcpy(newExampleDataType,data,sizeof(ExampleDataType));
 	return newExampleDataType;
 }
+
+cJSON* ComponentExampleEncode(void** data){
+    ExampleDataType *ex = *data; 
+    cJSON *obj = cJSON_CreateObject();
+    char c[] = "c";
+    c[0] = ex->example;
+
+    cJSON_AddStringToObject(obj, "exampleChar", c);
+
+    return obj;
+}
+
+void* ComponentExampleDecode(cJSON **data){
+    ExampleDataType *ex = malloc(sizeof(ExampleDataType));
+    ex->example = cJSON_GetObjectItem(*data, "exampleChar")->valuestring[0];
+
+    return ex;
+}

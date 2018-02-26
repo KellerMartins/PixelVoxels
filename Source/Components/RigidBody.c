@@ -42,6 +42,51 @@ void* RigidBodyCopy(void* data){
 	return newRigidBody;
 }
 
+cJSON* RigidBodyEncode(void** data){
+    RigidBody *rb = *data; 
+    cJSON *obj = cJSON_CreateObject();
+
+    cJSON_AddNumberToObject(obj,"mass",rb->mass);
+    cJSON_AddNumberToObject(obj,"bounciness",rb->bounciness);
+
+    cJSON *velocity = cJSON_AddArrayToObject(obj,"velocity");
+    cJSON_AddItemToArray(velocity, cJSON_CreateNumber(rb->velocity.x));
+    cJSON_AddItemToArray(velocity, cJSON_CreateNumber(rb->velocity.y));
+    cJSON_AddItemToArray(velocity, cJSON_CreateNumber(rb->velocity.z));
+
+    cJSON *acceleration = cJSON_AddArrayToObject(obj,"acceleration");
+    cJSON_AddItemToArray(acceleration, cJSON_CreateNumber(rb->acceleration.x));
+    cJSON_AddItemToArray(acceleration, cJSON_CreateNumber(rb->acceleration.y));
+    cJSON_AddItemToArray(acceleration, cJSON_CreateNumber(rb->acceleration.z));
+
+    cJSON_AddBoolToObject(obj,"useGravity",rb->useGravity);
+    cJSON_AddBoolToObject(obj,"isStatic",rb->isStatic);
+
+    return obj;
+}
+
+void* RigidBodyDecode(cJSON **data){
+    RigidBody *rb = malloc(sizeof(RigidBody));
+
+    rb->mass = (cJSON_GetObjectItem(*data,"mass"))->valuedouble;
+    rb->bounciness = (cJSON_GetObjectItem(*data,"bounciness"))->valuedouble;
+
+    cJSON *vel = cJSON_GetObjectItem(*data,"velocity");
+    rb->velocity = (Vector3){(cJSON_GetArrayItem(vel,0))->valuedouble,
+                             (cJSON_GetArrayItem(vel,1))->valuedouble,
+                             (cJSON_GetArrayItem(vel,2))->valuedouble};
+
+    cJSON *acc = cJSON_GetObjectItem(*data,"acceleration");
+    rb->acceleration = (Vector3){(cJSON_GetArrayItem(acc,0))->valuedouble,
+                                 (cJSON_GetArrayItem(acc,1))->valuedouble,
+                                 (cJSON_GetArrayItem(acc,2))->valuedouble};
+
+    rb->useGravity = cJSON_IsTrue(cJSON_GetObjectItem(*data,"useGravity"));
+    rb->isStatic = cJSON_IsTrue(cJSON_GetObjectItem(*data,"isStatic"));
+
+    return rb;
+}
+
 Vector3 GetVelocity(EntityID entity){
     if(!EntityContainsComponent(entity, ThisComponentID())){
         printf("GetVelocity: Entity doesn't have a RigidBody component. (%d)\n",entity);

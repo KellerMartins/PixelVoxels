@@ -8,6 +8,8 @@
 void RigidBodyConstructor(void** data);
 void RigidBodyDestructor(void** data);
 void* RigidBodyCopy(void* data);
+cJSON* RigidBodyEncode(void** data);
+void* RigidBodyDecode(cJSON **data);
 
 Vector3 GetVelocity(EntityID entity);
 Vector3 GetAcceleration(EntityID entity);

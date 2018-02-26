@@ -37,6 +37,8 @@ typedef struct VoxelModel{
 void VoxelModelConstructor(void** data);
 void VoxelModelDestructor(void** data);
 void* VoxelModelCopy(void* data);
+cJSON* VoxelModelEncode(void** data);
+void* VoxelModelDecode(cJSON **data);
 
 VoxelModel* GetVoxelModelPointer(EntityID entity);
 

@@ -344,7 +344,7 @@ EntityID ImportEntityPrefab(char path[], char name[]){
 		unsigned size = ftell(file);
 		rewind(file);
 
-		char *jsonString = malloc(size * sizeof(char));
+		char *jsonString = malloc((size+1) * sizeof(char));
 		fread(jsonString, sizeof(char), size, file);
 		jsonString[size] = '\0';
 		fclose(file);
@@ -387,7 +387,7 @@ EntityID ImportEntityPrefab(char path[], char name[]){
 		}
 		
 	}else{
-		printf("ExportEntityPrefab: Failed to create/open json file!\n");
+		printf("ImportEntityPrefab: Failed to open json file!\n");
 	}
 	return -1;
 }
@@ -438,6 +438,84 @@ int ExportScene(char path[], char name[]){
 	}
 	
 	cJSON_Delete(sceneObj);
+}
+
+int LoadScene(char path[], char name[]){
+	int i;
+	for(i=0;i<=ECS.maxUsedIndex;i++){
+		if(IsValidEntity(i)){
+			DestroyEntity(i);
+		}
+	}
+	return LoadSceneAdditive(path,name);
+}
+
+int LoadSceneAdditive(char path[], char name[]){
+
+	char fullPath[512+256];
+    strncpy(fullPath,path,512);
+    if(path[strlen(path)-1] != '/'){
+        strcat(fullPath,"/");
+    }
+    strcat(fullPath,name);
+    printf("Opening Scene: (%s)\n",fullPath);
+    FILE* file = fopen(fullPath,"rb");
+
+	if(file){
+		fseek(file,0,SEEK_END);
+		unsigned size = ftell(file);
+		rewind(file);
+
+		char *jsonString = malloc((size+1) * sizeof(char));
+		fread(jsonString, sizeof(char), size, file);
+		jsonString[size] = '\0';
+		fclose(file);
+
+		cJSON *sceneObj = cJSON_Parse(jsonString);
+		if (!sceneObj)
+		{
+			//Error treatment
+			const char *error_ptr = cJSON_GetErrorPtr();
+			if (error_ptr != NULL)
+			{
+				fprintf(stderr, "LoadScene: JSON error: %s\n", error_ptr);
+			}
+			free(jsonString);
+			return -1;
+
+		}else{
+			free(jsonString);
+
+			cJSON *entityArray = cJSON_GetObjectItemCaseSensitive(sceneObj, "entities");
+			cJSON *entityObj = NULL;
+			cJSON_ArrayForEach(entityObj, entityArray){	
+				//Entity construction
+
+				EntityID newEntity = CreateEntity();
+
+				ListCellPointer compCell;
+				ComponentID compID = 0;
+				cJSON *comp = NULL;
+				ListForEach(compCell,ECS.ComponentTypes){
+					ComponentType compType = GetElementAsType(compCell,ComponentType);
+
+					comp = cJSON_GetObjectItemCaseSensitive(entityObj, compType.name);
+					if(comp){
+						ECS.Components[compID][newEntity].data = compType.decode(&comp);
+						ECS.Entities[newEntity].mask.mask |= 1<<compID;
+					}
+					compID++;
+				}
+			}
+
+			cJSON_Delete(sceneObj);
+			return 1;
+		}
+		
+	}else{
+		printf("LoadScene: Failed to open json file!\n");
+	}
+	return 0;
 }
 
 ComponentMask GetEntityComponents(EntityID entity){

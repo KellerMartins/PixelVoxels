@@ -107,11 +107,11 @@ void VoxelRendererUpdate(){
 
 
         glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[0]);
-        glBufferData(GL_ARRAY_BUFFER, obj->numberOfVertices * 3 * sizeof(GLfloat), obj->vertices, GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, obj->numberOfVertices * 3 * sizeof(GLfloat), obj->vertices, GL_STREAM_DRAW);
         glEnableVertexAttribArray(0);
 
         glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[1]);
-        glBufferData(GL_ARRAY_BUFFER, obj->numberOfVertices * 3 * sizeof(GLfloat), obj->vColors, GL_DYNAMIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, obj->numberOfVertices * 3 * sizeof(GLfloat), obj->vColors, GL_STREAM_DRAW);
         glEnableVertexAttribArray(1);
 
         glUseProgram(Rendering.Shaders[1]);

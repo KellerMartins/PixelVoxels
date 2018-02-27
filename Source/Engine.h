@@ -199,6 +199,8 @@ int ExportEntityPrefab(EntityID entity, char path[], char name[]);
 int ExportScene(char path[], char name[]);
 
 EntityID ImportEntityPrefab(char path[], char name[]);
+int LoadScene(char path[], char name[]);
+int LoadSceneAdditive(char path[], char name[]);
 
 //Engine functions
 int InitEngine();

@@ -290,7 +290,7 @@ EntityID DuplicateEntity(EntityID entity){
 	return newEntity;
 }
 
-int ExportEntityPrefab(EntityID entity, char path[], char name[]){
+cJSON *EncodeEntity(EntityID entity){
 	cJSON *entityObj = cJSON_CreateObject();
 
 	ListCellPointer compCell;
@@ -302,6 +302,49 @@ int ExportEntityPrefab(EntityID entity, char path[], char name[]){
 		}
 		compID++;
 	}
+
+	if(EntityIsParent(entity)){
+
+		cJSON *childsArray = cJSON_AddArrayToObject(entityObj, "childs");
+
+		ListCellPointer childCell;
+		ListForEach(childCell, *GetChildsList(entity)){
+			cJSON_AddItemToArray(childsArray, EncodeEntity(GetElementAsType(childCell,EntityID)));
+		}
+	}
+
+	return entityObj;
+}
+
+EntityID DecodeEntity(cJSON **entityObj){
+	EntityID newEntity = CreateEntity();
+
+	ListCellPointer compCell;
+	ComponentID compID = 0;
+	ListForEach(compCell,ECS.ComponentTypes){
+		ComponentType compType = GetElementAsType(compCell,ComponentType);
+
+		cJSON *comp = cJSON_GetObjectItemCaseSensitive(*entityObj, compType.name);
+		if(comp){
+			ECS.Components[compID][newEntity].data = compType.decode(&comp);
+			ECS.Entities[newEntity].mask.mask |= 1<<compID;
+		}
+		compID++;
+	}
+
+	cJSON *childsArray = cJSON_GetObjectItem(*entityObj, "childs");
+	if(childsArray){
+		cJSON *child;
+		cJSON_ArrayForEach(child,childsArray){
+			EntityID newChild = DecodeEntity(&child);
+			SetEntityParent(newChild,newEntity);
+		}
+	}
+	return newEntity;
+}
+
+int ExportEntityPrefab(EntityID entity, char path[], char name[]){
+	cJSON *entityObj = EncodeEntity(entity);
 
 	char fullPath[512+256];
     strncpy(fullPath,path,512);
@@ -363,26 +406,8 @@ EntityID ImportEntityPrefab(char path[], char name[]){
 
 		}else{
 			free(jsonString);
-			//Entity construction
-
-			EntityID newEntity = CreateEntity();
-
-			ListCellPointer compCell;
-			ComponentID compID = 0;
-			cJSON *comp = NULL;
-			ListForEach(compCell,ECS.ComponentTypes){
-				ComponentType compType = GetElementAsType(compCell,ComponentType);
-
-				comp = cJSON_GetObjectItemCaseSensitive(entityObj, compType.name);
-				if(comp){
-					ECS.Components[compID][newEntity].data = compType.decode(&comp);
-					ECS.Entities[newEntity].mask.mask |= 1<<compID;
-				}
-				compID++;
-			}
-
+			EntityID newEntity = DecodeEntity(&entityObj);
 			cJSON_Delete(entityObj);
-
 			return newEntity;
 		}
 		
@@ -400,19 +425,7 @@ int ExportScene(char path[], char name[]){
 	int i;
 	for(i=0;i<=ECS.maxUsedIndex;i++){
 		if(IsValidEntity(i)){
-			cJSON *entityObj = cJSON_CreateObject();
-
-			ListCellPointer compCell;
-			ComponentID compID = 0;
-			ListForEach(compCell,ECS.ComponentTypes){
-				if(EntityContainsComponent(i, compID)){
-					ComponentType compType = GetElementAsType(compCell,ComponentType);
-					cJSON_AddItemToObject(entityObj, compType.name, compType.encode(&ECS.Components[compID][i].data));
-				}
-				compID++;
-			}
-
-			cJSON_AddItemToArray(entitiesArray, entityObj);
+			cJSON_AddItemToArray(entitiesArray, EncodeEntity(i));
 		}
 	}
 
@@ -490,22 +503,7 @@ int LoadSceneAdditive(char path[], char name[]){
 			cJSON *entityObj = NULL;
 			cJSON_ArrayForEach(entityObj, entityArray){	
 				//Entity construction
-
-				EntityID newEntity = CreateEntity();
-
-				ListCellPointer compCell;
-				ComponentID compID = 0;
-				cJSON *comp = NULL;
-				ListForEach(compCell,ECS.ComponentTypes){
-					ComponentType compType = GetElementAsType(compCell,ComponentType);
-
-					comp = cJSON_GetObjectItemCaseSensitive(entityObj, compType.name);
-					if(comp){
-						ECS.Components[compID][newEntity].data = compType.decode(&comp);
-						ECS.Entities[newEntity].mask.mask |= 1<<compID;
-					}
-					compID++;
-				}
+				DecodeEntity(&entityObj);
 			}
 
 			cJSON_Delete(sceneObj);

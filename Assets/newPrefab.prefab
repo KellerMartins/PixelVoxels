@@ -1,6 +1,6 @@
 {
 	"Transform":	{
-		"position":	[5, 50, 80],
+		"position":	[-0.54064583778381348, 13.021892547607422, 97.0519027709961],
 		"rotation":	[0, 0, 0]
 	},
 	"VoxelModel":	{
@@ -15,5 +15,47 @@
 		"acceleration":	[0, 0, 0],
 		"useGravity":	true,
 		"isStatic":	false
-	}
+	},
+	"childs":	[{
+			"Transform":	{
+				"position":	[-0.54064583778381348, -2.7348709106445313, 125.54105377197266],
+				"rotation":	[0, 0, 0]
+			},
+			"VoxelModel":	{
+				"modelPath":	"Models/",
+				"modelName":	"bullet.vox",
+				"center":	[0, 0, 0]
+			}
+		}, {
+			"Transform":	{
+				"position":	[-46.236427307128906, -9.4577693939208984, 132.40335083007812],
+				"rotation":	[0, 0, 0]
+			},
+			"VoxelModel":	{
+				"modelPath":	"Models/",
+				"modelName":	"bullet.vox",
+				"center":	[0, 0, 0]
+			},
+			"childs":	[{
+					"Transform":	{
+						"position":	[-32.717948913574219, -42.1268196105957, 132.40335083007812],
+						"rotation":	[0, 0, 0]
+					},
+					"VoxelModel":	{
+						"modelPath":	"Models/",
+						"modelName":	"bullet.vox",
+						"center":	[0, 0, 0]
+					}
+				}]
+		}, {
+			"Transform":	{
+				"position":	[-10.399734497070312, 10.500801086425781, 128.24441528320312],
+				"rotation":	[0, 0, 0]
+			},
+			"VoxelModel":	{
+				"modelPath":	"Models/",
+				"modelName":	"bullet.vox",
+				"center":	[0, 0, 0]
+			}
+		}]
 }

@@ -318,6 +318,9 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
     free(voxelData);
 
     //Final settings
+    obj->numberOfVertices = 0;
+    obj->vertices = NULL;
+    obj->vColors = NULL;
     obj->voxelCount = numVoxels;
     obj->voxelsRemaining = numVoxels;
 

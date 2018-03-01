@@ -21,6 +21,7 @@ typedef struct VoxelModel{
     unsigned char *lighting;
     GLfloat *vertices;
 	GLfloat *vColors;
+	GLfloat *normal;
 	int numberOfVertices;
 
 	unsigned int dimension[3];

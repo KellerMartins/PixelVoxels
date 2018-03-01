@@ -45,22 +45,6 @@ int main(int argc, char *argv[]){
 		printf("Font: Error loading font!");
 	}
 
-	static EntityID e = -1;
-	e = CreateEntity();
-	LoadVoxelModel(e,"Models/","dune.vox");
-	AddComponentToEntity(GetComponentID("RigidBody"),e);
-	SetStaticRigidbody(e,1);
-
-	static EntityID e1 = -1;
-	e1 = CreateEntity();
-	LoadVoxelModel(e1,"Models/","bullet.vox");
-	AddComponentToEntity(GetComponentID("RigidBody"),e1);
-	SetUseGravity(e1,1);
-	SetPosition(e1,(Vector3){5,50,80});
-	SetVelocity(e1,(Vector3){0.1,0,0});
-	SetMass(e1,1);
-	SetBounciness(e1, 0.7);
-
 	printf("GameLoop Initialized\n");
 	//Game Loop
 	while (!GameExited())

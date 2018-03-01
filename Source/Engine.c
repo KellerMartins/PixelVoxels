@@ -711,7 +711,7 @@ int InitEngine(){
 
     Screen.windowWidth = 1280;
     Screen.windowHeight = 720;
-    Screen.gameScale = 2;
+    Screen.gameScale = 1;
     Screen.maxFPS = 60;
 
 	Time.frameTicks = 0;
@@ -849,13 +849,16 @@ int InitEngine(){
     glBindVertexArray(Rendering.vao);
 
     // Color and vertex VBO generation and binding
-    glGenBuffers(2, Rendering.vbo);
+    glGenBuffers(3, Rendering.vbo);
 
     glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[0]);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
     glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[1]);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[2]);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	
     //Compile shaders
     if(!CompileAndLinkShader("Shaders/ScreenVert.vs","Shaders/ScreenFrag.fs",0)) printf(">Failed to compile/link shader! Description above\n\n");

@@ -1,7 +1,7 @@
 {
 	"entities":	[{
 			"Transform":	{
-				"position":	[0, 0, 0],
+				"position":	[0, 0, 3.7431008815765381],
 				"rotation":	[0, 0, 0]
 			},
 			"VoxelModel":	{
@@ -37,8 +37,8 @@
 			}
 		}, {
 			"Transform":	{
-				"position":	[90.128288269042969, 0, 0],
-				"rotation":	[10, 0, 0]
+				"position":	[125.32765960693359, 41.803501129150391, 36.391265869140625],
+				"rotation":	[8, 4, 0]
 			},
 			"VoxelModel":	{
 				"modelPath":	"Models/",
@@ -88,6 +88,24 @@
 				"acceleration":	[0, 0, 0],
 				"useGravity":	true,
 				"isStatic":	false
+			}
+		}, {
+			"Transform":	{
+				"position":	[11.661505699157715, -72.796348571777344, -10.813405990600586],
+				"rotation":	[45, 0, 120]
+			},
+			"VoxelModel":	{
+				"modelPath":	"Models/Tests",
+				"modelName":	"glock.vox",
+				"center":	[0, 0, 0]
+			},
+			"RigidBody":	{
+				"mass":	1,
+				"bounciness":	0.20000000298023224,
+				"velocity":	[0, 0, 0],
+				"acceleration":	[0, 0, 0],
+				"useGravity":	true,
+				"isStatic":	true
 			}
 		}]
 }

@@ -19,7 +19,7 @@ void VoxelModelConstructor(void** data){
     *data = calloc(1,sizeof(VoxelModel));
     VoxelModel *obj = *data;
 
-    *obj = (VoxelModel){0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,0,0,0};
+    *obj = (VoxelModel){0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,NULL,0,0,0};
 }
 void VoxelModelDestructor(void** data){
     if(!data) return;
@@ -29,6 +29,7 @@ void VoxelModelDestructor(void** data){
     free(obj->lighting);
     free(obj->vertices);
     free(obj->vColors);
+    free(obj->normal);
 
     free(*data);
     *data = NULL;
@@ -51,18 +52,20 @@ void* VoxelModelCopy(void* data){
         int sizeVertices = newVoxelModel->numberOfVertices*3*sizeof(GLfloat);
         newVoxelModel->vertices = malloc(sizeVertices);
         newVoxelModel->vColors = malloc(sizeVertices);
-
+        newVoxelModel->normal = malloc(sizeVertices);
         
         memcpy(newVoxelModel->model,((VoxelModel*)data)->model,sizeModel);
         memcpy(newVoxelModel->lighting,((VoxelModel*)data)->lighting,sizeModel);
 
         memcpy(newVoxelModel->vertices,((VoxelModel*)data)->vertices,sizeVertices);
         memcpy(newVoxelModel->vColors,((VoxelModel*)data)->vColors,sizeVertices);
+        memcpy(newVoxelModel->normal,((VoxelModel*)data)->normal,sizeVertices);
     }else{
         newVoxelModel->model = NULL;
         newVoxelModel->lighting = NULL;
         newVoxelModel->vertices = NULL;
         newVoxelModel->vColors = NULL;
+        newVoxelModel->normal = NULL;
     }
 
 	return newVoxelModel;
@@ -321,6 +324,7 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
     obj->numberOfVertices = 0;
     obj->vertices = NULL;
     obj->vColors = NULL;
+    obj->normal = NULL;
     obj->voxelCount = numVoxels;
     obj->voxelsRemaining = numVoxels;
 
@@ -353,6 +357,8 @@ void CalculateRendered(EntityID entity){
 
     List avaliableVoxels = InitList(sizeof(int));
     List requestedVoxels = InitList(sizeof(Vector3));
+
+    List requestedNormals = InitList(sizeof(Vector3)); 
 
     int x,y,z,i,index,dir,occ;
     int xLimitS = clamp(obj->modificationStartX-1 ,0,obj->dimension[0]-1);
@@ -411,7 +417,64 @@ void CalculateRendered(EntityID entity){
                     }
                     if(occ!=6){
                         Vector3 vPos = {x,y,z};
+                        Vector3 vNormal = VECTOR3_ZERO;
                         InsertListStart(&requestedVoxels,(void*)&vPos);
+
+                        if(x-1 < 0){
+                            vNormal.x -= 1;
+                        }else{
+                            index = (x-1) + (z) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
+                            if(obj->model[index]==0){
+                                vNormal.x -= 1;
+                            }
+                        }
+
+                        if(x+1 >= obj->dimension[0]){
+                            vNormal.x += 1;
+                        }else{
+                            index = (x+1) + (z) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
+                            if(obj->model[index]==0){
+                                vNormal.x += 1;
+                            }
+                        }
+
+                        if(z-1 < 0){
+                            vNormal.z -= 1;
+                        }else{
+                            index = (x) + (z-1) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
+                            if(obj->model[index]==0){
+                                vNormal.z -= 1;
+                            }
+                        }
+
+                        if(z+1 >= obj->dimension[2]){
+                            vNormal.z += 1;
+                        }else{
+                            index = (x) + (z+1) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
+                            if(obj->model[index]==0){
+                                vNormal.z += 1;
+                            }
+                        }
+
+                        if(y-1 < 0){
+                            vNormal.y -= 1;
+                        }else{
+                            index = (x) + (z) * obj->dimension[0] + (y-1) * obj->dimension[0] * obj->dimension[2];
+                            if(obj->model[index]==0){
+                                vNormal.y -= 1;
+                            }
+                        }
+
+                        if(y+1 >= obj->dimension[1]){
+                            vNormal.y += 1;
+                        }else{
+                            index = (x) + (z) * obj->dimension[0] + (y+1) * obj->dimension[0] * obj->dimension[2];
+                            if(obj->model[index]==0){
+                                vNormal.y += 1;
+                            }
+                        }
+
+                        InsertListStart(&requestedNormals,(void*)&vNormal);
                     }
                 }
             }
@@ -421,47 +484,62 @@ void CalculateRendered(EntityID entity){
     //First array creation
     if(obj->numberOfVertices == 0){
         obj->vertices = malloc(GetLength(requestedVoxels) * 3 * sizeof(GLfloat));
+        obj->normal = malloc(GetLength(requestedNormals) * 3 * sizeof(GLfloat));
+
         obj->numberOfVertices = GetLength(requestedVoxels);
 
-        ListCellPointer current = requestedVoxels.first;
+        ListCellPointer currentV = requestedVoxels.first;
+        ListCellPointer currentN = requestedNormals.first;
         i = 0;
-        while(current){
-            memcpy(&obj->vertices[i],GetElement(*current),sizeof(Vector3));
+        while(currentV){
+            memcpy(&obj->vertices[i],GetElement(*currentV),sizeof(Vector3));
+            memcpy(&obj->normal[i],GetElement(*currentN),sizeof(Vector3));
             i+=3;
-            current = GetNextCell(current);
+            currentV = GetNextCell(currentV);
+            currentN = GetNextCell(currentN);
         }
+
         FreeList(&requestedVoxels);
+        FreeList(&requestedNormals);
     }else{
         
         ListCellPointer currentAv = avaliableVoxels.first;
-        ListCellPointer currentReq = requestedVoxels.first;
-        while(currentAv && currentReq){
+        ListCellPointer currentReqV = requestedVoxels.first;
+        ListCellPointer currentReqN = requestedNormals.first;
+        while(currentAv && currentReqV){
             int indx = *((int*)GetElement(*currentAv));
-            memcpy(&obj->vertices[indx],GetElement(*currentReq),sizeof(Vector3));
+            memcpy(&obj->vertices[indx],GetElement(*currentReqV),sizeof(Vector3));
+            memcpy(&obj->normal[indx],GetElement(*currentReqN),sizeof(Vector3));
 
             RemoveListStart(&avaliableVoxels);
             RemoveListStart(&requestedVoxels);
 
             currentAv = avaliableVoxels.first;
-            currentReq = requestedVoxels.first;
+            currentReqV = requestedVoxels.first;
+            currentReqN = requestedVoxels.first;
         }
-        if(!currentAv && currentReq){
+        if(!currentAv && currentReqV){
             //Have more voxels to be added than removed, realloc to insert
             int numReqRemaining = GetLength(requestedVoxels);
             obj->vertices = realloc(obj->vertices, (obj->numberOfVertices + numReqRemaining) * 3 * sizeof(GLfloat));
+            obj->normal = realloc(obj->normal, (obj->numberOfVertices + numReqRemaining) * 3 * sizeof(GLfloat));
             
             int indx = (obj->numberOfVertices*3);
-            while(currentReq){ 
-                memcpy(&obj->vertices[indx],GetElement(*currentReq),sizeof(Vector3));
+            while(currentReqV){ 
+                memcpy(&obj->vertices[indx],GetElement(*currentReqV),sizeof(Vector3));
+                memcpy(&obj->normal[indx],GetElement(*currentReqN),sizeof(Vector3));
 
                 RemoveListStart(&requestedVoxels);
-                currentReq = requestedVoxels.first;
+                RemoveListStart(&requestedNormals);
+                currentReqV = requestedVoxels.first;
+                currentReqN = requestedNormals.first;
+
                 indx+=3;
             }
 
             obj->numberOfVertices += numReqRemaining;
 
-        }else if (!currentReq){
+        }else if (!currentReqV){
             //Have more removed than added, mark the empty positions as invalid
             while(currentAv){
                 int indx = *((int*)GetElement(*currentAv));
@@ -469,6 +547,10 @@ void CalculateRendered(EntityID entity){
                 obj->vertices[indx] = -1;
                 obj->vertices[indx+1] = -1;
                 obj->vertices[indx+2] = -1;
+
+                obj->normal[indx] = 0;
+                obj->normal[indx+1] = 0;
+                obj->normal[indx+2] = 0;
 
                 RemoveListStart(&avaliableVoxels);
                 currentAv = avaliableVoxels.first;

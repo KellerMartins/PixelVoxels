@@ -711,7 +711,7 @@ int InitEngine(){
 
     Screen.windowWidth = 1280;
     Screen.windowHeight = 720;
-    Screen.gameScale = 1;
+    Screen.gameScale = 2;
     Screen.maxFPS = 60;
 
 	Time.frameTicks = 0;
@@ -867,6 +867,9 @@ int InitEngine(){
      if(!CompileAndLinkShader("Shaders/VoxelVert.vs","Shaders/VoxelFrag.fs",1)) printf(">Failed to compile/link shader! Description above\n\n");
     else printf(">Compiled/linked shader sucessfully!\n");
 
+	if(!CompileAndLinkShader("Shaders/VoxelSmallVert.vs","Shaders/VoxelSmallFrag.fs",2)) printf(">Failed to compile/link shader! Description above\n\n");
+    else printf(">Compiled/linked shader sucessfully!\n");
+
 	//Load voxel palette
 	LoadVoxelPalette("Textures/magicaPalette.png");
 
@@ -1005,6 +1008,8 @@ int GameExited(){
 
 Vector3 PositionToGameScreenCoords(Vector3 position){
 	Vector3 screenPos;
+	position = (Vector3){roundf(position.x),roundf(position.y),roundf(position.z)};
+
 	screenPos.x = (int)(((position.x) - (position.y))*2 + roundf(-Rendering.cameraPosition.x)) + 0.375;
     screenPos.y = (int)(((position.x) + (position.y)) + (position.z + Rendering.cameraPosition.z )*2 + roundf(-Rendering.cameraPosition.y)) + 0.375;
 	screenPos.z = (position.z)/256.0;
@@ -1258,6 +1263,11 @@ void ReloadShaders(){
         printf(">Compiled/linked shader sucessfully!\n\n");
 
     if(!CompileAndLinkShader("Shaders/VoxelVert.vs","Shaders/VoxelFrag.fs",1)) 
+        printf(">Failed to compile/link shader! Description above\n\n");
+    else 
+        printf(">Compiled/linked shader sucessfully!\n\n");
+
+	if(!CompileAndLinkShader("Shaders/VoxelSmallVert.vs","Shaders/VoxelSmallFrag.fs",2)) 
         printf(">Failed to compile/link shader! Description above\n\n");
     else 
         printf(">Compiled/linked shader sucessfully!\n\n");

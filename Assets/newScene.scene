@@ -1,102 +1,13 @@
 {
 	"entities":	[{
 			"Transform":	{
-				"position":	[0, 0, 3.7431008815765381],
-				"rotation":	[0, 0, 0]
-			},
-			"VoxelModel":	{
-				"modelPath":	"Models/",
-				"modelName":	"dune.vox",
-				"center":	[0, 0, 0]
-			},
-			"RigidBody":	{
-				"mass":	1,
-				"bounciness":	0.20000000298023224,
-				"velocity":	[0, 0, 0],
-				"acceleration":	[0, 0, 0],
-				"useGravity":	true,
-				"isStatic":	true
-			}
-		}, {
-			"Transform":	{
-				"position":	[5, 50, 80],
-				"rotation":	[0, 0, 0]
-			},
-			"VoxelModel":	{
-				"modelPath":	"Models/",
-				"modelName":	"bullet.vox",
-				"center":	[0, 0, 0]
-			},
-			"RigidBody":	{
-				"mass":	1,
-				"bounciness":	0.699999988079071,
-				"velocity":	[10.100000381469727, 0, 0],
-				"acceleration":	[0, 0, 0],
-				"useGravity":	true,
-				"isStatic":	false
-			}
-		}, {
-			"Transform":	{
-				"position":	[125.32765960693359, 41.803501129150391, 36.391265869140625],
-				"rotation":	[8, 4, 0]
-			},
-			"VoxelModel":	{
-				"modelPath":	"Models/",
-				"modelName":	"dune.vox",
-				"center":	[0, 0, 0]
-			},
-			"RigidBody":	{
-				"mass":	1,
-				"bounciness":	0.20000000298023224,
-				"velocity":	[0, 0, 0],
-				"acceleration":	[0, 0, 0],
-				"useGravity":	true,
-				"isStatic":	true
-			}
-		}, {
-			"Transform":	{
-				"position":	[5, 18.701669692993164, 127.82851409912109],
-				"rotation":	[0, 0, 0]
-			},
-			"VoxelModel":	{
-				"modelPath":	"Models/",
-				"modelName":	"bullet.vox",
-				"center":	[0, 0, 0]
-			},
-			"RigidBody":	{
-				"mass":	1,
-				"bounciness":	0.699999988079071,
-				"velocity":	[10.100000381469727, 0, 0],
-				"acceleration":	[0, 0, 0],
-				"useGravity":	true,
-				"isStatic":	false
-			}
-		}, {
-			"Transform":	{
-				"position":	[5, 19.436986923217773, 80.415901184082031],
-				"rotation":	[0, 0, 0]
-			},
-			"VoxelModel":	{
-				"modelPath":	"Models/",
-				"modelName":	"bullet.vox",
-				"center":	[0, 0, 0]
-			},
-			"RigidBody":	{
-				"mass":	1,
-				"bounciness":	0.699999988079071,
-				"velocity":	[10.100000381469727, 0, 0],
-				"acceleration":	[0, 0, 0],
-				"useGravity":	true,
-				"isStatic":	false
-			}
-		}, {
-			"Transform":	{
-				"position":	[11.661505699157715, -72.796348571777344, -10.813405990600586],
-				"rotation":	[45, 0, 120]
+				"position":	[-67.938339233398437, 19.728879928588867, -8.9419040679931641],
+				"rotation":	[90, 0, 0]
 			},
 			"VoxelModel":	{
 				"modelPath":	"Models/Tests",
 				"modelName":	"glock.vox",
+				"smallScale":	false,
 				"center":	[0, 0, 0]
 			},
 			"RigidBody":	{
@@ -106,6 +17,25 @@
 				"acceleration":	[0, 0, 0],
 				"useGravity":	true,
 				"isStatic":	true
+			}
+		}, {
+			"Transform":	{
+				"position":	[0, 0, 0],
+				"rotation":	[0, 0, 0]
+			},
+			"VoxelModel":	{
+				"modelPath":	"Models/",
+				"modelName":	"plasmaPistolSmall.vox",
+				"smallScale":	false,
+				"center":	[0, 0, 0]
+			},
+			"RigidBody":	{
+				"mass":	1,
+				"bounciness":	0.699999988079071,
+				"velocity":	[0, 0, 0],
+				"acceleration":	[0, 0, 0],
+				"useGravity":	true,
+				"isStatic":	false
 			}
 		}]
 }

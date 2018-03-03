@@ -7,6 +7,7 @@
 
 typedef struct VoxelModel{
 	int enabled;
+	int smallScale;
 
 	char modificationStartX;
 	char modificationEndX;
@@ -47,6 +48,8 @@ Vector3 GetVoxelModelCenter(EntityID entity);
 void SetVoxelModelCenter(EntityID entity, Vector3 center);
 int IsVoxelModelEnabled(EntityID entity);
 void SetVoxelModelEnabled(EntityID entity, int booleanVal);
+int IsVoxelModelSmallScale(EntityID entity);
+void SetVoxelModelSmallScale(EntityID entity, int booleanVal);
 
 void LoadVoxelModel(EntityID entity, char modelPath[], char modelName[]);
 void CalculateRendered(EntityID entity);

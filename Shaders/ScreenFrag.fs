@@ -18,7 +18,7 @@ void main(void) {
 
     //Outline
 
-    const float ObjOutline = 0.54;
+    const float ObjOutline = 0.0;
     const float UIOutline = 0.1;
     
     vec4 neighbor = texture2D(fbo_texture, vec2(f_texcoord.x + pWidth,f_texcoord.y));

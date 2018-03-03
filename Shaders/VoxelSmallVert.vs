@@ -3,7 +3,6 @@
 in vec3 in_Position;
 in vec3 in_Color;
 in vec3 in_Normal;
-uniform int spriteScale;
 uniform vec3 camPos;
 uniform vec3 objPos;
 uniform vec3 centerPos;
@@ -13,6 +12,7 @@ uniform mat3 rotation;
 // We output the ex_Color variable to the next shader in the chain
 out vec3 ex_Color;
 out vec3 ex_Position;
+out vec3 ex_Normal;
 out float depth;
 out vec3 pointLightCol;
 out float pointLightDist;
@@ -23,19 +23,20 @@ float round(float f){
 }
 
 void main(void) {
-    vec3 rotPos = (in_Position - centerPos) * rotation;
+    vec3 rotPos = (in_Position/2 - centerPos) * rotation;
     float px = rotPos.x;
     float py = rotPos.y;
     float pz = rotPos.z;
 
-    vec4 pixelPos = vec4( ((px + round(objPos.x)) - (py + round(objPos.y)))*spriteScale*2 + round(-camPos.x) + 0.375,
-                          ((px + round(objPos.x)) + (py + round(objPos.y)))*spriteScale + (pz + round(objPos.z) + camPos.z )*spriteScale*2 + round(-camPos.y) + 0.375,
-                          (pz + objPos.z)-(py+px + objPos.y+objPos.x)/2 , 1);
+    vec4 pixelPos = vec4( ((px + round(objPos.x)) - (py + round(objPos.y)))*2 + round(-camPos.x) + 0.375,
+                          ((px + round(objPos.x)) + (py + round(objPos.y))) + (pz + round(objPos.z) + camPos.z )*2 + round(-camPos.y)+ 0.375,
+                          (pz + objPos.z)-(py+px + objPos.y+objPos.x)/2, 1);
 
     gl_Position = projection * pixelPos;
     
     vec3 globalPos = vec3(px + objPos.x,py + objPos.y,pz + objPos.z);
     ex_Color = in_Color;
+    ex_Normal = normalize(in_Normal) * rotation;
 
     pointLightCol =  vec3(1,1,1);
     pointLightDist = 200.01/pow(distance(globalPos,vec3(-10,-10,30)),2);

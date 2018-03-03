@@ -19,7 +19,7 @@ void VoxelModelConstructor(void** data){
     *data = calloc(1,sizeof(VoxelModel));
     VoxelModel *obj = *data;
 
-    *obj = (VoxelModel){0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,NULL,0,0,0};
+    *obj = (VoxelModel){0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,NULL,0,0,0};
 }
 void VoxelModelDestructor(void** data){
     if(!data) return;
@@ -77,6 +77,7 @@ cJSON* VoxelModelEncode(void** data){
 
     cJSON_AddStringToObject(obj, "modelPath", v->modelPath);
     cJSON_AddStringToObject(obj, "modelName", v->modelName);
+    cJSON_AddBoolToObject(obj,"smallScale",v->smallScale);
 
     cJSON *center = cJSON_AddArrayToObject(obj,"center");
     cJSON_AddItemToArray(center, cJSON_CreateNumber(v->center.x));
@@ -95,6 +96,13 @@ void* VoxelModelDecode(cJSON **data){
     v->center = (Vector3){(cJSON_GetArrayItem(center,0))->valuedouble,
                           (cJSON_GetArrayItem(center,1))->valuedouble,
                           (cJSON_GetArrayItem(center,2))->valuedouble};
+    
+    cJSON *small = cJSON_GetObjectItem(*data,"smallScale");
+    if(small){
+        v->smallScale = cJSON_IsTrue(small);
+    }else{
+        v->smallScale = 0;
+    }
     return v;
 }
 
@@ -140,6 +148,24 @@ void SetVoxelModelEnabled(EntityID entity, int booleanVal){
     }
     VoxelModel *m = GetVoxelModelPointer(entity);
     m->enabled = booleanVal? 1: 0;
+}
+
+int IsVoxelModelSmallScale(EntityID entity){
+    if(!EntityContainsComponent(entity, ThisComponentID())){
+        printf("IsVoxelModelSmallScale: Entity doesn't have a VoxelModel component. (%d)\n",entity);
+        return 0;
+    }
+    VoxelModel *m = GetVoxelModelPointer(entity);
+    return m->smallScale;
+}
+
+void SetVoxelModelSmallScale(EntityID entity, int booleanVal){
+    if(!EntityContainsComponent(entity, ThisComponentID())){
+        printf("SetVoxelModelSmallScale: Entity doesn't have a VoxelModel component. (%d)\n",entity);
+        return;
+    }
+    VoxelModel *m = GetVoxelModelPointer(entity);
+    m->smallScale = booleanVal? 1: 0;
 }
 
 //MagicaVoxel Voxel structure, used only to load data

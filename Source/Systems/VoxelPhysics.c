@@ -110,10 +110,15 @@ int VoxelModelVsVoxelModelCollision(EntityID entityA, EntityID entityB,Vector3 *
         return 0;
     }
 
-    Vector3 posA = Subtract(GetPosition(entityA),GetVoxelModelCenter(entityA));
-    Vector3 posB = Subtract(GetPosition(entityB),GetVoxelModelCenter(entityB));
+    Vector3 posA = GetPosition(entityA);
+    Vector3 posB = GetPosition(entityB);
     Vector3 rotA = GetRotation(entityA);
     Vector3 rotB = GetRotation(entityB);
+    Vector3 centerA = GetVoxelModelCenter(entityA);
+    Vector3 centerB = GetVoxelModelCenter(entityB);
+
+    if(IsVoxelModelSmallScale(entityA)) centerA = (Vector3){centerA.x/2,centerA.y/2,centerA.z/2};
+    if(IsVoxelModelSmallScale(entityB)) centerB = (Vector3){centerB.x/2,centerB.y/2,centerB.z/2};
 
     Vector3 velA = GetVelocity(entityA);
     Vector3 velB = GetVelocity(entityB);
@@ -175,8 +180,7 @@ int VoxelModelVsVoxelModelCollision(EntityID entityA, EntityID entityB,Vector3 *
         }
 
         //Apply A rotation matrix
-        Vector3 CenterA = GetVoxelModelCenter(entityA);
-        Vector3 p = {x - CenterA.x, y - CenterA.y, z - CenterA.z};
+        Vector3 p = {x - centerA.x, y - centerA.y, z - centerA.z};
         x = p.x*arxt1 + p.y*arxt2 + p.z*arxt3;
         y = p.x*aryt1 + p.z*aryt2 + p.y*aryt3;
         z = p.z*arzt1 + p.y*arzt2 - p.x*arzt3;
@@ -187,7 +191,7 @@ int VoxelModelVsVoxelModelCollision(EntityID entityA, EntityID entityB,Vector3 *
         z += posA.z + movementA.z;
 
         //Set origin as B position
-        Vector3 localPosAinB = { x-posB.x-movementB.x, y-posB.y-movementB.y, z-posB.z-movementB.z};
+        Vector3 localPosAinB = { x - posB.x-movementB.x, y - posB.y-movementB.y, z - posB.z-movementB.z};
 
         //Apply B (Transposed) rotation matrix
         p = (Vector3){localPosAinB.x, localPosAinB.y, localPosAinB.z};
@@ -195,7 +199,7 @@ int VoxelModelVsVoxelModelCollision(EntityID entityA, EntityID entityB,Vector3 *
         localPosAinB.y = p.z*bryt1 + p.x*bryt2 + p.y*bryt3;
         localPosAinB.z = p.z*brzt1 + p.x*brzt2 + p.y*brzt3;
 
-        localPosAinB = (Vector3){roundf(localPosAinB.x), roundf(localPosAinB.y), roundf(localPosAinB.z)};
+        localPosAinB = (Vector3){roundf(localPosAinB.x +centerB.x), roundf(localPosAinB.y +centerB.y), roundf(localPosAinB.z +centerB.z)};
 
         //If voxel of entityA is inside the entityB volume
         if(!objB->smallScale){

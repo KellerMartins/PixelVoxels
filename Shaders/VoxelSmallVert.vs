@@ -23,7 +23,7 @@ float round(float f){
 }
 
 void main(void) {
-    vec3 rotPos = (in_Position/2 - centerPos) * rotation;
+    vec3 rotPos = (in_Position - centerPos)/2 * rotation;
     float px = rotPos.x;
     float py = rotPos.y;
     float pz = rotPos.z;

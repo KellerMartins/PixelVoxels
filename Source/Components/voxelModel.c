@@ -354,7 +354,7 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
     obj->voxelCount = numVoxels;
     obj->voxelsRemaining = numVoxels;
 
-    obj->center = VECTOR3_ZERO;
+    obj->center = (Vector3){obj->dimension[0]/2,obj->dimension[1]/2,obj->dimension[2]/2};
 
     obj->modificationStartX = 0;
     obj->modificationEndX = obj->dimension[0]-1;

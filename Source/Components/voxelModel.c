@@ -500,6 +500,8 @@ void CalculateRendered(EntityID entity){
                             }
                         }
 
+                        if(vNormal.x == 0 && vNormal.y == 0 && vNormal.z == 0) vNormal = VECTOR3_UP;
+
                         InsertListStart(&requestedNormals,(void*)&vNormal);
                     }
                 }

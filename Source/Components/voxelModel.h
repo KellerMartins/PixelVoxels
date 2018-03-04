@@ -34,6 +34,7 @@ typedef struct VoxelModel{
 
 	char modelPath[512];
 	char modelName[256];
+	char objectName[65];
 }VoxelModel;
 
 void VoxelModelConstructor(void** data);
@@ -52,6 +53,9 @@ int IsVoxelModelSmallScale(EntityID entity);
 void SetVoxelModelSmallScale(EntityID entity, int booleanVal);
 
 void LoadVoxelModel(EntityID entity, char modelPath[], char modelName[]);
+void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[]);
+int IsMultiVoxelModelFile(char modelPath[], char modelName[]);
+
 void CalculateRendered(EntityID entity);
 void CalculateLighting(EntityID entity);
 //void LoadMultiVoxelModel(EntityID entity, char modelPath[]);

@@ -248,19 +248,19 @@ void EditorUpdate(){
 
         //Test shortcuts
         if(GetKeyDown(SDL_SCANCODE_E)){
-            //if(GetLength(SelectedEntities) == 1){
-            //    ListCellPointer cellp = GetFirstCell(SelectedEntities);
-            //    ExportEntityPrefab(GetElementAsType(cellp,EntityID), "Assets", "newPrefab");
-            //}
-            ExportScene("Assets", "newScene");
+            if(GetLength(SelectedEntities) == 1){
+                ListCellPointer cellp = GetFirstCell(SelectedEntities);
+                ExportEntityPrefab(GetElementAsType(cellp,EntityID), "Assets", "newPrefab");
+            }
+            //ExportScene("Assets", "newScene");
         }
 
         if(GetKeyDown(SDL_SCANCODE_F)){
-            //EntityID newEntity = ImportEntityPrefab("Assets", "newPrefab.prefab");
+            EntityID newEntity = ImportEntityPrefab("Assets", "newPrefab.prefab");
             FreeList(&SelectedEntities);
-            //InsertListEnd(&SelectedEntities,&newEntity);
-            //printf("Created entity %d!\n",newEntity);
-            LoadScene("Assets", "newScene.scene");
+            InsertListEnd(&SelectedEntities,&newEntity);
+            printf("Created entity %d!\n",newEntity);
+            //LoadScene("Assets", "newScene.scene");
         }
     }else{
         if(!fileBrowserOpened){
@@ -1038,6 +1038,7 @@ void DrawComponentsPanel(){
                             ListCellPointer selEntity = GetFirstCell(SelectedEntities);
                             int isEnabled = IsVoxelModelEnabled(GetElementAsType(selEntity,EntityID));
                             int isSmall = IsVoxelModelSmallScale(GetElementAsType(selEntity,EntityID));
+                            int isSubModel = GetVoxelModelPointer(GetElementAsType(selEntity,EntityID))->objectName[0] == '\0'? 0:1;
 
                             ListForEach(selEntity, SelectedEntities){
                                 if(isEnabled != IsVoxelModelEnabled(GetElementAsType(selEntity,EntityID))){
@@ -1047,14 +1048,14 @@ void DrawComponentsPanel(){
                                     isSmall = -1;
                                 }
                             }
-
+                            int backgroundHeight = (GetLength(SelectedEntities)==1? (isSubModel? 138:118): 96);
                             glBegin(GL_QUADS);
                                 //Component background
                                 glColor3f(0.1,0.1,0.15);
                                 glVertex2f( Screen.windowWidth-componentWindowLength,  componentHeight);
                                 glVertex2f( Screen.windowWidth-componentWindowWidthSpacing,  componentHeight);
-                                glVertex2f( Screen.windowWidth-componentWindowWidthSpacing, componentHeight-92);
-                                glVertex2f( Screen.windowWidth-componentWindowLength, componentHeight-92);
+                                glVertex2f( Screen.windowWidth-componentWindowWidthSpacing, componentHeight - backgroundHeight);
+                                glVertex2f( Screen.windowWidth-componentWindowLength, componentHeight - backgroundHeight);
                             glEnd();
 
                             
@@ -1077,6 +1078,7 @@ void DrawComponentsPanel(){
                             //Only show the model load button and name if only one entity is selected
                             if(GetLength(SelectedEntities)==1){
                                 VoxelModel* m = GetVoxelModelPointer(GetElementAsType(GetFirstCell(SelectedEntities),EntityID));
+
                                 if(1 == PointButton((Vector3){Screen.windowWidth-componentWindowLength + 15,componentHeight - 10},10,1, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){0.8,0.8,0.8})){
                                     if(!fileBrowserOpened){
                                         if(m->modelPath[0] != '\0'){
@@ -1094,6 +1096,11 @@ void DrawComponentsPanel(){
                                     RenderText("No model", lightWhite, Screen.windowWidth-componentWindowLength + 28, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
                                 }
                                 componentHeight-=22;
+
+                                if(isSubModel){
+                                    RenderText(m->objectName, lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+                                    componentHeight-=22;
+                                }
                             }
                             
                             //Center field
@@ -2459,7 +2466,7 @@ void OpenFileBrowser(char *initialPath,void (*onOpen)()){
     if(initialPath){
         memcpy(filePath,initialPath,_TINYDIR_PATH_MAX*sizeof(char));
     }else{
-        char DefaultPath[] = "Assets";
+        char DefaultPath[] = "./";
         memcpy(filePath,DefaultPath,sizeof(DefaultPath));
 
         if(fileBrowserOpened){
@@ -2530,7 +2537,11 @@ void CloseFileBrowser(){
 
 void FBLoadModel(){
     printf("(%s)(%s)\n",filePath,fileName);
-    LoadVoxelModel(GetElementAsType(GetFirstCell(SelectedEntities),EntityID),filePath,fileName);
+    if(IsMultiVoxelModelFile(filePath,fileName)){
+        LoadMultiVoxelModel(GetElementAsType(GetFirstCell(SelectedEntities),EntityID),filePath,fileName);
+    }else{
+        LoadVoxelModel(GetElementAsType(GetFirstCell(SelectedEntities),EntityID),filePath,fileName);
+    }
 }
 
 void FBLoadScene(){

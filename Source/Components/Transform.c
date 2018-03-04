@@ -116,5 +116,47 @@ void SetRotation(EntityID entity, Vector3 rot){
         return;
     }
     Transform *transform = (Transform *)ECS.Components[ThisComponentID()][entity].data;
+    //Vector3 oldRot = (Vector3){transform->rotation.x,transform->rotation.y,transform->rotation.z};
     transform->rotation = rot;
+
+    //Rotation transfer to childs
+    //Disabled until I find a way to reverse the rotation, as all rotations with the code below are permanent
+    /*
+    if(EntityIsParent(entity)){
+        Vector3 deltaRot = ScalarMult(Subtract(transform->rotation,oldRot),-1);
+
+        float sinx = sin(deltaRot.x * PI_OVER_180);
+        float cosx = cos(deltaRot.x * PI_OVER_180);
+        float siny = sin(deltaRot.y * PI_OVER_180);
+        float cosy = cos(deltaRot.y * PI_OVER_180);
+        float sinz = sin(deltaRot.z * PI_OVER_180);
+        float cosz = cos(deltaRot.z * PI_OVER_180);
+
+        float rxt1 = cosy*cosz, rxt2 = siny,                         rxt3 = cosy*sinz;
+        float ryt1 = cosy*sinx, ryt2 = (cosz*sinx*siny - cosx*sinz), ryt3 = (cosx*cosz + sinx*siny*sinz);
+        float rzt1 = cosx*cosy, rzt2 = (cosx*cosz*siny + sinx*sinz), rzt3 = (cosx*siny*sinz - cosz*sinx);
+        
+        ListCellPointer current = GetFirstCell(ECS.Entities[entity].childs);
+        while(current){
+            EntityID child = *((EntityID*) GetElement(*current));
+
+            if(EntityContainsComponent(child, ThisComponentID())){
+                Vector3 pos = GetPosition(child);
+                Vector3 rotatedPos = { pos.x - transform->position.x, pos.y - transform->position.y, pos.z - transform->position.z};
+
+                //Apply (Transposed) rotation matrix
+                Vector3 p = (Vector3){rotatedPos.x, rotatedPos.y, rotatedPos.z};
+                rotatedPos.x = p.x*rxt1 - p.z*rxt2 + p.y*rxt3;
+                rotatedPos.y = p.z*ryt1 + p.x*ryt2 + p.y*ryt3;
+                rotatedPos.z = p.z*rzt1 + p.x*rzt2 + p.y*rzt3;
+
+                rotatedPos = (Vector3){ rotatedPos.x + transform->position.x, rotatedPos.y + transform->position.y, rotatedPos.z + transform->position.z};
+
+                //rotatedPos = (Vector3){roundf(rotatedPos.x), roundf(rotatedPos.y), roundf(rotatedPos.z)};
+                SetPosition(child, rotatedPos);
+                SetRotation(child, Subtract(GetRotation(child), deltaRot));
+            }
+            current = GetNextCell(current);
+        }
+    }*/
 }

@@ -13,6 +13,7 @@ extern engineECS ECS;
 extern engineRendering Rendering;
 
 void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char modelName[]);
+void InternalLoadMultiVoxelModelObject(VoxelModel **modelPointer, char modelPath[], char modelName[], char objectName[]);
 
 void VoxelModelConstructor(void** data){
     if(!data) return;
@@ -77,6 +78,9 @@ cJSON* VoxelModelEncode(void** data){
 
     cJSON_AddStringToObject(obj, "modelPath", v->modelPath);
     cJSON_AddStringToObject(obj, "modelName", v->modelName);
+    if(v->objectName[0] != '\0')
+        cJSON_AddStringToObject(obj, "objectName", v->objectName);
+
     cJSON_AddBoolToObject(obj,"smallScale",v->smallScale);
 
     cJSON *center = cJSON_AddArrayToObject(obj,"center");
@@ -88,9 +92,14 @@ cJSON* VoxelModelEncode(void** data){
 }
 
 void* VoxelModelDecode(cJSON **data){
-    VoxelModel *v = malloc(sizeof(VoxelModel));
+    VoxelModel *v = calloc(1,sizeof(VoxelModel));
 
+    cJSON *objName = cJSON_GetObjectItem(*data, "objectName");
+    if(objName){
+        InternalLoadMultiVoxelModelObject(&v, cJSON_GetObjectItem(*data, "modelPath")->valuestring, cJSON_GetObjectItem(*data, "modelName")->valuestring, objName->valuestring);
+    }else{
     InternalLoadVoxelModel(&v, cJSON_GetObjectItem(*data, "modelPath")->valuestring, cJSON_GetObjectItem(*data, "modelName")->valuestring);
+    }
 
     cJSON *center = cJSON_GetObjectItem(*data,"center");
     v->center = (Vector3){(cJSON_GetArrayItem(center,0))->valuedouble,
@@ -202,6 +211,348 @@ void LoadVoxelModel(EntityID entity, char modelPath[], char modelName[])
     
 }
 
+int IsMultiVoxelModelFile(char modelPath[], char modelName[]){
+    char fullPath[512+256];
+    strncpy(fullPath,modelPath,512);
+    if(modelPath[strlen(modelPath)-1] != '/'){
+        strcat(fullPath,"/");
+    }
+    strcat(fullPath,modelName);
+    FILE* file = fopen(fullPath,"rb");
+
+    if(file == NULL){
+	    perror("IsMultiVoxelModelFile");
+        return 0;
+    }
+
+    fseek(file, 0L, SEEK_END);
+    int fileLength = ftell(file);
+    rewind(file);
+
+    char *magic = (char *)calloc(5,sizeof(char));
+    fread(magic,sizeof(char),4,file);
+
+    int version;
+    fread(&version,sizeof(int),1,file);
+
+    int sizeCount = 0;
+    int nTRNCount = 0;
+
+    // a MagicaVoxel .vox file starts with a 'magic' 4 character 'VOX ' identifier
+    if (strcmp("VOX ",magic) == 0)
+    {
+        char *chunkId = (char *)calloc(5,sizeof(char));
+
+        while (ftell(file)<fileLength)
+        {
+            // each chunk has an ID, size and child chunks
+            fread(chunkId,sizeof(char),4,file);
+
+            int chunkSize;
+            fread(&chunkSize,sizeof(int),1,file);
+
+            int childChunks;
+            fread(&childChunks,sizeof(int),1,file);
+
+            if (strcmp(chunkId,"SIZE") == 0){        
+                sizeCount++;
+            }else if (strcmp(chunkId,"nTRN") == 0){      
+                nTRNCount++;
+            }
+            fseek(file,chunkSize,SEEK_CUR);
+        }
+        free(chunkId);
+    }else{
+        printf("IsMultiVoxelModelFile: Magic word is not \"VOX \" (%s)\n",magic);
+        return 0;
+    }
+    free(magic);
+    fclose(file);
+
+    //If there is more than one model in the file and it has per object properties (line nTRN), it is an multi model file
+    return (sizeCount>1 && nTRNCount>0)? 1:0;
+}
+
+void InternalLoadMultiVoxelModelObject(VoxelModel **modelPointer, char modelPath[], char modelName[], char objectName[]){
+    VoxelModel *obj = *modelPointer;
+
+    char fullPath[512+256];
+    strncpy(fullPath,modelPath,512);
+    if(modelPath[strlen(modelPath)-1] != '/'){
+        strcat(fullPath,"/");
+    }
+    strcat(fullPath,modelName);
+    FILE* file = fopen(fullPath,"rb");
+
+    if(file == NULL){
+	    perror("LoadMultiVoxelModelObject");
+        //Return an empty VoxelObject in case of failure
+        return;
+    }
+
+    strncpy(obj->modelPath,modelPath,512);
+    strncpy(obj->modelName,modelName,256);
+    strncpy(obj->objectName,objectName,65);
+
+    fseek(file, 0L, SEEK_END);
+    int fileLength = ftell(file);
+    rewind(file);
+
+    char *magic = (char *)calloc(5,sizeof(char));
+    fread(magic,sizeof(char),4,file);
+
+    int version;
+    fread(&version,sizeof(int),1,file);
+
+    Voxel *voxelData = NULL;
+
+    char curObjName[64] = "";
+    int isHidden = 0;
+    int shapeIndex = 0;
+    int objIndex = -1;
+    int found = 0;
+
+    // a MagicaVoxel .vox file starts with a 'magic' 4 character 'VOX ' identifier
+    if (strcmp("VOX ",magic) == 0)
+    {
+        char *chunkId = (char *)calloc(5,sizeof(char));
+
+        //First, gather the nSHP index
+        while (ftell(file)<fileLength)
+        {
+            // each chunk has an ID, size and child chunks
+            fread(chunkId,sizeof(char),4,file);
+
+            int chunkSize;
+            fread(&chunkSize,sizeof(int),1,file);
+
+            int childChunks;
+            fread(&childChunks,sizeof(int),1,file);
+
+            int dataRead = 0;
+            if(strcmp(chunkId,"nTRN") == 0)
+            {
+                
+                int aux,pNum,editorProp;
+                //0: Index in list
+                fread(&aux,sizeof(int),1,file);
+                dataRead+=sizeof(int);
+                //1: Number of string with the editor properties to be followed
+                fread(&editorProp,sizeof(int),1,file);
+                dataRead+=sizeof(int);
+
+                if(editorProp){
+                    //Parse these strings and get their data
+                    for(pNum=0;pNum<editorProp;pNum++){
+                        //Number of characters of the string
+                        int PropertyLength1,intData;
+                        fread(&PropertyLength1,sizeof(int),1,file);
+                        dataRead+=sizeof(int);
+
+                        //Allocate string and read chars
+                        char *editorProperty = calloc(PropertyLength1+1 ,sizeof(char));
+                        for(aux = 0; aux<PropertyLength1; aux ++){
+                            fread(&editorProperty[aux],sizeof(char),1,file);
+                            dataRead+=sizeof(char);
+                        }
+                        editorProperty[aux] = '\0';
+
+                        //Read the following int
+                        fread(&intData,sizeof(int),1,file);
+                        dataRead+=sizeof(int);
+                        
+                        //If the string was "_name", the last int is the number of
+                        //characters of the object name, so read the characters of the name
+                        if(strcmp(editorProperty,"_name") == 0){                    
+                            for(aux = 0; aux<intData; aux ++){
+                                fread(&curObjName[aux],sizeof(char),1,file);
+                                dataRead+=sizeof(char);
+                            }
+                            curObjName[aux] = '\0';
+
+                            //If this object name isn't what we are looking for, jump to the next chunk
+                            //If it is, set as found and continue gathering the needed data
+                            if(strcmp(objectName,curObjName) != 0){
+                                free(editorProperty);
+                                fseek(file,chunkSize-dataRead,SEEK_CUR);
+                                break;
+                            }else{
+                                found = 1;
+                            }
+                        }
+                        //If the string was "_hidden", the last int is the number of
+                        //characters of the object hidden status, so read the character '1' or '0'
+                        else if(strcmp(editorProperty,"_hidden") == 0){
+                            char hid;
+                            fread(&hid,sizeof(char),1,file);
+                            isHidden = (hid == '1'? 1:0);
+                        }
+                        free(editorProperty);
+                    }
+                    
+                    if(found){
+                        //2: Index of the nSHP corresponding to that object in the list
+                        fread(&shapeIndex,sizeof(int),1,file);
+                        //Stop searching
+                        break;
+                    }
+
+                }else{
+                    //nTRN with no data (first one)
+                    fseek(file,chunkSize-dataRead,SEEK_CUR);
+                }
+
+            }else fseek(file,chunkSize,SEEK_CUR);
+        }
+
+        if(!found){
+            free(chunkId);
+            free(magic);
+            fclose(file);
+            printf("LoadMultiVoxelModelObject: Object with name \"%s\" not found in file!\n",objectName);
+            return;
+        }
+
+        //Go back to the start to get the model index;
+        rewind(file);
+        fseek(file, sizeof(char)*4 + sizeof(int) ,SEEK_CUR); // Magic word and file version
+        while (ftell(file)<fileLength)
+        {
+            // each chunk has an ID, size and child chunks
+            fread(chunkId,sizeof(char),4,file);
+
+            int chunkSize;
+            fread(&chunkSize,sizeof(int),1,file);
+
+            int childChunks;
+            fread(&childChunks,sizeof(int),1,file);
+
+            if (strcmp(chunkId,"nSHP") == 0)
+            {
+                int indexInList;
+                //0: Index in list
+                fread(&indexInList,sizeof(int),1,file);
+
+                if(indexInList == shapeIndex){
+                    //Jump two unneeded properties
+                    fseek(file, sizeof(int)*2 ,SEEK_CUR);
+                    //3: Index of the model it refers to
+                    fread(&objIndex,sizeof(int),1,file);
+
+                    //Stop searching
+                    break;
+                }else{
+                    fseek(file, chunkSize - sizeof(int),SEEK_CUR);
+                }
+            }else fseek(file,chunkSize,SEEK_CUR);
+        }
+
+        if(objIndex<0){
+            free(chunkId);
+            free(magic);
+            fclose(file);
+            printf("LoadMultiVoxelModelObject: nSHP property not found in file!\n");
+            return;
+        }
+
+        //Go back to the start to get the model;
+        rewind(file);
+        fseek(file, sizeof(char)*4 + sizeof(int) ,SEEK_CUR); // Magic word and file version
+        int currentObj = 0;
+
+        while (ftell(file)<fileLength)
+        {
+            // each chunk has an ID, size and child chunks
+            fread(chunkId,sizeof(char),4,file);
+
+            int chunkSize;
+            fread(&chunkSize,sizeof(int),1,file);
+
+            int childChunks;
+            fread(&childChunks,sizeof(int),1,file);
+
+            if (strcmp(chunkId,"SIZE") == 0)
+            {        
+                if(currentObj!=objIndex){ fseek(file,chunkSize,SEEK_CUR); continue; }
+
+                fread(&obj->dimension[0],sizeof(int),1,file);
+                fread(&obj->dimension[1],sizeof(int),1,file);
+                fread(&obj->dimension[2],sizeof(int),1,file);
+            }
+            //XYZI contains the voxels position and color index
+            else if (strcmp(chunkId,"XYZI") == 0)
+            {
+                if(currentObj!=objIndex){currentObj++; fseek(file,chunkSize,SEEK_CUR); continue;}
+                
+
+                // XYZI contains n voxels
+                fread(&obj->voxelCount,sizeof(int),1,file);
+                obj->voxelsRemaining = obj->voxelCount;
+
+                voxelData = calloc(obj->voxelCount,sizeof(Voxel));
+                int i;
+                for(i = 0; i < obj->voxelCount; i++){
+                    //Get MagicaVoxel voxel position and color index and insert in the array
+                    fread(&voxelData[i].x,sizeof(char),1,file);
+                    fread(&voxelData[i].y,sizeof(char),1,file);
+                    fread(&voxelData[i].z,sizeof(char),1,file);
+                    fread(&voxelData[i].color,sizeof(char),1,file);
+                }
+
+                //After loading all voxels into the array, allocate and transfer them to the new objects
+
+                //Allocating memory and initializing structures
+                obj->model = calloc(obj->dimension[0] * obj->dimension[1] * obj->dimension[2],sizeof(unsigned char));
+                obj->lighting = calloc(obj->dimension[0] * obj->dimension[1] * obj->dimension[2],sizeof(unsigned char));
+
+                obj->vertices = NULL;
+                obj->vColors = NULL;
+                obj->normal = NULL;
+                obj->numberOfVertices = 0;
+                
+                //Inserting voxels into the VoxelObject structure
+                for (i = 0; i < obj->voxelCount; i++)
+                {
+                    // do not store this voxel if it lies out of range of the voxel chunk (126x126x126)
+                    if (voxelData[i].x > 126 || voxelData[i].y > 126 || voxelData[i].z > 126) continue;
+
+                    // Insert data based on the index = (x + z*sizeX + y*sizeX*sizeZ)
+                    int voxel = (voxelData[i].x + voxelData[i].z * obj->dimension[0] + voxelData[i].y * obj->dimension[0] * obj->dimension[2]);
+                    obj->model[voxel] = voxelData[i].color;
+                }
+
+                //Initialize lighting array
+                for(i = 0;i<obj->dimension[0]*obj->dimension[1]*obj->dimension[2]; i++){
+                    obj->lighting[i] = 1;
+                }
+
+                obj->modificationStartX = 0;
+                obj->modificationEndX = obj->dimension[0]-1;
+
+                obj->modificationStartY = 0;
+                obj->modificationEndY = obj->dimension[1]-1;
+
+                obj->modificationStartZ = 0;
+                obj->modificationEndZ = obj->dimension[2]-1;
+
+                obj->enabled = !isHidden;
+
+                //Pass to the next model
+                free(voxelData);
+
+                //After loaded the data, stop the file navigation loop
+                break;
+            }else fseek(file,chunkSize,SEEK_CUR);
+        }
+        free(chunkId);
+    }else{
+        printf("LoadMultiVoxelModelObject: Magic word is not \"VOX \" (%s)\n",magic);
+        return;
+    }
+    free(magic);
+    fclose(file);
+}
+
 void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char modelName[]){
     VoxelModel *obj = *modelPointer;
     char fullPath[512+256];
@@ -220,6 +571,8 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
     }
     strncpy(obj->modelPath,modelPath,512);
     strncpy(obj->modelName,modelName,256);
+    obj->objectName[0] = '\0';
+
     obj->enabled = 1;
 
     Voxel *voxelData = NULL;
@@ -715,7 +1068,7 @@ void CalculateLighting(EntityID entity){
 }
 
 //Multi Object helper structures
-/*typedef enum {nTRN, nSHP, nGRP}mpTypes;
+typedef enum {nTRN, nSHP, nGRP}mpTypes;
 typedef struct MagicaProperties *mpNode;
 
 typedef struct MagicaProperties{
@@ -729,27 +1082,31 @@ typedef struct MagicaProperties{
 }MagicaProperties;
 
 //Load a voxel model with various parts into multiple entities parented to a main object
-void LoadMultiVoxelModel(EntityID entity, char modelPath[])
+void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
 {
-    printf("\nLoading multi model: %s\n",modelPath);
-    FILE* file = fopen(modelPath,"rb");
-
-    if(file == NULL){
-        printf("Failed to open file!\n");
-	    perror("Error");
-        //Return an empty MultiVoxelObject in case of failure
+    if(!IsMultiVoxelModelFile(modelPath, modelName)){
+        printf("LoadMultiVoxelModel: File doesn't contain more than one object, use LoadVoxelModel\n");
         return;
     }
 
-    VoxelObjectList modelsList = InitializeObjectList();
+    char fullPath[512+256];
+    strncpy(fullPath,modelPath,512);
+    if(modelPath[strlen(modelPath)-1] != '/'){
+        strcat(fullPath,"/");
+    }
+    strcat(fullPath,modelName);
+    FILE* file = fopen(fullPath,"rb");
+
+    if(file == NULL){
+	    perror("LoadMultiVoxelModel");
+        return;
+    }
+
+    List modelsList = InitList(sizeof(VoxelModel));
     mpNode propertiesListStart = NULL;
     mpNode propertiesListEnd = NULL;
 
     Voxel *voxelData = NULL;
-
-    MultiVoxelObject mobj;
-
-    int currentModel = 0;
     int i;
 
     //Get file length and return to start
@@ -794,39 +1151,33 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[])
                 //If not, flag an error
                 if(!voxelData){
 
-                    //Create the new object and add to the models list
-                    VoxelObject *newModel = malloc(sizeof(VoxelObject));
-                    AddObjectInList(&modelsList,newModel);
+                    //Create the new object
+                    VoxelModel *newModel = malloc(sizeof(VoxelModel));
+                    fread(&newModel->dimension[0],sizeof(int),1,file);
+                    fread(&newModel->dimension[1],sizeof(int),1,file);
+                    fread(&newModel->dimension[2],sizeof(int),1,file);
 
-                    fread(&modelsList.list[currentModel]->dimension[0],sizeof(int),1,file);
-                    fread(&modelsList.list[currentModel]->dimension[1],sizeof(int),1,file);
-                    fread(&modelsList.list[currentModel]->dimension[2],sizeof(int),1,file);
+                    //Copy to the models list
+                    InsertListEnd(&modelsList,newModel);
+                    free(newModel);
 
                 }else{
-                    printf("An error loading has ocurred!\n");
+                    printf("LoadMultiVoxelModel: An error loading has ocurred!\n");
                     fclose(file);
-                    return (MultiVoxelObject){0,(VoxelObjectList){0,0},VECTOR3_ZERO,VECTOR3_ZERO,VECTOR3_ZERO,};
+                    return;
                 }
             }
             //XYZI contains the voxels position and color index
             else if (strcmp(chunkId,"XYZI") == 0)
             {
+                VoxelModel *objPointer = GetLastCell(modelsList)->element;
                 // XYZI contains n voxels
-                fread(&modelsList.list[currentModel]->voxelCount,sizeof(int),1,file);
-                modelsList.list[currentModel]->voxelsRemaining = modelsList.list[currentModel]->voxelCount;
+                fread(&objPointer->voxelCount,sizeof(int),1,file);
+                objPointer->voxelsRemaining = objPointer->voxelCount;
 
-                voxelData = calloc(modelsList.list[currentModel]->voxelCount,sizeof(Voxel));
+                voxelData = calloc(objPointer->voxelCount,sizeof(Voxel));
 
-                //Free strings and return empty Object if it fails to allocate memory
-                if(!voxelData){
-                    printf("Failed to allocate voxel array!\n");
-                    fclose(file);
-                    free(magic);
-                    free(chunkId);
-                    return (MultiVoxelObject){0,(VoxelObjectList){0,0},VECTOR3_ZERO,VECTOR3_ZERO,VECTOR3_ZERO,};
-                }
-                
-                for(i = 0; i < modelsList.list[currentModel]->voxelCount; i++){
+                for(i = 0; i < objPointer->voxelCount; i++){
                     //Get MagicaVoxel voxel position and color index and insert in the array
                     fread(&voxelData[i].x,sizeof(char),1,file);
                     fread(&voxelData[i].y,sizeof(char),1,file);
@@ -837,64 +1188,46 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[])
                 //After loading all voxels into the array, allocate and transfer them to the new objects
 
                 //Allocating memory and initializing structures
-                modelsList.list[currentModel]->model = calloc(modelsList.list[currentModel]->dimension[0] * modelsList.list[currentModel]->dimension[1] * modelsList.list[currentModel]->dimension[2],sizeof(unsigned char));
-                modelsList.list[currentModel]->lighting = calloc(modelsList.list[currentModel]->dimension[0] * modelsList.list[currentModel]->dimension[1] * modelsList.list[currentModel]->dimension[2],sizeof(unsigned char));
+                objPointer->model = calloc(objPointer->dimension[0] * objPointer->dimension[1] * objPointer->dimension[2],sizeof(unsigned char));
+                objPointer->lighting = calloc(objPointer->dimension[0] * objPointer->dimension[1] * objPointer->dimension[2],sizeof(unsigned char));
 
-                modelsList.list[currentModel]->vertices = NULL;
-                modelsList.list[currentModel]->vColors = NULL;
-                modelsList.list[currentModel]->numberOfVertices = 0;
+                objPointer->vertices = NULL;
+                objPointer->vColors = NULL;
+                objPointer->numberOfVertices = 0;
                 
                 //Inserting voxels into the VoxelObject structure
-                for (i = 0; i < modelsList.list[currentModel]->voxelCount; i++)
+                for (i = 0; i < objPointer->voxelCount; i++)
                 {
                     
                     // do not store this voxel if it lies out of range of the voxel chunk (126x126x126)
                     if (voxelData[i].x > 126 || voxelData[i].y > 126 || voxelData[i].z > 126) continue;
 
                     // Insert data based on the index = (x + z*sizeX + y*sizeX*sizeZ)
-                    int voxel = (voxelData[i].x + voxelData[i].z * modelsList.list[currentModel]->dimension[0] + voxelData[i].y * modelsList.list[currentModel]->dimension[0] * modelsList.list[currentModel]->dimension[2]);
-                    modelsList.list[currentModel]->model[voxel] = voxelData[i].color;
+                    int voxel = (voxelData[i].x + voxelData[i].z * objPointer->dimension[0] + voxelData[i].y * objPointer->dimension[0] * objPointer->dimension[2]);
+                    objPointer->model[voxel] = voxelData[i].color;
                 }
 
                 //Initialize lighting array
-                for(i = 0;i<modelsList.list[currentModel]->dimension[0]*modelsList.list[currentModel]->dimension[1]*modelsList.list[currentModel]->dimension[2]; i++){
-                    modelsList.list[currentModel]->lighting[i] = 1;
+                for(i = 0;i<objPointer->dimension[0]*objPointer->dimension[1]*objPointer->dimension[2]; i++){
+                    objPointer->lighting[i] = 1;
                 }
 
-                modelsList.list[currentModel]->position = (Vector3){0,0,0};
-                modelsList.list[currentModel]->rotation = (Vector3){0,0,0};
-                modelsList.list[currentModel]->center = (Vector3){modelsList.list[currentModel]->dimension[0]/2,modelsList.list[currentModel]->dimension[1]/2,modelsList.list[currentModel]->dimension[2]/2};
-                modelsList.list[currentModel]->numberOfPoints = 0;
-                modelsList.list[currentModel]->points = NULL;
+                objPointer->center = (Vector3){objPointer->dimension[0]/2,objPointer->dimension[1]/2,objPointer->dimension[2]/2};
 
-                modelsList.list[currentModel]->modificationStartX = 0;
-                modelsList.list[currentModel]->modificationEndX = modelsList.list[currentModel]->dimension[0]-1;
+                objPointer->modificationStartX = 0;
+                objPointer->modificationEndX = objPointer->dimension[0]-1;
 
-                modelsList.list[currentModel]->modificationStartY = 0;
-                modelsList.list[currentModel]->modificationEndY = modelsList.list[currentModel]->dimension[1]-1;
+                objPointer->modificationStartY = 0;
+                objPointer->modificationEndY = objPointer->dimension[1]-1;
 
-                modelsList.list[currentModel]->modificationStartZ = 0;
-                modelsList.list[currentModel]->modificationEndZ = modelsList.list[currentModel]->dimension[2]-1;
-                
-                CalculateRendered(modelsList.list[currentModel]);
-                CalculateLighting(modelsList.list[currentModel]);
+                objPointer->modificationStartZ = 0;
+                objPointer->modificationEndZ = objPointer->dimension[2]-1;
 
-                modelsList.list[currentModel]->modificationStartX = -1;
-                modelsList.list[currentModel]->modificationEndX = -1;
-
-                modelsList.list[currentModel]->modificationStartY = -1;
-                modelsList.list[currentModel]->modificationEndY = -1;
-
-                modelsList.list[currentModel]->modificationStartZ = -1;
-                modelsList.list[currentModel]->modificationEndZ = -1;
-
-                modelsList.list[currentModel]->enabled = 1;
+                objPointer->enabled = 1;
 
                 //Pass to the next model
                 free(voxelData);
                 voxelData = NULL;
-                currentModel++;
-
             }
             //Chunk containing the name, show/hidden status, rotation and position of an object
             //Will be put into a properties list
@@ -1073,27 +1406,17 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[])
         free(chunkId);
     }else{
         //Magic word is not VOX
-        printf("Magic word is not 'VOX ', but '%s'\n",magic);
-        return (MultiVoxelObject){0,(VoxelObjectList){0,0},VECTOR3_ZERO,VECTOR3_ZERO,VECTOR3_ZERO,};
+        printf("LoadMultiVoxelModel: Magic word is not 'VOX ', but '%s'\n",magic);
     }
     free(magic);
     fclose(file);
 
-    //If the file being loaded doesn't contains any property (files from Magicavoxel ver <0.99), just put the objects loaded as is
-    if(!propertiesListStart){
-        mobj.objects = modelsList;
-        printf("File doesn't contain any property, considering all objects active and with position zero\n");
-        printf(">DONE!\n\n");
-        return mobj;
-    }
-
     //Create the models to be inserted on the MultiObject and copy the needed data
 
-    VoxelObject *obj = NULL;
+    VoxelModel *obj = NULL;
     Vector3 pos = VECTOR3_ZERO,rot;
     int enab = 1;
 
-    mobj.objects = InitializeObjectList();
     mpNode current = propertiesListStart;
     while(current){
         switch (current->Type){
@@ -1196,32 +1519,68 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[])
                 shp = shp->next;
             }
 
+            //Ignore this nTRN if its not a model (groups not supported)
             if(shp->Type != nSHP){current = current->next; continue;}
             
             //Allocate and copy data to the final object
-            obj = malloc(sizeof(VoxelObject));
+            EntityID subModel;
 
-            obj->dimension[0] = modelsList.list[shp->data[3]]->dimension[0];
-            obj->dimension[1] = modelsList.list[shp->data[3]]->dimension[1];
-            obj->dimension[2] = modelsList.list[shp->data[3]]->dimension[2];
-            *obj = *modelsList.list[shp->data[3]];
+            int foundChild = -1;
+            if(EntityIsParent(entity)){
+                
+                ListCellPointer child;
+                ListForEach(child,*GetChildsList(entity)){
+                    if(EntityContainsComponent(GetElementAsType(child,EntityID),ThisComponentID())){
+                        VoxelModel *childObj = GetVoxelModelPointer(GetElementAsType(child,EntityID));
+                        if(childObj->objectName[0] != '\0' && !strcmp(childObj->objectName,current->name)){
+                            foundChild = GetElementAsType(child,EntityID);
+                            break;
+                        }
+                    }
+                }
+            }
+
+            //Create the new entity
+            if(foundChild>=0){
+                subModel = foundChild;
+                if(!EntityContainsComponent(subModel, GetComponentID("Transform")))
+                    AddComponentToEntity(GetComponentID("Transform"),subModel);
+            }else{
+                subModel = CreateEntity();
+                SetEntityParent(subModel,entity);
+                AddComponentToEntity(ThisComponentID(),subModel);
+                AddComponentToEntity(GetComponentID("Transform"),subModel);
+            }
+
+            //Pass the data to the entity
+            obj = GetVoxelModelPointer(subModel);
+
+            VoxelModel *curModel = GetCellAt(modelsList,shp->data[3])->element;
+
+            obj->dimension[0] = curModel->dimension[0];
+            obj->dimension[1] = curModel->dimension[1];
+            obj->dimension[2] = curModel->dimension[2];
+            *obj = *curModel;
 
             obj->model = calloc(obj->dimension[0]*obj->dimension[1]*obj->dimension[2], sizeof(unsigned char));
             obj->lighting = calloc(obj->dimension[0]*obj->dimension[1]*obj->dimension[2], sizeof(unsigned char));
-            obj->vertices = calloc(modelsList.list[shp->data[3]]->numberOfVertices * 3, sizeof(GLfloat));
-            obj->vColors = calloc(modelsList.list[shp->data[3]]->numberOfVertices * 3, sizeof(GLfloat));
-            obj->numberOfVertices = modelsList.list[shp->data[3]]->numberOfVertices;
+            obj->vertices = calloc(curModel->numberOfVertices * 3, sizeof(GLfloat));
+            obj->vColors = calloc(curModel->numberOfVertices * 3, sizeof(GLfloat));
+            obj->numberOfVertices = curModel->numberOfVertices;
 
-            memcpy(obj->model, modelsList.list[shp->data[3]]->model, obj->dimension[0]*obj->dimension[1]*obj->dimension[2] * sizeof(unsigned char) );
-            memcpy(obj->lighting, modelsList.list[shp->data[3]]->lighting, obj->dimension[0]*obj->dimension[1]*obj->dimension[2] * sizeof(unsigned char) );
-            memcpy(obj->vertices,modelsList.list[shp->data[3]]->vertices,obj->numberOfVertices * 3 * sizeof(GLfloat) );
-            memcpy(obj->vColors,modelsList.list[shp->data[3]]->vColors,obj->numberOfVertices * 3 * sizeof(GLfloat) );
+            memcpy(obj->model, curModel->model, obj->dimension[0]*obj->dimension[1]*obj->dimension[2] * sizeof(unsigned char) );
+            memcpy(obj->lighting, curModel->lighting, obj->dimension[0]*obj->dimension[1]*obj->dimension[2] * sizeof(unsigned char) );
+            memcpy(obj->vertices,curModel->vertices,obj->numberOfVertices * 3 * sizeof(GLfloat) );
+            memcpy(obj->vColors,curModel->vColors,obj->numberOfVertices * 3 * sizeof(GLfloat) );
 
-            obj->position = (Vector3){pos.x - (obj->dimension[0]/2),pos.y - (obj->dimension[1]/2),pos.z - (obj->dimension[2]/2)};
-            obj->rotation = rot;
+            SetPosition(subModel,(Vector3){pos.x - (obj->dimension[0]/2),pos.y - (obj->dimension[1]/2),pos.z - (obj->dimension[2]/2)});
+            SetRotation(subModel,rot);
             obj->enabled = enab;
+            obj->smallScale = 0;
 
-            AddObjectInList(&mobj.objects,obj);
+            strncpy(obj->modelPath,modelPath,512);
+            strncpy(obj->modelName,modelName,256);
+            strncpy(obj->objectName,current->name,65);
 
             break;
             case nSHP:
@@ -1247,9 +1606,12 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[])
         current = current->next;
         free(aux);
     }
-
-    FreeObjectList(&modelsList);
+    ListCellPointer modelsCell;
+    ListForEach(modelsCell,modelsList){
+        free(GetElementAsType(modelsCell,VoxelModel).model);
+        free(GetElementAsType(modelsCell,VoxelModel).lighting);
+    }
+    FreeList(&modelsList);
 
     printf(">DONE!\n\n");
-    return mobj;
-}*/
+}

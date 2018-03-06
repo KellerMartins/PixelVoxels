@@ -134,6 +134,10 @@ void VoxelRendererUpdate(){
             glUniform1i(glGetUniformLocation(Rendering.Shaders[1], "spriteScale"), cubeTexDimension/5.0f);
         }
 
+        GLuint blockIndex = glGetUniformBlockIndex(Rendering.Shaders[usedProgram], "PointLight");
+        glUniformBlockBinding(Rendering.Shaders[usedProgram], blockIndex, 0);
+        glBindBufferBase(GL_UNIFORM_BUFFER, glGetUniformBlockIndex(Rendering.Shaders[usedProgram], "PointLight"), GetPointLightsBuffer());
+
         glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[usedProgram], "projection"), 1, GL_FALSE, &ProjectionMatrix[0]);
         glUniformMatrix3fv(glGetUniformLocation(Rendering.Shaders[usedProgram], "rotation"), 1, GL_FALSE, &RotationMatrix[0]);
         glUniform3f(glGetUniformLocation(Rendering.Shaders[usedProgram], "objPos"), position.x, position.y, position.z);

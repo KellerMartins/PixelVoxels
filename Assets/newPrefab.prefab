@@ -1,366 +1,64 @@
 {
 	"Transform":	{
-		"position":	[19.392229080200195, 0.84036219120025635, 67.375717163085938],
+		"position":	[0, 0, 32.856109619140625],
 		"rotation":	[0, 0, 0]
+	},
+	"VoxelModel":	{
+		"modelPath":	"./Models",
+		"modelName":	"Sea.vox",
+		"smallScale":	false,
+		"center":	[16, 16, 32]
 	},
 	"childs":	[{
 			"Transform":	{
-				"position":	[11.762624740600586, -12.248136520385742, 63.415458679199219],
-				"rotation":	[0, 0, 0]
+				"position":	[-5.7850866317749023, -8.19351863861084, 18.923458099365234],
+				"rotation":	[0, 0, -45]
 			},
 			"VoxelModel":	{
 				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"Small",
-				"smallScale":	false,
-				"center":	[5, 5, 5]
-			}
-		}, {
-			"Transform":	{
-				"position":	[29.392238616943359, -4.15964412689209, 92.375839233398438],
-				"rotation":	[0, 0, 0]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"Ref",
-				"smallScale":	false,
-				"center":	[5, 5, 5]
-			}
-		}, {
-			"Transform":	{
-				"position":	[-20.607759475708008, -19.159666061401367, 41.375717163085938],
-				"rotation":	[0, 0, 0]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"Big",
-				"smallScale":	false,
-				"center":	[20, 20, 20]
-			}
-		}, {
-			"Transform":	{
-				"position":	[-3.6077556610107422, -1.1596407890319824, 107.37570190429687],
-				"rotation":	[0, 0, 0]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"Smallest",
-				"smallScale":	false,
-				"center":	[2, 2, 2]
-			}
-		}, {
-			"Transform":	{
-				"position":	[26.666568756103516, 58.47064208984375, 42.678558349609375],
-				"rotation":	[0, 0, 0]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"v.vox",
+				"modelName":	"minichar.vox",
 				"smallScale":	true,
-				"center":	[16, 6, 13]
+				"center":	[5, 2, 10]
 			}
 		}, {
 			"Transform":	{
-				"position":	[58.392196655273438, 57.840377807617188, 71.375656127929688],
-				"rotation":	[90, 90, 0]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB1",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
-			}
-		}, {
-			"Transform":	{
-				"position":	[77.392204284667969, 58.840362548828125, 73.2471923828125],
-				"rotation":	[180, 0, 0]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB2",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
-			}
-		}, {
-			"Transform":	{
-				"position":	[97.392219543457031, 58.840362548828125, 71.375656127929688],
-				"rotation":	[180, 90, 0]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB3",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
-			}
-		}, {
-			"Transform":	{
-				"position":	[42.392219543457031, 39.840324401855469, 71.375656127929688],
-				"rotation":	[180, 0, 90]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB4",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
-			}
-		}, {
-			"Transform":	{
-				"position":	[60.392204284667969, 38.840324401855469, 71.375656127929688],
-				"rotation":	[270, 270, 0]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB5",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
-			}
-		}, {
-			"Transform":	{
-				"position":	[77.392204284667969, 36.84033203125, 72.375625610351563],
-				"rotation":	[270, 0, 0]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB6",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
-			}
-		}, {
-			"Transform":	{
-				"position":	[96.392219543457031, 34.840328216552734, 72.375625610351563],
-				"rotation":	[270, 0, 90]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB7",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
-			}
-		}, {
-			"Transform":	{
-				"position":	[45.392196655273438, 19.840362548828125, 71.375656127929688],
-				"rotation":	[0, 90, 0]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB8",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
-			}
-		}, {
-			"Transform":	{
-				"position":	[61.392219543457031, 18.840364456176758, 71.375656127929688],
-				"rotation":	[0, 90, 90]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB9",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
-			}
-		}, {
-			"Transform":	{
-				"position":	[78.392219543457031, 16.840370178222656, 71.375656127929688],
-				"rotation":	[0, 180, 0]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB10",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
-			}
-		}, {
-			"Transform":	{
-				"position":	[96.392219543457031, 18.840364456176758, 71.375656127929688],
-				"rotation":	[270, 180, 0]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB11",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
-			}
-		}, {
-			"Transform":	{
-				"position":	[49.392196655273438, 1.8403604030609131, 71.375656127929688],
-				"rotation":	[0, 180, 90]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB12",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
-			}
-		}, {
-			"Transform":	{
-				"position":	[61.392219543457031, 0.84036219120025635, 71.375656127929688],
-				"rotation":	[0, 270, 0]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB13",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
-			}
-		}, {
-			"Transform":	{
-				"position":	[78.392219543457031, 0.84036219120025635, 71.375656127929688],
-				"rotation":	[90, 0, 270]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB14",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
-			}
-		}, {
-			"Transform":	{
-				"position":	[97.392219543457031, 2.8403670787811279, 71.375656127929688],
-				"rotation":	[0, 0, 90]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB15",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
-			}
-		}, {
-			"Transform":	{
-				"position":	[53.392196655273438, -15.159666061401367, 71.375656127929688],
-				"rotation":	[90, 270, 0]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB16",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
-			}
-		}, {
-			"Transform":	{
-				"position":	[64.392204284667969, -15.159666061401367, 71.375656127929688],
-				"rotation":	[90, 0, 90]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB17",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
-			}
-		}, {
-			"Transform":	{
-				"position":	[79.392219543457031, -16.1596622467041, 71.375656127929688],
-				"rotation":	[0, 0, 180]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB18",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
-			}
-		}, {
-			"Transform":	{
-				"position":	[96.392219543457031, -15.159666061401367, 72.375625610351563],
-				"rotation":	[90, 180, 0]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB19",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
-			}
-		}, {
-			"Transform":	{
-				"position":	[55.392181396484375, -28.1596622467041, 71.375656127929688],
-				"rotation":	[90, 270, 90]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB20",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
-			}
-		}, {
-			"Transform":	{
-				"position":	[66.3922348022461, -30.159650802612305, 71.375656127929688],
-				"rotation":	[0, 0, 270]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB21",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
-			}
-		}, {
-			"Transform":	{
-				"position":	[79.392219543457031, -31.15965461730957, 72.375625610351563],
-				"rotation":	[270, 0, 270]
-			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB22",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
-			}
-		}, {
-			"Transform":	{
-				"position":	[63.392204284667969, -55.159660339355469, 71.375656127929688],
+				"position":	[6.7544994354248047, -27.898147583007813, 24.269405364990234],
 				"rotation":	[0, 0, 0]
 			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB23",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
+			"PointLight":	{
+				"color":	[0, 0, 1],
+				"intensity":	0.75,
+				"range":	1000
 			}
 		}, {
 			"Transform":	{
-				"position":	[81.392219543457031, -54.15966796875, 71.375656127929688],
+				"position":	[-7.6591143608093262, -1.2605419158935547, 42.837810516357422],
 				"rotation":	[0, 0, 0]
 			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB24",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
+			"PointLight":	{
+				"color":	[1, 1, 1],
+				"intensity":	0.75,
+				"range":	100
 			}
 		}, {
 			"Transform":	{
-				"position":	[100.39223480224609, -54.15966796875, 71.375656127929688],
+				"position":	[-17.273767471313477, -2.9412636756896973, 11.437296867370605],
 				"rotation":	[0, 0, 0]
 			},
-			"VoxelModel":	{
-				"modelPath":	"./Models",
-				"modelName":	"test.vox",
-				"objectName":	"OB25",
-				"smallScale":	false,
-				"center":	[5, 2, 1]
+			"PointLight":	{
+				"color":	[1, 1, 1],
+				"intensity":	0.75,
+				"range":	100
+			}
+		}, {
+			"Transform":	{
+				"position":	[-12.629406929016113, -17.962718963623047, 21.626907348632812],
+				"rotation":	[0, 0, 0]
+			},
+			"PointLight":	{
+				"color":	[1, 1, 1],
+				"intensity":	0.75,
+				"range":	100
 			}
 		}]
 }

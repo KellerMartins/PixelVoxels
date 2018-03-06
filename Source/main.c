@@ -1,9 +1,13 @@
 #include "Engine.h"
 #include "utils.h"
+
 #include "Components/VoxelModel.h"
 #include "Components/Transform.h"
 #include "Components/Rigidbody.h"
+#include "Components/PointLight.h"
+
 #include "Systems/VoxelRenderer.h"
+#include "Systems/PointLighting.h"
 #include "Systems/VoxelModification.h"
 #include "Systems/VoxelPhysics.h"
 #include "Systems/Editor.h"
@@ -27,10 +31,12 @@ int main(int argc, char *argv[]){
 	ComponentID transformComponent = RegisterNewComponent("Transform", &TransformConstructor, &TransformDestructor,&TransformCopy, &TransformEncode, &TransformDecode);
 	ComponentID voxelModelComponent = RegisterNewComponent("VoxelModel", &VoxelModelConstructor, &VoxelModelDestructor,&VoxelModelCopy, &VoxelModelEncode, &VoxelModelDecode);
 	ComponentID rigidBodyComponent = RegisterNewComponent("RigidBody", &RigidBodyConstructor, &RigidBodyDestructor,&RigidBodyCopy, &RigidBodyEncode, &RigidBodyDecode);
+	ComponentID pointLightComponent = RegisterNewComponent("PointLight", &PointLightConstructor, &PointLightDestructor,&PointLightCopy, &PointLightEncode, &PointLightDecode);
 
-	if(RegisterNewSystem("VoxelPhysics",1,CreateComponentMaskByID(3,transformComponent, voxelModelComponent,rigidBodyComponent),(ComponentMask){0},&VoxelPhysicsInit,&VoxelPhysicsUpdate,&VoxelPhysicsFree) < 0) printf("Failed to register VoxelPhysics system!\n");
+	if(RegisterNewSystem("VoxelPhysics",2,CreateComponentMaskByID(3,transformComponent, voxelModelComponent,rigidBodyComponent),(ComponentMask){0},&VoxelPhysicsInit,&VoxelPhysicsUpdate,&VoxelPhysicsFree) < 0) printf("Failed to register VoxelPhysics system!\n");
+	if(RegisterNewSystem("PointLighting",1,CreateComponentMaskByID(2,transformComponent, pointLightComponent),(ComponentMask){0},&PointLightingInit,&PointLightingUpdate,&PointLightingFree) < 0) printf("Failed to register PointLighting system!\n");
 	if(RegisterNewSystem("VoxelRenderer",0,CreateComponentMaskByID(2,transformComponent, voxelModelComponent),(ComponentMask){0},&VoxelRendererInit,&VoxelRendererUpdate,&VoxelRendererFree) < 0) printf("Failed to register VoxelRender system!\n");
-	if(RegisterNewSystem("VoxelModification",2,CreateComponentMaskByID(2,voxelModelComponent, transformComponent),(ComponentMask){0},&VoxelModificationInit,&VoxelModificationUpdate,&VoxelModificationFree) < 0) printf("Failed to register VoxelModification system!\n");
+	if(RegisterNewSystem("VoxelModification",3,CreateComponentMaskByID(2,voxelModelComponent, transformComponent),(ComponentMask){0},&VoxelModificationInit,&VoxelModificationUpdate,&VoxelModificationFree) < 0) printf("Failed to register VoxelModification system!\n");
 	if(RegisterNewSystem("Editor",-1,CreateComponentMaskByID(0),(ComponentMask){0},&EditorInit,&EditorUpdate,&EditorFree) < 0) printf("Failed to register Editor system!\n");
 
 	if(!InitEngine()) return 1;

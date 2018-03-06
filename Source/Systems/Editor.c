@@ -2,7 +2,8 @@
 
 static System *ThisSystem;
 
-static SystemID VoxRenderSystem ;
+static SystemID VoxRenderSystem;
+static SystemID PointLightSystem;
 static SystemID VoxModifSystem;
 static SystemID EditorSystem;
 
@@ -128,12 +129,13 @@ void EditorInit(System *systemObject){
     entitiesPlaymodeCopy = calloc(ECS.maxEntities,sizeof(Entity));
 
     VoxRenderSystem = GetSystemID("VoxelRenderer");
+    PointLightSystem = GetSystemID("PointLighting");
     VoxModifSystem = GetSystemID("VoxelModification");
     EditorSystem = GetSystemID("Editor");
 
     //Disable all game systems, except the rendering, editor and voxel modification
     for(i=0;i<GetLength(ECS.SystemList);i++){
-        if(i != EditorSystem && i!= VoxRenderSystem && i!= VoxModifSystem){
+        if(i != EditorSystem && i!= VoxRenderSystem && i!= VoxModifSystem && i!= PointLightSystem){
             DisableSystem(i);
         }
     }
@@ -175,6 +177,7 @@ void EditorInit(System *systemObject){
 //Runs each GameLoop iteration
 int editingField = -1;
 int menuOpened = 1;
+int hideGizmos = 0;
 void EditorUpdate(){
     //Update mouse data
     mousePos = (Vector3){Input.mouseX,Screen.windowHeight - Input.mouseY,0};
@@ -200,7 +203,7 @@ void EditorUpdate(){
 
     //Draw UI windows and gizmos
     if(!menuOpened){
-        if(!fileBrowserOpened){
+        if(!fileBrowserOpened && !hideGizmos){
             DrawTransformGizmos();
         }
 
@@ -244,6 +247,11 @@ void EditorUpdate(){
                 SetEntityParent(GetElementAsType(cellp,EntityID),GetElementAsType(GetLastCell(SelectedEntities),EntityID));
                 cellp = GetNextCell(cellp);
             }
+        }
+
+        //Hide gizmos shortcut
+        if(GetKeyDown(SDL_SCANCODE_H)){
+            hideGizmos = !hideGizmos;
         }
 
         //Test shortcuts
@@ -1807,7 +1815,7 @@ void DrawPlayModeWidget(){
             //Disable all game systems
             int i;
             for(i=0;i<GetLength(ECS.SystemList);i++){
-                if(i != EditorSystem && i!= VoxRenderSystem && i!= VoxModifSystem){
+                if(i != EditorSystem && i!= VoxRenderSystem && i!= VoxModifSystem && i!= PointLightSystem){
                     DisableSystem(i);
                 }
             }
@@ -1819,7 +1827,7 @@ void DrawPlayModeWidget(){
             //Disable all game systems
             int i;
             for(i=0;i<GetLength(ECS.SystemList);i++){
-                if(i != EditorSystem && i!= VoxRenderSystem && i!= VoxModifSystem){
+                if(i != EditorSystem && i!= VoxRenderSystem && i!= VoxModifSystem && i!= PointLightSystem){
                     DisableSystem(i);
                 }
             }
@@ -1834,7 +1842,7 @@ void DrawPlayModeWidget(){
             //Enable all game systems
             int i;
             for(i=0;i<GetLength(ECS.SystemList);i++){
-                if(i != EditorSystem && i!= VoxRenderSystem && i!= VoxModifSystem){
+                if(i != EditorSystem && i!= VoxRenderSystem && i!= VoxModifSystem && i!= PointLightSystem){
                     EnableSystem(i);
                 }
             }
@@ -1847,7 +1855,7 @@ void DrawPlayModeWidget(){
             //Disable all game systems
             int i;
             for(i=0;i<GetLength(ECS.SystemList);i++){
-                if(i != EditorSystem && i!= VoxRenderSystem && i!= VoxModifSystem){
+                if(i != EditorSystem && i!= VoxRenderSystem && i!= VoxModifSystem && i!= PointLightSystem){
                     DisableSystem(i);
                 }
             }
@@ -1863,7 +1871,7 @@ void DrawPlayModeWidget(){
             //Enable all game systems
             int i;
             for(i=0;i<GetLength(ECS.SystemList);i++){
-                if(i != EditorSystem && i!= VoxRenderSystem && i!= VoxModifSystem){
+                if(i != EditorSystem && i!= VoxRenderSystem && i!= VoxModifSystem && i!= PointLightSystem){
                     EnableSystem(i);
                 }
             }

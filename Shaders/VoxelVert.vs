@@ -3,6 +3,20 @@
 in vec3 in_Position;
 in vec3 in_Color;
 in vec3 in_Normal;
+
+struct PLight{
+    vec4 position;
+    vec4 color;
+    float intensity;
+    float range;
+    float align3;
+    float align4;
+};
+const int MAX_POINT_LIGHTS = 10;
+layout (std140) uniform PointLight {
+    PLight lights[MAX_POINT_LIGHTS];
+};
+
 uniform int spriteScale;
 uniform vec3 camPos;
 uniform vec3 objPos;
@@ -16,7 +30,7 @@ out vec3 ex_Position;
 out float depth;
 out vec3 pointLightCol;
 out float pointLightDist;
-out vec3 pointLightDir;
+out vec3 pointLightDir[MAX_POINT_LIGHTS];
 
 float round(float f){
     return fract(f)>=0.5? ceil(f):floor(f);
@@ -35,11 +49,13 @@ void main(void) {
     gl_Position = projection * pixelPos;
     
     vec3 globalPos = vec3(px + objPos.x,py + objPos.y,pz + objPos.z);
+
+    ex_Position = globalPos;
     ex_Color = in_Color;
 
-    pointLightCol =  vec3(1,1,1);
-    pointLightDist = 200.01/pow(distance(globalPos,vec3(-10,-10,30)),2);
-    pointLightDir = normalize(vec3(-10,-10,30)-globalPos);
+    for(int i=0;i<MAX_POINT_LIGHTS;i++){
+        pointLightDir[i] = normalize(lights[i].position.xyz - globalPos);
+    }
 
     if(in_Position.x<0 || globalPos.z>256)
         depth = -1.0;

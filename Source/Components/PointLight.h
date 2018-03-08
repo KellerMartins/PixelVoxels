@@ -14,4 +14,11 @@ void* PointLightCopy(void* data);
 cJSON* PointLightEncode(void** data);
 void* PointLightDecode(cJSON **data);
 
+Vector3 GetPointLightColor(EntityID entity);
+void SetPointLightColor(EntityID entity, Vector3 rgbColor);
+float GetPointLightIntensity(EntityID entity);
+void SetPointLightIntensity(EntityID entity, float intensity);
+float GetPointLightRange(EntityID entity);
+void SetPointLightRange(EntityID entity, float range);
+
 #endif

@@ -1154,6 +1154,74 @@ void DrawComponentsPanel(){
                                 }
                             }
                             componentHeight -= 7;
+                        }else if(c == GetComponentID("PointLight")){
+                            int ommitColorX = 0, ommitColorY = 0, ommitColorZ = 0;
+                            int ommitIntensity = 0, ommitRange = 0;
+
+                            ListCellPointer selEntity = GetFirstCell(SelectedEntities);
+                            Vector3 lastColor = GetPointLightColor(GetElementAsType(selEntity,int));
+                            float lastIntensity = GetPointLightIntensity(GetElementAsType(selEntity,int));
+                            float lastRange = GetPointLightRange(GetElementAsType(selEntity,int));
+                            
+                            ListForEach(selEntity, SelectedEntities){
+                                Vector3 curColor = GetPointLightColor(GetElementAsType(selEntity,int));
+                                float curIntensity = GetPointLightIntensity(GetElementAsType(selEntity,int));
+                                float curRange = GetPointLightRange(GetElementAsType(selEntity,int));
+
+                                if(curColor.x != lastColor.x){
+                                    ommitColorX = 1;
+                                    lastColor.x = 0;
+                                }
+                                if(curColor.y != lastColor.y){
+                                    ommitColorY = 1;
+                                    lastColor.y = 0;
+                                }
+                                if(curColor.z != lastColor.z){
+                                    ommitColorZ = 1;
+                                    lastColor.z = 0;
+                                }
+
+                                if(curIntensity != lastIntensity){
+                                    ommitIntensity = 1;
+                                    lastIntensity = 0;
+                                }
+                                if(curRange != lastRange){
+                                    ommitRange = 1;
+                                    lastRange = 0;
+                                }
+                            }
+                            Vector3 newColor = lastColor;
+                            float newIntensity = lastIntensity;
+                            float newRange = lastRange;
+
+                            Vector3Field("Light color",&newColor,ommitColorX,ommitColorY,ommitColorZ,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1,4, &currentComponentField, &componentHeight);
+                            FloatField("Intensity",&newIntensity,ommitIntensity,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
+                            FloatField("Range",&newRange,ommitRange,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
+
+                            int changedColorX = 0, changedColorY = 0, changedColorZ = 0;
+                            int changedIntensity = 0, changedRange = 0;
+
+                            if(lastColor.x != newColor.x) changedColorX = 1;
+                            if(lastColor.y != newColor.y) changedColorY = 1;
+                            if(lastColor.z != newColor.z) changedColorZ = 1;
+
+                            if(lastIntensity != newIntensity) changedIntensity = 1;
+                            if(lastRange != newRange) changedRange = 1;
+                            
+                            if(changedColorX || changedColorY || changedColorZ || changedIntensity || changedRange){
+                                ListForEach(selEntity, SelectedEntities){
+                                    Vector3 color = GetPointLightColor(GetElementAsType(selEntity,int));
+
+                                    if(changedColorX) color.x = newColor.x;
+                                    if(changedColorY) color.y = newColor.y;
+                                    if(changedColorZ) color.z = newColor.z;
+
+                                    SetPointLightColor(GetElementAsType(selEntity,int),color);
+
+                                    if(changedIntensity) SetPointLightIntensity(GetElementAsType(selEntity,int),newIntensity);
+                                    if(changedRange) SetPointLightRange(GetElementAsType(selEntity,int),newRange);
+                                }
+                            }
                         }
                     }
                     componentHeight -= componentBetweenSpacing;
@@ -2387,6 +2455,7 @@ void RemoveFromSelected(EntityID entity){
 
 //-------------------------- Play mode handling functions --------------------------
 
+//Function responsible for copying the game state to another structure before starting the play mode
 void EnterPlayMode(){
     int c=0,i;
     for(i=0;i<=ECS.maxUsedIndex;i++){
@@ -2413,12 +2482,31 @@ void EnterPlayMode(){
     
 }
 
+//Function responsible to restore the state of the game stored before starting the play mode
 void ExitPlayMode(){
     int c,i;
     for(i=0;i<ECS.maxEntities;i++){
         //Destroy game modified entity before recreate
         if(IsValidEntity(i)){
-            DestroyEntity(i);
+            //This code is similar to the DestroyEntity function, but without destroying the child objects
+            int mask = ECS.Entities[i].mask.mask;
+            c = 0;
+            ListCellPointer compCell;
+            ListForEach(compCell,ECS.ComponentTypes){
+                if(mask & 1){
+                    ((ComponentType*)(GetElement(*compCell)))->destructor(&ECS.Components[c][i].data);
+                }
+                mask >>=1;
+                c++;
+            }
+
+            ECS.Entities[i].mask.mask = 0;
+            ECS.Entities[i].isSpawned = 0;
+            FreeList(&ECS.Entities[i].childs);
+            ECS.Entities[i].isChild = 0;
+            ECS.Entities[i].isParent = 0;
+
+            InsertListStart(&ECS.AvaliableEntitiesIndexes, (void*)&i);
         }
 
         ECS.Entities[i] = entitiesPlaymodeCopy[i];
@@ -2432,7 +2520,7 @@ void ExitPlayMode(){
         }
         //Destroy backup
         FreeList(&entitiesPlaymodeCopy[i].childs);
-
+    
         c=0;
         ListCellPointer comp;
         ListForEach(comp,ECS.ComponentTypes){

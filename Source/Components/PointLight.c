@@ -67,3 +67,57 @@ void* PointLightDecode(cJSON **data){
 
     return pl;
 }
+
+Vector3 GetPointLightColor(EntityID entity){
+     if(!EntityContainsComponent(entity, ThisComponentID())){
+        printf("GetPointLightColor: Entity doesn't have a PointLight component. (%d)\n",entity);
+        return VECTOR3_ZERO;
+    }
+    PointLightData *pl = (PointLightData *)ECS.Components[ThisComponentID()][entity].data;
+    return pl->color;
+}
+
+void SetPointLightColor(EntityID entity, Vector3 rgbColor){
+    if(!EntityContainsComponent(entity, ThisComponentID())){
+        printf("SetPointLightColor: Entity doesn't have a PointLight component. (%d)\n",entity);
+        return;
+    }
+    PointLightData *pl = (PointLightData *)ECS.Components[ThisComponentID()][entity].data;
+    pl->color = rgbColor;
+}
+
+float GetPointLightIntensity(EntityID entity){
+     if(!EntityContainsComponent(entity, ThisComponentID())){
+        printf("GetPointLightIntensity: Entity doesn't have a PointLight component. (%d)\n",entity);
+        return 0;
+    }
+    PointLightData *pl = (PointLightData *)ECS.Components[ThisComponentID()][entity].data;
+    return pl->intensity;
+}
+
+void SetPointLightIntensity(EntityID entity, float intensity){
+    if(!EntityContainsComponent(entity, ThisComponentID())){
+        printf("SetPointLightIntensity: Entity doesn't have a PointLight component. (%d)\n",entity);
+        return;
+    }
+    PointLightData *pl = (PointLightData *)ECS.Components[ThisComponentID()][entity].data;
+    pl->intensity = clamp(intensity,0,INFINITY);
+}
+
+float GetPointLightRange(EntityID entity){
+     if(!EntityContainsComponent(entity, ThisComponentID())){
+        printf("GetPointLightRange: Entity doesn't have a PointLight component. (%d)\n",entity);
+        return 0;
+    }
+    PointLightData *pl = (PointLightData *)ECS.Components[ThisComponentID()][entity].data;
+    return pl->range;
+}
+
+void SetPointLightRange(EntityID entity, float range){
+    if(!EntityContainsComponent(entity, ThisComponentID())){
+        printf("SetPointLightRange: Entity doesn't have a PointLight component. (%d)\n",entity);
+        return;
+    }
+    PointLightData *pl = (PointLightData *)ECS.Components[ThisComponentID()][entity].data;
+    pl->range = clamp(range,0,INFINITY);
+}

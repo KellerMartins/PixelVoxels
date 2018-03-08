@@ -189,13 +189,14 @@ void DestroyEntity(EntityID entity){
 		}
 	}
 
-	int i, mask = ECS.Entities[entity].mask.mask;
-	for(i=0;i<GetLength(ECS.ComponentTypes);i++){
+	int c = 0, mask = ECS.Entities[entity].mask.mask;
+	ListCellPointer compCell;
+	ListForEach(compCell,ECS.ComponentTypes){
 		if(mask & 1){
-			free(ECS.Components[i][entity].data);
-			ECS.Components[i][entity].data = NULL;
+			((ComponentType*)(GetElement(*compCell)))->destructor(&ECS.Components[c][entity].data);
 		}
 		mask >>=1;
+		c++;
 	}
 
 	ECS.Entities[entity].mask.mask = 0;

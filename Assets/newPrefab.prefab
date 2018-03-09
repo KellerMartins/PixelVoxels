@@ -4,7 +4,7 @@
 		"rotation":	[0, 0, 0]
 	},
 	"VoxelModel":	{
-		"modelPath":	"./Models",
+		"modelPath":	"Assets/Game/Models/",
 		"modelName":	"Sea.vox",
 		"smallScale":	false,
 		"center":	[16, 16, 32]
@@ -15,7 +15,7 @@
 				"rotation":	[0, 0, -45]
 			},
 			"VoxelModel":	{
-				"modelPath":	"./Models",
+				"modelPath":	"Assets/Game/Models/",
 				"modelName":	"minichar.vox",
 				"smallScale":	true,
 				"center":	[5, 2, 10]

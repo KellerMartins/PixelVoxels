@@ -22,7 +22,7 @@ void VoxelRendererInit(){
     glGenTextures(1, CubeTex);
 
     //Normal
-    SDL_Surface *cubeimg = IMG_Load("Textures/cube.png");
+    SDL_Surface *cubeimg = IMG_Load("Assets/Game/Textures/cube.png");
     if(!cubeimg){ printf("Failed to load!\n"); return; }
     glBindTexture(GL_TEXTURE_2D, CubeTex[0]);
     

@@ -872,7 +872,7 @@ int InitEngine(){
     else printf(">Compiled/linked shader sucessfully!\n");
 
 	//Load voxel palette
-	LoadVoxelPalette("Textures/magicaPalette.png");
+	LoadVoxelPalette("Assets/Game/Textures/magicaPalette.png");
 
 
 

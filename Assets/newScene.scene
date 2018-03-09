@@ -5,7 +5,7 @@
 				"rotation":	[0, 0, 0]
 			},
 			"VoxelModel":	{
-				"modelPath":	"Models/",
+				"modelPath":	"Assets/Game/Models/",
 				"modelName":	"dune.vox",
 				"smallScale":	false,
 				"center":	[0, 0, 0]
@@ -24,7 +24,7 @@
 				"rotation":	[90, -0, 0]
 			},
 			"VoxelModel":	{
-				"modelPath":	"Models/",
+				"modelPath":	"Assets/Game/Models/",
 				"modelName":	"char.vox",
 				"smallScale":	true,
 				"center":	[0, 10, 0]
@@ -43,7 +43,7 @@
 				"rotation":	[8, 4, 0]
 			},
 			"VoxelModel":	{
-				"modelPath":	"Models/",
+				"modelPath":	"Assets/Game/Models/",
 				"modelName":	"dune.vox",
 				"smallScale":	true,
 				"center":	[0, 100, 0]
@@ -62,7 +62,7 @@
 				"rotation":	[0, 0, 0]
 			},
 			"VoxelModel":	{
-				"modelPath":	"Models/",
+				"modelPath":	"Assets/Game/Models/",
 				"modelName":	"bullet.vox",
 				"smallScale":	false,
 				"center":	[0, 0, 0]
@@ -81,7 +81,7 @@
 				"rotation":	[0, 0, 0]
 			},
 			"VoxelModel":	{
-				"modelPath":	"Models/",
+				"modelPath":	"Assets/Game/Models/",
 				"modelName":	"bullet.vox",
 				"smallScale":	false,
 				"center":	[0, 0, 0]
@@ -100,7 +100,7 @@
 				"rotation":	[45, 0, 120]
 			},
 			"VoxelModel":	{
-				"modelPath":	"Models/Tests",
+				"modelPath":	"Assets/Game/Models/Tests",
 				"modelName":	"glock.vox",
 				"smallScale":	true,
 				"center":	[0, 0, 0]
@@ -119,7 +119,7 @@
 				"rotation":	[0, 0, 0]
 			},
 			"VoxelModel":	{
-				"modelPath":	"Models/",
+				"modelPath":	"Assets/Game/Models/",
 				"modelName":	"plasmaPistolSmall.vox",
 				"smallScale":	true,
 				"center":	[0, 0, 0]

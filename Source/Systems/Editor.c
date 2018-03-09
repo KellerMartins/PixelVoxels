@@ -2562,7 +2562,7 @@ void OpenFileBrowser(char *initialPath,void (*onOpen)()){
     if(initialPath){
         memcpy(filePath,initialPath,_TINYDIR_PATH_MAX*sizeof(char));
     }else{
-        char DefaultPath[] = "./";
+        char DefaultPath[] = "Assets";
         memcpy(filePath,DefaultPath,sizeof(DefaultPath));
 
         if(fileBrowserOpened){

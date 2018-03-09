@@ -114,7 +114,6 @@ void GetGlobalTransform(EntityID entity, Vector3 *outPos, Vector3 *outRot){
     if(EntityIsChild(entity)){
         Vector3 parentGlobalPos, parentGlobalRot;
         GetGlobalTransform(GetEntityParent(entity),&parentGlobalPos, &parentGlobalRot);
-
         Vector3 rot = (Vector3){parentGlobalRot.x,parentGlobalRot.y,parentGlobalRot.z};
 
         float sinx = sin(rot.x * PI_OVER_180);
@@ -128,18 +127,17 @@ void GetGlobalTransform(EntityID entity, Vector3 *outPos, Vector3 *outRot){
         float ryt1 = cosy*sinz, ryt2 = (cosx*siny*sinz - cosz*sinx), ryt3 = (cosx*cosz + sinx*siny*sinz);
         float rzt1 = cosx*cosy, rzt2 = sinx*cosy,                    rzt3 = siny;
         
-        Vector3 pos = transform->position;
-        Vector3 rotatedPos = {pos.x, pos.y, pos.z};
-
+        Vector3 rotatedPos;
         //Apply rotation matrix
-        Vector3 p = (Vector3){rotatedPos.x, rotatedPos.y, rotatedPos.z};
-        rotatedPos.x = p.x*rxt1 + p.z*rxt2 + p.y*rxt3;
-        rotatedPos.y = p.z*ryt1 + p.x*ryt2 + p.y*ryt3;
-        rotatedPos.z = p.z*rzt1 + p.x*rzt2 - p.y*rzt3;
+        Vector3 p = (Vector3){transform->position.x, transform->position.y, transform->position.z};
+        rotatedPos.x = p.x*rxt1 + p.y*rxt2 + p.z*rxt3;
+        rotatedPos.y = p.x*ryt1 + p.z*ryt2 + p.y*ryt3;
+        rotatedPos.z = p.z*rzt1 + p.y*rzt2 - p.x*rzt3;
 
         rotatedPos = (Vector3){ rotatedPos.x + parentGlobalPos.x, rotatedPos.y + parentGlobalPos.y, rotatedPos.z + parentGlobalPos.z};
 
         if(outPos) *outPos = rotatedPos;
+        //Currently incorrect, need to fix
         if(outRot) *outRot = Add(transform->rotation, parentGlobalRot);
         
     }else{

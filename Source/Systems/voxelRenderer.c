@@ -60,8 +60,9 @@ void VoxelRendererUpdate(){
         if(!obj->model || !obj->enabled){
             continue;
         }
-        Vector3 position = GetPosition(entity);
-        Vector3 rotation = GetRotation(entity);
+        Vector3 position;
+        Vector3 rotation;
+        GetGlobalTransform(entity, &position, &rotation);
         //Configure OpenGL parameters to render point sprites
 
         //Render game objects only in the [0.01,1.0] range, as [0,0.01] is reserved for UI rendering

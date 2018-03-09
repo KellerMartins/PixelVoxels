@@ -32,7 +32,6 @@ void VoxelPhysicsInit(){
 //Simple collision and kinematic movement
 //Warning: Not even close to be physically or mathematically correct!
 void VoxelPhysicsUpdate(){
-
     //Runs for all entities that use voxel physics
     EntityID entity;
 	for(entity = 0; entity <= ECS.maxUsedIndex; entity++){
@@ -45,7 +44,7 @@ void VoxelPhysicsUpdate(){
         if(!IsEmptyComponentMask(ThisSystem->excluded) && EntityContainsMask(entity,ThisSystem->excluded) ) continue;
 
 
-        if(IsStaticRigidbody(entity)) {
+        if(IsStaticRigidbody(entity) || EntityIsChild(entity)) {
             SetVelocity(entity,VECTOR3_ZERO);
             SetAcceleration(entity,VECTOR3_ZERO);
             continue;

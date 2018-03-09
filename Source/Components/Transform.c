@@ -1,6 +1,7 @@
 #include "Transform.h"
 
 //Can't exist without being an component from an entity
+//Defines the local transform of an entity
 typedef struct Transform{
     Vector3 position;
     Vector3 rotation;
@@ -91,23 +92,7 @@ void SetPosition(EntityID entity, Vector3 pos){
         return;
     }
     Transform *transform = (Transform *)ECS.Components[ThisComponentID()][entity].data;
-    Vector3 oldPos = transform->position;
     transform->position = pos;
-
-    //Modify childs position too
-    if(EntityIsParent(entity)){
-        Vector3 deltaPos = Subtract(transform->position,oldPos);
-        
-        ListCellPointer current = GetFirstCell(ECS.Entities[entity].childs);
-        while(current){
-            EntityID child = *((EntityID*) GetElement(*current));
-
-            if(EntityContainsComponent(child, ThisComponentID())){
-                SetPosition(child, Add(GetPosition(child),deltaPos));
-            }
-            current = GetNextCell(current);
-        }
-    }
 }
 
 void SetRotation(EntityID entity, Vector3 rot){
@@ -116,47 +101,49 @@ void SetRotation(EntityID entity, Vector3 rot){
         return;
     }
     Transform *transform = (Transform *)ECS.Components[ThisComponentID()][entity].data;
-    //Vector3 oldRot = (Vector3){transform->rotation.x,transform->rotation.y,transform->rotation.z};
     transform->rotation = rot;
+}
 
-    //Rotation transfer to childs
-    //Disabled until I find a way to reverse the rotation, as all rotations with the code below are permanent
-    /*
-    if(EntityIsParent(entity)){
-        Vector3 deltaRot = ScalarMult(Subtract(transform->rotation,oldRot),-1);
+void GetGlobalTransform(EntityID entity, Vector3 *outPos, Vector3 *outRot){
+    if(!EntityContainsComponent(entity, ThisComponentID())){
+        printf("GetGlobalTransform: Entity doesn't have a Transform component. (%d)\n",entity);
+        return;
+    }
+    Transform *transform = (Transform *)ECS.Components[ThisComponentID()][entity].data;
 
-        float sinx = sin(deltaRot.x * PI_OVER_180);
-        float cosx = cos(deltaRot.x * PI_OVER_180);
-        float siny = sin(deltaRot.y * PI_OVER_180);
-        float cosy = cos(deltaRot.y * PI_OVER_180);
-        float sinz = sin(deltaRot.z * PI_OVER_180);
-        float cosz = cos(deltaRot.z * PI_OVER_180);
+    if(EntityIsChild(entity)){
+        Vector3 parentGlobalPos, parentGlobalRot;
+        GetGlobalTransform(GetEntityParent(entity),&parentGlobalPos, &parentGlobalRot);
 
-        float rxt1 = cosy*cosz, rxt2 = siny,                         rxt3 = cosy*sinz;
-        float ryt1 = cosy*sinx, ryt2 = (cosz*sinx*siny - cosx*sinz), ryt3 = (cosx*cosz + sinx*siny*sinz);
-        float rzt1 = cosx*cosy, rzt2 = (cosx*cosz*siny + sinx*sinz), rzt3 = (cosx*siny*sinz - cosz*sinx);
+        Vector3 rot = (Vector3){parentGlobalRot.x,parentGlobalRot.y,parentGlobalRot.z};
+
+        float sinx = sin(rot.x * PI_OVER_180);
+        float cosx = cos(rot.x * PI_OVER_180);
+        float siny = sin(rot.y * PI_OVER_180);
+        float cosy = cos(rot.y * PI_OVER_180);
+        float sinz = sin(rot.z * PI_OVER_180);
+        float cosz = cos(rot.z * PI_OVER_180);
+
+        float rxt1 = cosy*cosz, rxt2 = (cosz*sinx*siny - cosx*sinz), rxt3 = (cosx*cosz*siny + sinx*sinz);
+        float ryt1 = cosy*sinz, ryt2 = (cosx*siny*sinz - cosz*sinx), ryt3 = (cosx*cosz + sinx*siny*sinz);
+        float rzt1 = cosx*cosy, rzt2 = sinx*cosy,                    rzt3 = siny;
         
-        ListCellPointer current = GetFirstCell(ECS.Entities[entity].childs);
-        while(current){
-            EntityID child = *((EntityID*) GetElement(*current));
+        Vector3 pos = transform->position;
+        Vector3 rotatedPos = {pos.x, pos.y, pos.z};
 
-            if(EntityContainsComponent(child, ThisComponentID())){
-                Vector3 pos = GetPosition(child);
-                Vector3 rotatedPos = { pos.x - transform->position.x, pos.y - transform->position.y, pos.z - transform->position.z};
+        //Apply rotation matrix
+        Vector3 p = (Vector3){rotatedPos.x, rotatedPos.y, rotatedPos.z};
+        rotatedPos.x = p.x*rxt1 + p.z*rxt2 + p.y*rxt3;
+        rotatedPos.y = p.z*ryt1 + p.x*ryt2 + p.y*ryt3;
+        rotatedPos.z = p.z*rzt1 + p.x*rzt2 - p.y*rzt3;
 
-                //Apply (Transposed) rotation matrix
-                Vector3 p = (Vector3){rotatedPos.x, rotatedPos.y, rotatedPos.z};
-                rotatedPos.x = p.x*rxt1 - p.z*rxt2 + p.y*rxt3;
-                rotatedPos.y = p.z*ryt1 + p.x*ryt2 + p.y*ryt3;
-                rotatedPos.z = p.z*rzt1 + p.x*rzt2 + p.y*rzt3;
+        rotatedPos = (Vector3){ rotatedPos.x + parentGlobalPos.x, rotatedPos.y + parentGlobalPos.y, rotatedPos.z + parentGlobalPos.z};
 
-                rotatedPos = (Vector3){ rotatedPos.x + transform->position.x, rotatedPos.y + transform->position.y, rotatedPos.z + transform->position.z};
-
-                //rotatedPos = (Vector3){roundf(rotatedPos.x), roundf(rotatedPos.y), roundf(rotatedPos.z)};
-                SetPosition(child, rotatedPos);
-                SetRotation(child, Subtract(GetRotation(child), deltaRot));
-            }
-            current = GetNextCell(current);
-        }
-    }*/
+        if(outPos) *outPos = rotatedPos;
+        if(outRot) *outRot = Add(transform->rotation, parentGlobalRot);
+        
+    }else{
+        if(outPos) *outPos = transform->position;
+        if(outRot) *outRot = transform->rotation;
+    }
 }

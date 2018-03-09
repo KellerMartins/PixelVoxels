@@ -1156,6 +1156,16 @@ void DrawComponentsPanel(){
                             }
                             componentHeight -= 7;
                         }else if(c == GetComponentID("PointLight")){
+
+                            glBegin(GL_QUADS);
+                                //Component background
+                                glColor3f(0.1,0.1,0.15);
+                                glVertex2f( Screen.windowWidth-componentWindowLength,  componentHeight);
+                                glVertex2f( Screen.windowWidth-componentWindowWidthSpacing,  componentHeight);
+                                glVertex2f( Screen.windowWidth-componentWindowWidthSpacing, componentHeight - 80);
+                                glVertex2f( Screen.windowWidth-componentWindowLength, componentHeight - 80);
+                            glEnd();
+
                             int ommitColorX = 0, ommitColorY = 0, ommitColorZ = 0;
                             int ommitIntensity = 0, ommitRange = 0;
 
@@ -1194,6 +1204,10 @@ void DrawComponentsPanel(){
                             Vector3 newColor = lastColor;
                             float newIntensity = lastIntensity;
                             float newRange = lastRange;
+
+                            componentHeight -= 6;
+                            DrawRectangle((Vector3){Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentHeight-20}, (Vector3){Screen.windowWidth-componentWindowWidthSpacing-componentNameLeftSpacing, componentHeight},newColor.x,newColor.y,newColor.z);
+                            componentHeight -= 22;
 
                             Vector3Field("Light color",&newColor,ommitColorX,ommitColorY,ommitColorZ,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1,4, &currentComponentField, &componentHeight);
                             FloatField("Intensity",&newIntensity,ommitIntensity,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);

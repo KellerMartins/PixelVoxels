@@ -540,7 +540,7 @@ void DrawMenuWindow(){
                 TTF_SizeText(gizmosFont,"Select all",&btw,&bth);
                 RenderText("Select all", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
 
-                //Deselect all butotn
+                //Deselect all button
                 spacing = bMax.y-bMin.y + 4;
                 bMin.y -= spacing;
                 bMax.y -= spacing;
@@ -1481,7 +1481,7 @@ void DrawEntitiesPanel(){
         glVertex2f( entityWindowLength, 0);
     glEnd();
 
-
+    //Draw Entities boxes
     int entityHeight = Screen.windowHeight + entityStartHeight-entityWindowTopHeightSpacing;
     for(entity=0;entity<=ECS.maxUsedIndex;entity++){
         if(IsValidEntity(entity) && !EntityIsChild(entity)){
@@ -1490,13 +1490,21 @@ void DrawEntitiesPanel(){
     }
 
     //Scrollbar
-    int mouseOverEntityPanel = MouseOverBox(mousePos, (Vector3){0,0,0}, (Vector3){entityWindowLength,Screen.windowHeight-entityWindowTopHeightSpacing,0},0);
+    int mouseOverEntityPanel = MouseOverBox(mousePos, (Vector3){-1,-1,0}, (Vector3){entityWindowLength,Screen.windowHeight-entityWindowTopHeightSpacing,0},0);
     glLineWidth(clamp((entityWindowWidthSpacing/2 - 2) * 2/Screen.gameScale,1,Screen.windowWidth));
-    int offscreenPixels = -clamp(entityHeight-entityStartHeight,-(Screen.windowHeight-10),0);
+    int offscreenPixels = -clamp(entityHeight-entityStartHeight,-INFINITY,0);
     glBegin(GL_LINES);  
     
         Vector3 scrollbarStart = {entityWindowWidthSpacing/2 ,Screen.windowHeight-entityStartHeight - entityWindowTopHeightSpacing,0};
         Vector3 scrollbarEnd = {entityWindowWidthSpacing/2 ,offscreenPixels - entityStartHeight + 1,0};
+
+        //If the scrollbar is only 10 pixels high, make the bar lerp between the top and bottom height, instead of
+        //showing exactly the pixel movement of the bar
+        if(scrollbarEnd.y > scrollbarStart.y-10){
+            float frac = fabs(entityStartHeight/(float)offscreenPixels);
+            scrollbarStart.y = Lerp(frac, Screen.windowHeight- entityWindowTopHeightSpacing - 5, 8) - 5;
+            scrollbarEnd.y = Lerp(frac, Screen.windowHeight- entityWindowTopHeightSpacing - 5, 8) + 5;
+        }
         
         if(mouseOverEntityPanel){
             if(!movingEntitiesScrollbar){
@@ -1530,7 +1538,8 @@ void DrawEntitiesPanel(){
             if(movingEntitiesScrollbar == 1){
                 if(GetMouseButton(SDL_BUTTON_LEFT)){
                     if(offscreenPixels>0){
-                        double scrollbarMovement = norm(VectorProjection(deltaMousePos,(Vector3){0,1,0})) * sign(deltaMousePos.y);
+                        float scrollMultiplier = clamp(offscreenPixels/(float)(Screen.windowHeight-entityWindowTopHeightSpacing),1,INFINITY);
+                        double scrollbarMovement = norm(VectorProjection(deltaMousePos,(Vector3){0,1,0})) * sign(deltaMousePos.y)*scrollMultiplier;
                         entityStartHeight = clamp(entityStartHeight-scrollbarMovement,0,offscreenPixels);
                     }else{
                         entityStartHeight = 0;
@@ -1584,6 +1593,8 @@ void DrawEntitiesPanel(){
 }
 
 void DrawEntityElement(EntityID entity, int *entityHeight, int depth){
+
+    //Draw this entity rect
     if((*entityHeight)>0 && (*entityHeight)<Screen.windowHeight-entityWindowTopHeightSpacing+TTF_FontHeight(gizmosFont)+2){
 
         int isSelected = IsSelected(entity);
@@ -1591,7 +1602,8 @@ void DrawEntityElement(EntityID entity, int *entityHeight, int depth){
         Vector3 elMax = {entityWindowLength,(*entityHeight),0};
         
         //Entity element
-        if(MouseOverBox(mousePos, elMin, elMax,0)){
+        //If mouse is over the item and is inside the entityWindow (Condition to avoid overlapping with the add entity button)
+        if(MouseOverBox(mousePos, elMin, elMax,0) && mousePos.y<Screen.windowHeight-entityWindowTopHeightSpacing){
             if(isSelected){
                 DrawRectangle(elMin,elMax,0.3,0.3,0.3);
 
@@ -1629,16 +1641,17 @@ void DrawEntityElement(EntityID entity, int *entityHeight, int depth){
         if(entityWindowLength - (entityNameLeftSpacing +depth*10)>= w){
             RenderText(entityName, lightWhite, entityNameLeftSpacing +depth*10, (*entityHeight) - TTF_FontHeight(gizmosFont), gizmosFont);
         }
-        (*entityHeight) -= TTF_FontHeight(gizmosFont)+2 + entityBetweenSpacing;
+    }
 
-        if(EntityIsParent(entity)){
-            ListCellPointer childCell;
-            ListForEach(childCell, *GetChildsList(entity)){
-                    DrawEntityElement(GetElementAsType(childCell,EntityID), entityHeight, depth+1);
-            }
+    //Add entities spacing
+    (*entityHeight) -= TTF_FontHeight(gizmosFont)+2 + entityBetweenSpacing;
+
+    //Draw child entities boxes
+    if(EntityIsParent(entity)){
+        ListCellPointer childCell;
+        ListForEach(childCell, *GetChildsList(entity)){
+            DrawEntityElement(GetElementAsType(childCell,EntityID), entityHeight, depth+1);
         }
-    }else{
-        (*entityHeight) -= TTF_FontHeight(gizmosFont)+2 + entityBetweenSpacing;
     }
 }
 
@@ -2017,7 +2030,7 @@ int PointButton(Vector3 pos,int iconID, int scale, Vector3 defaultColor, Vector3
             state = 0;
         }
 
-        glVertex2f( roundf(pos.x), roundf(pos.y));
+        glVertex2f( roundf(pos.x) + 0.375, roundf(pos.y) + 0.375);
     glEnd();
     glDisable(GL_TEXTURE_2D);
     glDisable(GL_BLEND);
@@ -2063,7 +2076,7 @@ int PointToggle(int *data,Vector3 pos,int onIconID, int offIconID, int undefined
             state = 0;
         }
 
-        glVertex2f( roundf(pos.x), roundf(pos.y));
+        glVertex2f( roundf(pos.x) + 0.375, roundf(pos.y) + 0.375);
     glEnd();
     glDisable(GL_TEXTURE_2D);
     glDisable(GL_BLEND);
@@ -2082,7 +2095,7 @@ void DrawPointIcon(Vector3 pos,int iconID, int scale, Vector3 color){
 
     glBegin(GL_POINTS);
         glColor3f(color.x,color.y,color.z);
-        glVertex2f( roundf(pos.x), roundf(pos.y));
+        glVertex2f( roundf(pos.x) + 0.375, roundf(pos.y) + 0.375);
     glEnd();
     glDisable(GL_TEXTURE_2D);
     glDisable(GL_BLEND);
@@ -2436,8 +2449,10 @@ void LoadUITexture(char *path,int index){
     
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    GLfloat borderColor[4] = {0,0,0,0};
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
 
     SDL_FreeSurface(img);
 }

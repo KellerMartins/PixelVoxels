@@ -1416,33 +1416,41 @@ void InputUpdate(){
 
 	
 	if(SDL_IsTextInputActive()){
-		
+
+		//Repeat action if the key is hold
+		static double keyboardHold = 0;
+		keyboardHold+= Time.deltaTime;
+
 		//Backspace delete
-		if(GetKeyDown(SDL_SCANCODE_BACKSPACE)){
+		if(GetKeyDown(SDL_SCANCODE_BACKSPACE) || (GetKey(SDL_SCANCODE_BACKSPACE) && keyboardHold >= 0.05)){
 			if(Input.textInputCursorPos>0){
 				memmove(Input.textInput + Input.textInputCursorPos-1,Input.textInput + Input.textInputCursorPos,Input.textInputLength - Input.textInputCursorPos);
 				memset(Input.textInput + Input.textInputLength-1, '\0',1);
 				Input.textInputLength -= 1;
 				Input.textInputCursorPos -=1;
 			}
+			keyboardHold = 0;
 		}
 		
 		//Del delete
-		if(GetKeyDown(SDL_SCANCODE_DELETE)){//string
+		if(GetKeyDown(SDL_SCANCODE_DELETE) || (GetKey(SDL_SCANCODE_DELETE) && keyboardHold >= 0.05)){//string
 			if(Input.textInputLength-Input.textInputCursorPos>0){
 				//Deletes the character in the cursor position by moving the sucessing characters to the left and setting the last character as a '\0'
 				memmove(Input.textInput + Input.textInputCursorPos,Input.textInput + Input.textInputCursorPos+1,Input.textInputLength - (Input.textInputCursorPos + 1));
 				memset(Input.textInput + Input.textInputLength-1, '\0',1);
 				Input.textInputLength -= 1;
 			}
+			keyboardHold = 0;
 		}
 		
 		//Cursor movement
-		if(GetKeyDown(SDL_SCANCODE_LEFT)){
+		if(GetKeyDown(SDL_SCANCODE_LEFT) || (GetKey(SDL_SCANCODE_LEFT) && keyboardHold >= 0.05)){
 			Input.textInputCursorPos = Input.textInputCursorPos<1? 0:Input.textInputCursorPos-1;
+			keyboardHold = 0;
 		}
-		if(GetKeyDown(SDL_SCANCODE_RIGHT)){
+		if(GetKeyDown(SDL_SCANCODE_RIGHT) || (GetKey(SDL_SCANCODE_RIGHT) && keyboardHold >= 0.05)){
 			Input.textInputCursorPos = Input.textInputCursorPos<Input.textInputLength? Input.textInputCursorPos+1:Input.textInputLength;
+			keyboardHold = 0;
 		}
 
 		//Home and End shortcuts
@@ -1452,6 +1460,10 @@ void InputUpdate(){
 		if(GetKeyDown(SDL_SCANCODE_END)){
 			Input.textInputCursorPos = Input.textInputLength;
 		}
+
+		//Increase delay between the key press and key repetition
+		if(GetKeyDown(SDL_SCANCODE_BACKSPACE) || GetKeyDown(SDL_SCANCODE_DELETE) || GetKeyDown(SDL_SCANCODE_LEFT) || GetKeyDown(SDL_SCANCODE_RIGHT))
+			keyboardHold = -0.5;
 	}
 }
 

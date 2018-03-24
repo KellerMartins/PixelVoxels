@@ -409,3 +409,34 @@ float fModulus(float a, float b)
 
 // ----------- Misc. functions ---------------
 
+//Compare if two zero terminated strings are exactly equal
+int StringCompareEqual(char *stringA, char *stringB){
+	int i, isEqual = 1;
+
+	//Check characters until the string A ends
+	for(i=0; stringA[i] != '\0'; i++){
+		if(stringB[i] != stringA[i]){
+			isEqual = 0; 
+			break;
+		}
+	}
+
+	//Check if B ends in the same point as A, if not B contains A, but is longer than A
+	return isEqual? (stringB[i] == '\0'? 1:0) : 0;
+}
+
+//Same as above, but case insensitive
+int StringCompareEqualCaseInsensitive(char *stringA, char *stringB){
+	int i, isEqual = 1;
+
+	//Check characters until the string A ends
+	for(i=0; stringA[i] != '\0'; i++){
+		if(tolower(stringB[i]) != tolower(stringA[i])){
+			isEqual = 0; 
+			break;
+		}
+	}
+
+	//Check if B ends in the same point as A, if not B contains A, but is longer than A
+	return isEqual? (stringB[i] == '\0'? 1:0) : 0;
+}

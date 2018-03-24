@@ -97,22 +97,17 @@ int RegisterNewSystem(char systemName[25], int priority, ComponentMask required,
 
 //-- Component functions --
 ComponentID GetComponentID(char componentName[25]){
-	int i,index = 0;
+	int index = 0;
 	ListCellPointer current = GetFirstCell(ECS.ComponentTypes);
 	while(current){
 		ComponentType currType = *((ComponentType*)GetElement(*current));
 
-		int isEqual = 1;
-		//Compare only if equal, breaking if any difference appears
-		for(i=0;i<25 && currType.name[i] != '\0';i++){
-			if(componentName[i]!=currType.name[i]){isEqual = 0; break;}
-		}
-		if(isEqual) return index;
+		if(StringCompareEqual(currType.name, componentName)) return index;
 
 		index++;
 		current = GetNextCell(current);
 	}
-	printf("NOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO (%s)",componentName);
+	printf("GetComponentID: Component named %s not found\n",componentName);
 	return -1;
 }
 
@@ -425,7 +420,7 @@ int ExportScene(char path[], char name[]){
 
 	int i;
 	for(i=0;i<=ECS.maxUsedIndex;i++){
-		if(IsValidEntity(i)){
+		if(IsValidEntity(i) && !EntityIsChild(i)){
 			cJSON_AddItemToArray(entitiesArray, EncodeEntity(i));
 		}
 	}
@@ -663,18 +658,11 @@ int UnsetParent(EntityID child){
 
 //-- System functions --
 SystemID GetSystemID(char systemName[25]){
-	int i,index = 0;
+	int index = 0;
 	ListCellPointer current;
 	ListForEach(current,ECS.SystemList){
 		System currSys = GetElementAsType(current,System);
-
-		int isEqual = 1;
-		//Compare only if equal, breaking if any difference appears
-		for(i=0;i<25 && currSys.name[i] != '\0';i++){
-			if(systemName[i]!=currSys.name[i]){isEqual = 0; break;}
-		}
-		if(isEqual) return index;
-		
+		if(StringCompareEqual(currSys.name, systemName)) return index;	
 		index++;
 	}
 	return -1;

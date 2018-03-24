@@ -561,7 +561,7 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
         strcat(fullPath,"/");
     }
     strcat(fullPath,modelName);
-    printf("\nLoading model: (%s)(%s)(%s)\n",modelPath,modelName,fullPath);
+    printf("\nLoading model: (%s)\n",fullPath);
     FILE* file = fopen(fullPath,"rb");
 
     if(file == NULL){

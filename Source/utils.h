@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include <SDL2/SDL.h>
 
 #define PI_OVER_180 0.01745329251
@@ -144,4 +145,8 @@ int Step(float edge, float x );
 float Smoothstep(float edge0, float edge1, float x);
 int Modulus(int a, int b);
 float fModulus(float a, float b);
+
+int StringCompareEqual(char *stringA, char *stringB);
+int StringCompareEqualCaseInsensitive(char *stringA, char *stringB);
+
 #endif

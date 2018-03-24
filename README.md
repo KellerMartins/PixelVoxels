@@ -1,10 +1,13 @@
 # Vopix Engine
 Pixel art voxel rendering experiment.
-#### Currently supports:
+#### Features:
+* ECS based architecture
+* Scene and Prefab editor
+* Simple physics collision
 * .vox File loading
-* Multiple voxel objects renderization in isometric pixel art
+    * Single object
+    * Multiple objects with position and rotation
+* Multiple voxel objects rendering in isometric pixel art
     * OpenGL renderer
     * Outline, vignette and chromatic aberration effects
-    * Self shadowing and shadow casting
-* Collision with destruction
-* Object pool
+    * Point lights and directional light

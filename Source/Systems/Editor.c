@@ -50,17 +50,34 @@ char *textFieldString = NULL;
 char scenePath[_TINYDIR_PATH_MAX] = "";
 char sceneName[_TINYDIR_FILENAME_MAX] = "";
 
-//File browser data;
-List Folders; //List of tinydir_file
-List Files;   //List of tinydir_file
-List Paths;   //List of char*
-int indexPath;
-char filePath[_TINYDIR_PATH_MAX];
-char fileName[_TINYDIR_FILENAME_MAX];
-char fileExtension[_TINYDIR_FILENAME_MAX] = "";
-void (*onOpenFunction)();
-int fileBrowserOpened = 0; //File browser open status (0 = not opened, 1 = opened valid folder, -1 failed to open)
-int fbItemsScroll = 0;     //Line of items scrolled
+//File browser "namespace"
+typedef struct {
+    List folders; //List of tinydir_file
+    List files;   //List of tinydir_file
+    List paths;   //List of char*
+    int indexPath;
+    char filePath[_TINYDIR_PATH_MAX];
+    char fileName[_TINYDIR_FILENAME_MAX];
+    char fileExtension[_TINYDIR_FILENAME_MAX];
+    void (*onConfirmFunction)();
+    int opened; //File browser open status (0 = not opened, 1 = opened (load mode), 2 = opened (save mode), -1 failed to open)
+    int itemsScroll;     //Line of items scrolled
+}FileBrowserData;
+FileBrowserData fileBrowser = {.fileExtension = "", .itemsScroll = 0, .opened = 0};
+
+//Dialog window "namespace"
+typedef struct {
+    int opened;
+    char contentString[256];
+    char option1String[8];
+    char option2String[8];
+    char option3String[8];
+    void(*option1Function)();
+    void(*option2Function)();
+    void(*option3Function)();
+
+}DialogWindowData;
+DialogWindowData dialog = {.opened = 0, .option1Function = NULL, .option2Function = NULL, .option3Function = NULL};
 
 //Input data
 static Vector3 mousePos = {0,0,0};
@@ -80,12 +97,14 @@ void DrawTransformGizmos();
 void DrawComponentsPanel();
 void DrawEntitiesPanel();
 void DrawFileBrowser();
+void DrawDialogWindow();
 
 int DrawComponentHeader(ComponentID component, int* curHeight);
 void DrawEntityElement(EntityID entity, int *entityHeight, int depth);
 
 void DrawRectangle(Vector3 min, Vector3 max, float r, float g, float b);
 void DrawPointIcon(Vector3 pos,int iconID, int scale, Vector3 color);
+void StringField(char *title, char *data, int maxChars, int ommit,int x, int w, int* curField, int* curHeight);
 void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,int x, int w, int fieldsSpacing, int* curField, int* curHeight);
 void FloatField(char *title, float *data,int ommit,int x, int w, int* curField, int* curHeight);
 void IntField(char *title, int *data,int ommit,int x, int w, int* curField, int* curHeight);
@@ -102,11 +121,18 @@ Vector3 WorldVectorToScreenVector(Vector3 v);
 int IsSelected(EntityID entity);
 void RemoveFromSelected(EntityID entity);
 
-void OpenFileBrowser(char *initialPath,void(*onOpen)());
+void OpenFileBrowser(int mode, char *initialPath,void(*onOpen)());
 void FileBrowserExtension(char *ext);
 void CloseFileBrowser();
+void FBOverrideFileDialogConfirmation();
+void FBOverrideFileDialogCancel();
 void FBLoadModel();
 void FBLoadScene();
+void FBSaveScene();
+void FBExportPrefab();
+
+void OpenDialogWindow(char content[], char option1[], char option2[], char option3[], void(*op1Func)(), void(*op2Func)(), void(*op3Func)());
+void CloseDialogWindow();
 
 void EnterPlayMode();
 void ExitPlayMode();
@@ -200,10 +226,9 @@ void EditorUpdate(){
     glBindFramebuffer(GL_FRAMEBUFFER, Rendering.frameBuffer);
     glViewport(0,0,Screen.gameWidth,Screen.gameHeight);
 
-
     //Draw UI windows and gizmos
     if(!menuOpened){
-        if(!fileBrowserOpened && !hideGizmos){
+        if(!fileBrowser.opened && !hideGizmos){
             DrawTransformGizmos();
         }
 
@@ -227,7 +252,7 @@ void EditorUpdate(){
         RenderText("Menu", brightWhite, 16, Screen.windowHeight-(entityWindowTopHeightSpacing/2)+5, gizmosFont);
 
         //Delete shortcut
-        if(GetKeyDown(SDL_SCANCODE_DELETE) && editingField<0  && !fileBrowserOpened){
+        if(GetKeyDown(SDL_SCANCODE_DELETE) && editingField<0  && !fileBrowser.opened){
             ListCellPointer sEntity;
             ListForEach(sEntity,SelectedEntities){
                 DestroyEntity(GetElementAsType(sEntity,EntityID));
@@ -271,13 +296,17 @@ void EditorUpdate(){
             //LoadScene("Assets", "newScene.scene");
         }
     }else{
-        if(!fileBrowserOpened){
+        if(!fileBrowser.opened){
             DrawMenuWindow();
         }
     }
 
-    if(fileBrowserOpened){
+    if(fileBrowser.opened && !dialog.opened){
         DrawFileBrowser();
+    }
+
+    if(dialog.opened){
+        DrawDialogWindow();
     }
 
     //Return depth to default values
@@ -289,7 +318,7 @@ void EditorUpdate(){
 void EditorFree(){
     FreeList(&SelectedEntities);
 
-    if(fileBrowserOpened) CloseFileBrowser();
+    if(fileBrowser.opened) CloseFileBrowser();
     
     int c=0,i;
     //Free entities backup
@@ -410,9 +439,9 @@ void DrawMenuWindow(){
                     DrawRectangle(bMin,bMax,0.3,0.3,0.4);
                     if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
                         if(scenePath[0] != '\0'){
-                            OpenFileBrowser(scenePath,FBLoadScene);
+                            OpenFileBrowser(0,scenePath,FBLoadScene);
                         }else{
-                            OpenFileBrowser(NULL,FBLoadScene);
+                            OpenFileBrowser(0,NULL,FBLoadScene);
                         }
                         FileBrowserExtension("scene");
                     }
@@ -429,7 +458,13 @@ void DrawMenuWindow(){
                 if(MouseOverBox(mousePos, bMin, bMax,0)){
                     DrawRectangle(bMin,bMax,0.3,0.3,0.4);
                     if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
-                        menuOpened = 1;
+                        if(scenePath[0] != '\0'){
+                            OpenFileBrowser(1,scenePath,FBSaveScene);
+                        }else{
+                            OpenFileBrowser(1,NULL,FBSaveScene);
+                        }
+                        FileBrowserExtension("scene");
+                        
                     }
                 }else{
                     DrawRectangle(bMin,bMax,0.2,0.2,0.35);
@@ -469,13 +504,18 @@ void DrawMenuWindow(){
                 //New Scene button
                 bMin = (Vector3){optionsBgMin.x + 10,optionsBgMax.y-55};
                 bMax = (Vector3){optionsBgMin.x + 270,optionsBgMax.y-25};
-                if(MouseOverBox(mousePos, bMin, bMax,0)){
-                    DrawRectangle(bMin,bMax,0.3,0.3,0.4);
-                    if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
-                        menuOpened = 1;
+                if(!IsListEmpty(SelectedEntities)){
+                    if(MouseOverBox(mousePos, bMin, bMax,0)){
+                        DrawRectangle(bMin,bMax,0.3,0.3,0.4);
+                        if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
+                            OpenFileBrowser(1,NULL,FBExportPrefab);
+                            FileBrowserExtension("prefab");
+                        }
+                    }else{
+                        DrawRectangle(bMin,bMax,0.2,0.2,0.35);
                     }
                 }else{
-                    DrawRectangle(bMin,bMax,0.2,0.2,0.35);
+                    DrawRectangle(bMin,bMax,0.2,0.2,0.2);
                 }
                 TTF_SizeText(gizmosFont,"Export selected",&btw,&bth);
                 RenderText("Export selected", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
@@ -1089,11 +1129,11 @@ void DrawComponentsPanel(){
                                 VoxelModel* m = GetVoxelModelPointer(GetElementAsType(GetFirstCell(SelectedEntities),EntityID));
 
                                 if(1 == PointButton((Vector3){Screen.windowWidth-componentWindowLength + 15,componentHeight - 10},10,1, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){0.8,0.8,0.8})){
-                                    if(!fileBrowserOpened){
+                                    if(!fileBrowser.opened){
                                         if(m->modelPath[0] != '\0'){
-                                            OpenFileBrowser(GetVoxelModelPointer(GetElementAsType(GetFirstCell(SelectedEntities),EntityID))->modelPath,FBLoadModel);
+                                            OpenFileBrowser(0,GetVoxelModelPointer(GetElementAsType(GetFirstCell(SelectedEntities),EntityID))->modelPath,FBLoadModel);
                                         }else{
-                                            OpenFileBrowser(NULL,FBLoadModel);
+                                            OpenFileBrowser(0,NULL,FBLoadModel);
                                         }
                                         FileBrowserExtension("vox");
                                     }
@@ -1162,8 +1202,8 @@ void DrawComponentsPanel(){
                                 glColor3f(0.1,0.1,0.15);
                                 glVertex2f( Screen.windowWidth-componentWindowLength,  componentHeight);
                                 glVertex2f( Screen.windowWidth-componentWindowWidthSpacing,  componentHeight);
-                                glVertex2f( Screen.windowWidth-componentWindowWidthSpacing, componentHeight - 80);
-                                glVertex2f( Screen.windowWidth-componentWindowLength, componentHeight - 80);
+                                glVertex2f( Screen.windowWidth-componentWindowWidthSpacing, componentHeight - 170);
+                                glVertex2f( Screen.windowWidth-componentWindowLength, componentHeight - 170);
                             glEnd();
 
                             int ommitColorX = 0, ommitColorY = 0, ommitColorZ = 0;
@@ -1384,7 +1424,7 @@ void DrawComponentsPanel(){
                     }
                 }    
             }else{
-                fbItemsScroll = 0;
+                fileBrowser.itemsScroll = 0;
             }
         }
 
@@ -1607,10 +1647,10 @@ void DrawEntityElement(EntityID entity, int *entityHeight, int depth){
             if(isSelected){
                 DrawRectangle(elMin,elMax,0.3,0.3,0.3);
 
-                if(GetMouseButtonDown(SDL_BUTTON_LEFT) && !fileBrowserOpened){
+                if(GetMouseButtonDown(SDL_BUTTON_LEFT) && !fileBrowser.opened){
                     RemoveFromSelected(entity);
                 }
-                if(GetMouseButtonDown(SDL_BUTTON_RIGHT) && !fileBrowserOpened){
+                if(GetMouseButtonDown(SDL_BUTTON_RIGHT) && !fileBrowser.opened){
                     EntityID newEntity = DuplicateEntity(entity);
                     FreeList(&SelectedEntities);
                     InsertListEnd(&SelectedEntities,&newEntity);
@@ -1618,7 +1658,7 @@ void DrawEntityElement(EntityID entity, int *entityHeight, int depth){
             }else{
                 DrawRectangle(elMin,elMax,0.3,0.3,0.4);
 
-                if(GetMouseButtonDown(SDL_BUTTON_LEFT) && !fileBrowserOpened){
+                if(GetMouseButtonDown(SDL_BUTTON_LEFT) && !fileBrowser.opened){
                     if(GetKey(SDL_SCANCODE_LSHIFT)){
                         InsertListEnd(&SelectedEntities,&entity);
                     }else{
@@ -1674,38 +1714,41 @@ void DrawFileBrowser(){
     Vector3 filepathBgMax = {Screen.windowWidth/2 +297,Screen.windowHeight/2 +195};
     DrawRectangle(filepathBgMin,filepathBgMax,0.2, 0.2, 0.2);
 
+    //0 = open mode, 1 = save mode
+    int mode = fileBrowser.opened-1;
+
     //Header buttons
     //Previous button
-    if(indexPath>0){
+    if(fileBrowser.indexPath>0){
         if(PointButton((Vector3){fbHeaderMin.x+ iconsSize[9] * 2 ,fbHeaderMin.y+(fbHeaderMax.y - fbHeaderMin.y)/2,0},9, 1, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){0.5,0.5,0.5}) == 1){
-            indexPath--;
-            OpenFileBrowser(*((char**)GetElementAt(Paths,indexPath)),onOpenFunction);
+            fileBrowser.indexPath--;
+            OpenFileBrowser(mode,*((char**)GetElementAt(fileBrowser.paths,fileBrowser.indexPath)),fileBrowser.onConfirmFunction);
         }
     }else{
         PointButton((Vector3){fbHeaderMin.x+ iconsSize[9] * 2 ,fbHeaderMin.y+(fbHeaderMax.y - fbHeaderMin.y)/2,0},9, 1, (Vector3){0.25,0.25,0.25}, (Vector3){0.25,0.25,0.25}, (Vector3){0.25,0.25,0.25});
     }
     //Next button
-    if(indexPath<GetLength(Paths)-1){
+    if(fileBrowser.indexPath<GetLength(fileBrowser.paths)-1){
         if(PointButton((Vector3){fbHeaderMin.x+ iconsSize[8] * 6 ,fbHeaderMin.y+(fbHeaderMax.y - fbHeaderMin.y)/2,0},8, 1, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){0.5,0.5,0.5}) == 1){
-            indexPath++;
-            OpenFileBrowser(*((char**)GetElementAt(Paths,indexPath)),onOpenFunction);
+            fileBrowser.indexPath++;
+            OpenFileBrowser(mode,*((char**)GetElementAt(fileBrowser.paths,fileBrowser.indexPath)),fileBrowser.onConfirmFunction);
         }
     }else{
         PointButton((Vector3){fbHeaderMin.x+ iconsSize[8] * 6 ,fbHeaderMin.y+(fbHeaderMax.y - fbHeaderMin.y)/2,0},8, 1, (Vector3){0.25,0.25,0.25}, (Vector3){0.25,0.25,0.25}, (Vector3){0.25,0.25,0.25});
     }
     //Home
     if(PointButton((Vector3){fbHeaderMin.x+ iconsSize[6] * 10,fbHeaderMin.y+(fbHeaderMax.y - fbHeaderMin.y)/2,0},6, 1, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){0.5,0.5,0.5})==1){
-        OpenFileBrowser(NULL,onOpenFunction);
+        OpenFileBrowser(mode,NULL,fileBrowser.onConfirmFunction);
     }
     //File path
-    if(strlen(filePath)>34){
+    if(strlen(fileBrowser.filePath)>34){
         char minifiedPath[] = "0000000000000000000000000000000000...";
-        memcpy(minifiedPath,filePath,34*sizeof(char));
+        memcpy(minifiedPath,fileBrowser.filePath,34*sizeof(char));
         TTF_SizeText(gizmosFont,minifiedPath,&w,&h);
         RenderText(minifiedPath, lightWhite, filepathBgMin.x + 6, filepathBgMin.y+ ((filepathBgMax.y-filepathBgMin.y)-h)/2 -1, gizmosFont);    
     }else{
-        TTF_SizeText(gizmosFont,filePath,&w,&h);
-        RenderText(filePath, lightWhite, filepathBgMin.x + 6, filepathBgMin.y+ ((filepathBgMax.y-filepathBgMin.y)-h)/2 -1, gizmosFont);    
+        TTF_SizeText(gizmosFont,fileBrowser.filePath,&w,&h);
+        RenderText(fileBrowser.filePath, lightWhite, filepathBgMin.x + 6, filepathBgMin.y+ ((filepathBgMax.y-filepathBgMin.y)-h)/2 -1, gizmosFont);    
     }
 
 
@@ -1723,69 +1766,143 @@ void DrawFileBrowser(){
     }
     TTF_SizeText(gizmosFont,"Cancel",&w,&h);
     RenderText("Cancel", lightWhite, cancelButtonMin.x + ((cancelButtonMax.x-cancelButtonMin.x)-w)/2, cancelButtonMin.y+ ((cancelButtonMax.y-cancelButtonMin.y)-h)/2, gizmosFont);
-    //Open button
+
+    //Open/Save button
     Vector3 openButtonMin = {Screen.windowWidth/2 +207 - (cancelButtonMax.x-cancelButtonMin.x) - 10,Screen.windowHeight/2 -197};
     Vector3 openButtonMax = {Screen.windowWidth/2 +297 - (cancelButtonMax.x-cancelButtonMin.x) - 10,Screen.windowHeight/2 -152};
-    if(!strcmp(fileName,"")){
+
+    if(StringCompareEqual(fileBrowser.fileName,"")){
+        //No file selected, disable button
         DrawRectangle(openButtonMin,openButtonMax,0.1,0.1,0.1);
     }else{
         if(MouseOverBox(mousePos,openButtonMin,openButtonMax,0)){
             DrawRectangle(openButtonMin,openButtonMax,0.3,0.3,0.45);
             if(GetMouseButtonUp(SDL_BUTTON_LEFT)){
-                onOpenFunction();
-                CloseFileBrowser();
+                if(mode == 0){
+                    fileBrowser.onConfirmFunction();
+                    CloseFileBrowser();
+                }else if(mode == 1){
+                    //Check if file already exists
+                    
+                    char nameBuff[_TINYDIR_FILENAME_MAX];
+                    strcpy(nameBuff,fileBrowser.fileName);
+                    strcat(nameBuff,".");
+                    strcat(nameBuff,fileBrowser.fileExtension);
+                    
+                    int willOverride = 0;
+
+                    ListCellPointer fileCell;
+                    ListForEach(fileCell,fileBrowser.files){
+                        if(StringCompareEqual(nameBuff,GetElementAsType(fileCell,tinydir_file).name)){
+                            willOverride = 1;
+                            break;
+                        }
+                    }
+                    if(willOverride){
+                        OpenDialogWindow("Do you want override the file ?", "Cancel", "Confirm", "",FBOverrideFileDialogCancel, FBOverrideFileDialogConfirmation, NULL);
+                    }else{
+                        fileBrowser.onConfirmFunction();
+                        CloseFileBrowser();
+                    }
+                }
             }
         }else{
             DrawRectangle(openButtonMin,openButtonMax,0.2,0.2,0.35);
         }
     }
-    TTF_SizeText(gizmosFont,"Open",&w,&h);
-    RenderText("Open", lightWhite, openButtonMin.x + ((openButtonMax.x-openButtonMin.x)-w)/2, openButtonMin.y+ ((openButtonMax.y-openButtonMin.y)-h)/2, gizmosFont);
+    TTF_SizeText(gizmosFont,mode?"Save":"Open",&w,&h);
+    RenderText(mode?"Save":"Open", lightWhite, openButtonMin.x + ((openButtonMax.x-openButtonMin.x)-w)/2, openButtonMin.y+ ((openButtonMax.y-openButtonMin.y)-h)/2, gizmosFont);
+
     //File name
-    Vector3 filenameBgMin = {Screen.windowWidth/2 -295,Screen.windowHeight/2 -195};
-    Vector3 filenameBgMax = {openButtonMin.x -10,Screen.windowHeight/2 -164};
-    DrawRectangle(filenameBgMin,filenameBgMax,0.2, 0.2, 0.2);
-    RenderText("file name", lightWhite, filenameBgMin.x, filenameBgMax.y +1, gizmosFontSmall);
-    TTF_SizeText(gizmosFont,fileName,&w,&h);
-    RenderText(fileName, lightWhite, filenameBgMin.x + 5, filenameBgMin.y+ ((filenameBgMax.y-filenameBgMin.y)-h)/2 +1, gizmosFont);
+    if(mode == 1){
+        Vector3 filenameBgMin = {Screen.windowWidth/2 -295,Screen.windowHeight/2 -195};
+        Vector3 filenameBgMax = {openButtonMin.x -10,Screen.windowHeight/2 -164};
+        if(MouseOverBox(mousePos,filenameBgMin,filenameBgMax,0)){
+            DrawRectangle(filenameBgMin,filenameBgMax,0.3, 0.3, 0.3);
+            if(GetMouseButtonUp(SDL_BUTTON_LEFT) && !SDL_IsTextInputActive()){
+                //Files saved have a limit of 27 characters
+                int curLen = strlen(fileBrowser.fileName);
+                curLen = curLen>=27? 27:curLen;
+                GetTextInput(fileBrowser.fileName, 27, curLen);
+                memset(fileBrowser.fileName+curLen,'\0',_TINYDIR_FILENAME_MAX-curLen);
+            }
+        }else{
+            DrawRectangle(filenameBgMin,filenameBgMax,0.2, 0.2, 0.2);
+        }
+
+        if(SDL_IsTextInputActive()){
+            //Get the cursor position by creating a string containing the characters until the cursor
+            //and getting his size when rendered with the used font
+            char buff[_TINYDIR_FILENAME_MAX];
+            strncpy(buff,fileBrowser.fileName,Input.textInputCursorPos);
+            memset(buff+Input.textInputCursorPos,'\0',1);
+            int cursorPos,h;
+            TTF_SizeText(gizmosFont,buff,&cursorPos,&h);
+            cursorPos += filenameBgMin.x + 5;
+
+            //Cursor line
+            glColor3f(0.7,0.7,0.7);
+            glLineWidth(2/Screen.gameScale);
+            glBegin(GL_LINES);
+                glVertex2f( cursorPos, filenameBgMin.y+2);
+                glVertex2f( cursorPos, filenameBgMax.y-2);
+            glEnd();
+        }
+        
+        RenderText("file name", lightWhite, filenameBgMin.x, filenameBgMax.y +1, gizmosFontSmall);
+        TTF_SizeText(gizmosFont,fileBrowser.fileName,&w,&h);
+        RenderText(fileBrowser.fileName, lightWhite, filenameBgMin.x + 5, filenameBgMin.y+ ((filenameBgMax.y-filenameBgMin.y)-h)/2 +1, gizmosFont);
+    }else{
+        Vector3 filenameBgMin = {Screen.windowWidth/2 -295,Screen.windowHeight/2 -195};
+        Vector3 filenameBgMax = {openButtonMin.x -10,Screen.windowHeight/2 -164};
+        DrawRectangle(filenameBgMin,filenameBgMax,0.2, 0.2, 0.2);
+        RenderText("file name", lightWhite, filenameBgMin.x, filenameBgMax.y +1, gizmosFontSmall);
+        TTF_SizeText(gizmosFont,fileBrowser.fileName,&w,&h);
+        RenderText(fileBrowser.fileName, lightWhite, filenameBgMin.x + 5, filenameBgMin.y+ ((filenameBgMax.y-filenameBgMin.y)-h)/2 +1, gizmosFont);
+    }
 
     //Browser Items
-    if(fileBrowserOpened == 1){
+    if(fileBrowser.opened>0){
         int i=0,startx = fbHeaderMin.x + iconsSize[10] * 3 + 12,starty = fbHeaderMin.y - iconsSize[10]*3 -28;
         int x = startx, y = starty;
         ListCellPointer cell;
         //Folders
-        ListForEach(cell,Folders){
+        ListForEach(cell,fileBrowser.folders){
             tinydir_file file = GetElementAsType(cell,tinydir_file);
-            if(!strcmp(file.name,".") || !strcmp(file.name,"..")) continue;
+            if(StringCompareEqual(file.name,".") || StringCompareEqual(file.name,"..")) continue;
 
-            if((i - 7*fbItemsScroll)<0 || (i - 7*fbItemsScroll)>=(7 * 3)){
+            //Skip rendering the items out of view
+            if((i - 7*fileBrowser.itemsScroll)<0 || (i - 7*fileBrowser.itemsScroll)>=(7 * 3)){
                 i++;
                 continue;
             }
 
             //Only jump if not the first line (end of the line, not the first item to render)
-            if(i%7==0 && (i - 7*fbItemsScroll)!=0){
+            if(i%7==0 && (i - 7*fileBrowser.itemsScroll)!=0){
                 x = startx;
                 y-= iconsSize[10] * 6 + 40;
             }
+
             //Folder icon/button
             if(PointButton((Vector3){x,y,0},10,3, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){0.5,0.5,0.5}) == 1){
                 char *path = calloc(_TINYDIR_PATH_MAX,sizeof(char));
                 strncpy(path,file.path,_TINYDIR_PATH_MAX);
 
-                OpenFileBrowser(path,onOpenFunction);
-                memcpy(filePath,path,_TINYDIR_PATH_MAX*sizeof(char));
+                OpenFileBrowser(mode,path,fileBrowser.onConfirmFunction);
+                memcpy(fileBrowser.filePath,path,_TINYDIR_PATH_MAX*sizeof(char));
 
                 //If there is any folder as next folder, remove from the list before adding the new folder
-                while(indexPath+1 < GetLength(Paths)){
-                    RemoveListEnd(&Paths);
+                while(fileBrowser.indexPath+1 < GetLength(fileBrowser.paths)){
+                    RemoveListEnd(&fileBrowser.paths);
                 }
 
-                InsertListEnd(&Paths,&path);
-                indexPath++;
+                InsertListEnd(&fileBrowser.paths,&path);
+                fileBrowser.indexPath++;
             }
+
+            //Render folder name
             if(strlen(file.name)>6){
+                //Cut name if too long
                 char minifiedName[] = "00000...";
                 memcpy(minifiedName,file.name,5*sizeof(char));
                 TTF_SizeText(gizmosFont,minifiedName,&w,&h);
@@ -1799,36 +1916,48 @@ void DrawFileBrowser(){
         }
 
         //Files
-        int specificExtension = fileExtension[0] == '\0'? 0:(!strcmp(fileExtension,"vox")? 1:2);
-        ListForEach(cell,Files){
+        //0 = No specific extension, show all; 1 = vox; 2 = Other extensions
+        int specificExtension = fileBrowser.fileExtension[0] == '\0'? 0:(StringCompareEqual(fileBrowser.fileExtension,"vox")? 1:2);
+
+        ListForEach(cell,fileBrowser.files){
             tinydir_file file = GetElementAsType(cell,tinydir_file);
 
-            if(specificExtension){
-                int isEqual = 1;
-                int chr;
-                for(chr=0;chr<_TINYDIR_FILENAME_MAX && fileExtension[chr] != '\0';chr++){
-                    if(tolower(fileExtension[chr]) != tolower(file.extension[chr])){isEqual = 0; break;}
-                }
-                if(!isEqual) continue;
-            }
+            //Skip rendering the files with different extensions
+            if(specificExtension && !StringCompareEqualCaseInsensitive(fileBrowser.fileExtension,file.extension)) continue;
 
-            if((i - 7*fbItemsScroll)<0 || (i - 7*fbItemsScroll)>=(7 * 3)){
+            //Skip rendering the items out of view
+            if((i - 7*fileBrowser.itemsScroll)<0 || (i - 7*fileBrowser.itemsScroll)>=(7 * 3)){
                 i++;
                 continue;
             }
             
+            //Select the icon ID
             int icon = specificExtension==0? 11:(specificExtension == 1? 17:11);
 
-            //Only jump if not the first line (end of the line, not the first item to render)
-            if(i%7==0 && (i - 7*fbItemsScroll)!=0){
+            //Only jump to the next line if not the first line (if end of the line && not the first item to render)
+            if(i%7==0 && (i - 7*fileBrowser.itemsScroll)!=0){
                 x = startx;
                 y-= iconsSize[icon] * 6 + 40;
             }
             
+            //File icon/button
             if(PointButton((Vector3){x,y,0},icon,3, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){0.5,0.5,0.5}) == 1){
-                memcpy(fileName,file.name,_TINYDIR_FILENAME_MAX*sizeof(char));
+                //Remove the extension from the name in the save mode
+                if(mode == 1){
+                    int extLen = strlen(file.extension) + 1; //Extension name length + dot
+                    int filenameLen = strlen(file.name);
+
+                    memcpy(fileBrowser.fileName,file.name,_TINYDIR_FILENAME_MAX*sizeof(char));
+                    fileBrowser.fileName[filenameLen - extLen] = '\0';
+
+                }else{
+                    memcpy(fileBrowser.fileName,file.name,_TINYDIR_FILENAME_MAX*sizeof(char));
+                }
             }
+
+            //Render file name
             if(strlen(file.name)>6){
+                //Cut name if too long
                 char minifiedName[] = "00000...";
                 memcpy(minifiedName,file.name,5*sizeof(char));
                 TTF_SizeText(gizmosFont,minifiedName,&w,&h);
@@ -1849,11 +1978,11 @@ void DrawFileBrowser(){
             Vector3 scrollbarUpMin = {fbMin.x+1,fbHeaderMin.y-22};
             Vector3 scrollbarUpMax = {fbMax.x-1,fbHeaderMin.y-2};
 
-            if(fbItemsScroll<(i/7)-2){
+            if(fileBrowser.itemsScroll<(i/7)-2){
                 if(MouseOverBox(mousePos,scrollbarDownMin,scrollbarDownMax,0)){
                     DrawRectangle(scrollbarDownMin,scrollbarDownMax,0.1,0.1,0.125);
                     if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
-                        fbItemsScroll++;
+                        fileBrowser.itemsScroll++;
                     }
                 }else{
                     DrawRectangle(scrollbarDownMin,scrollbarDownMax,0.05,0.05,0.075);
@@ -1863,14 +1992,14 @@ void DrawFileBrowser(){
 
                 //Mouse scroll
                 if(Input.mouseWheelY<0){
-                    fbItemsScroll++;
+                    fileBrowser.itemsScroll++;
                 }
             }
-            if(fbItemsScroll>0){
+            if(fileBrowser.itemsScroll>0){
                 if(MouseOverBox(mousePos,scrollbarUpMin,scrollbarUpMax,0)){
                     DrawRectangle(scrollbarUpMin,scrollbarUpMax,0.1,0.1,0.125);
                     if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
-                        fbItemsScroll--;
+                        fileBrowser.itemsScroll--;
                     }
                 }else{
                     DrawRectangle(scrollbarUpMin,scrollbarUpMax,0.05,0.05,0.075);
@@ -1879,14 +2008,14 @@ void DrawFileBrowser(){
                                         scrollbarUpMin.y + (scrollbarUpMax.y - scrollbarUpMin.y)/2},12, 1, (Vector3){0.2,0.2,0.2});
                 //Mouse scroll
                 if(Input.mouseWheelY>0){
-                    fbItemsScroll--;
+                    fileBrowser.itemsScroll--;
                 }
             }    
             
         }else{
-            fbItemsScroll = 0;
+            fileBrowser.itemsScroll = 0;
         }
-    }else if (fileBrowserOpened == -1){
+    }else if (fileBrowser.opened == -1){
         //Invalid folder message
         TTF_SizeText(gizmosFont,"Invalid or nonexistent path!",&w,&h);
         RenderText("Invalid or nonexistent path!", lightWhite, fbMin.x+ ((fbMax.x-fbMin.x)-w)/2, fbMin.y+ ((fbMax.y-fbMin.y)-h)/2, gizmosFont);
@@ -1974,6 +2103,108 @@ void DrawPlayModeWidget(){
         }
         //Stop button disabled
         PointButton((Vector3){Screen.windowWidth/2 + iconSize * 2 +2,  Screen.windowHeight-iconSize * 2 -1 },5, 2, (Vector3){0.2,0.2,0.2}, (Vector3){0.2,0.2,0.2}, (Vector3){0.2,0.2,0.2});
+    }
+}
+
+
+
+void DrawDialogWindow(){
+    int w,h;
+    //Backgrounds
+    Vector3 bgMin = {Screen.windowWidth/2 -200,Screen.windowHeight/2 -70};
+    Vector3 bgMax = {Screen.windowWidth/2 +200,Screen.windowHeight/2 +70};
+    Vector3 footMin = {Screen.windowWidth/2 -200,Screen.windowHeight/2 -69};
+    Vector3 footMax = {Screen.windowWidth/2 +200,Screen.windowHeight/2 -30};
+
+    DrawRectangle(bgMin,bgMax,bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
+    DrawRectangle(footMin,footMax,0.1,0.1,0.15);
+
+    Vector3 contentMin = {bgMin.x,footMax.y};
+    Vector3 contentMax = {bgMax.x,bgMax.y};
+
+    static char contentBuffer[sizeof(dialog.contentString)/sizeof(char)];
+    memcpy(contentBuffer, dialog.contentString,sizeof(dialog.contentString));
+
+    char *contentLine = strtok(contentBuffer,"\n");
+    if(contentLine){
+        int lineCount = 0;
+        //Count the number of lines
+        while(contentLine){
+            contentLine = strtok(NULL,"\n");
+            lineCount++;
+        }
+        //Reset buffer
+        memcpy(contentBuffer, dialog.contentString,sizeof(dialog.contentString));
+        contentLine = strtok(contentBuffer,"\n");
+
+        //Get text height
+        TTF_SizeText(gizmosFont,contentLine,&w,&h);
+
+        int l,lineHeight = contentMax.y - ((contentMax.y - contentMin.y) - h*lineCount)/2;
+        for(l=0; l<lineCount; l++){
+            lineHeight -= h;
+            //Print the current line
+            TTF_SizeText(gizmosFont,contentLine,&w,&h);
+            RenderText(contentLine, lightWhite, contentMin.x + 40, lineHeight, gizmosFont);
+            
+            //Parse the next line
+            contentLine = strtok(NULL,"\n");
+        }
+    }
+
+    //Option 1 Button
+
+    Vector3 option1Max = {footMax.x-3,footMax.y-3};
+    Vector3 option1Min = {option1Max.x-100,footMin.y+3};
+    
+    if(dialog.option1Function){
+        if(MouseOverBox(mousePos,option1Min,option1Max,0)){
+            DrawRectangle(option1Min,option1Max,0.3,0.3,0.45);
+            if(GetMouseButtonUp(SDL_BUTTON_LEFT)){
+                dialog.option1Function();
+                CloseDialogWindow();
+            }
+        }else{
+            DrawRectangle(option1Min,option1Max,0.2,0.2,0.35);
+        }
+        TTF_SizeText(gizmosFont,dialog.option1String,&w,&h);
+        RenderText(dialog.option1String, lightWhite, option1Min.x + ((option1Max.x-option1Min.x)-w)/2, option1Min.y+ ((option1Max.y-option1Min.y)-h)/2, gizmosFont);
+    }
+
+    //Option 2 Button
+    Vector3 option2Min = {option1Min.x - 110,option1Min.y};
+    Vector3 option2Max = {option1Max.x - 110,option1Max.y};
+
+    if(dialog.option2Function){
+        if(MouseOverBox(mousePos,option2Min,option2Max,0)){
+            DrawRectangle(option2Min,option2Max,0.3,0.3,0.45);
+            if(GetMouseButtonUp(SDL_BUTTON_LEFT)){
+                dialog.option2Function();
+                CloseDialogWindow();
+            }
+        }else{
+            DrawRectangle(option2Min,option2Max,0.2,0.2,0.35);
+        }
+        TTF_SizeText(gizmosFont,dialog.option2String,&w,&h);
+        RenderText(dialog.option2String, lightWhite, option2Min.x + ((option2Max.x-option2Min.x)-w)/2, option2Min.y+ ((option2Max.y-option2Min.y)-h)/2, gizmosFont);
+    }
+
+    //Option 3 Button
+    Vector3 option3Min = {option2Min.x - 110,option2Min.y};
+    Vector3 option3Max = {option2Max.x - 110,option2Max.y};
+
+    if(dialog.option3Function){
+        if(MouseOverBox(mousePos,option3Min,option3Max,0)){
+            DrawRectangle(option3Min,option3Max,0.3,0.3,0.45);
+            if(GetMouseButtonUp(SDL_BUTTON_LEFT)){
+                dialog.option3Function();
+                CloseDialogWindow();
+            }
+        }else{
+            DrawRectangle(option3Min,option3Max,0.2,0.2,0.35);
+        }
+        TTF_SizeText(gizmosFont,dialog.option3String,&w,&h);
+        RenderText(dialog.option3String, lightWhite, option3Min.x + ((option3Max.x-option3Min.x)-w)/2, option3Min.y+ ((option3Max.y-option3Min.y)-h)/2, gizmosFont);
     }
 }
 
@@ -2578,46 +2809,75 @@ void ExitPlayMode(){
     }
 }
 
-//-------------------------- File browser functions --------------------------
+//-------------------------- Dialog window functions --------------------------
+void OpenDialogWindow(char content[], char option1[], char option2[], char option3[], void(*op1Func)(), void(*op2Func)(), void(*op3Func)()){
+    dialog.opened = 1;
+    //Pass the data to the dialog struct
+    strncpy(dialog.contentString,content,sizeof(dialog.contentString)/sizeof(char));
+    //All options have the same size
+    int sizeOptions = sizeof(dialog.option1String)/sizeof(char)-1;
 
-void OpenFileBrowser(char *initialPath,void (*onOpen)()){
+    strncpy(dialog.option1String,option1,sizeOptions);
+    strncpy(dialog.option2String,option2,sizeOptions);
+    strncpy(dialog.option3String,option3,sizeOptions);
+
+    //Ensure the string is zero terminated
+    dialog.option1String[sizeOptions] = '\0';
+    dialog.option2String[sizeOptions] = '\0';
+    dialog.option3String[sizeOptions] = '\0';
+
+    dialog.option1Function = op1Func;
+    dialog.option2Function = op2Func;
+    dialog.option3Function = op3Func;
+}
+
+void CloseDialogWindow(){
+    dialog.opened = 0;
+    dialog.option1Function = NULL;
+    dialog.option2Function = NULL;
+    dialog.option3Function = NULL;
+}
+
+//-------------------------- File browser functions --------------------------
+//Mode: 0 = open file, 1 = save file
+void OpenFileBrowser(int mode, char *initialPath,void (*onOpen)()){
     //Free the folder and files lists before opening another path
-    if(fileBrowserOpened){
-        FreeList(&Folders);
-        FreeList(&Files);
+    if(fileBrowser.opened){
+        FreeList(&fileBrowser.folders);
+        FreeList(&fileBrowser.files);
     }
-    onOpenFunction = *onOpen;
-    Folders = InitList(sizeof(tinydir_file));
-    Files = InitList(sizeof(tinydir_file));
+    fileBrowser.onConfirmFunction = *onOpen;
+    fileBrowser.folders = InitList(sizeof(tinydir_file));
+    fileBrowser.files = InitList(sizeof(tinydir_file));
     if(initialPath){
-        memcpy(filePath,initialPath,_TINYDIR_PATH_MAX*sizeof(char));
+        memcpy(fileBrowser.filePath,initialPath,_TINYDIR_PATH_MAX*sizeof(char));
     }else{
         char DefaultPath[] = "Assets";
-        memcpy(filePath,DefaultPath,sizeof(DefaultPath));
+        memcpy(fileBrowser.filePath,DefaultPath,sizeof(DefaultPath));
 
-        if(fileBrowserOpened){
+        if(fileBrowser.opened){
             //Free the paths list when returning to default path
             ListCellPointer cell;
-            ListForEach(cell,Paths){
+            ListForEach(cell,fileBrowser.paths){
                 free(GetElement(*cell));
             }
-            FreeList(&Paths);
+            FreeList(&fileBrowser.paths);
         }
     }
     //Insert the initial path to the list when opening/returning to default path
-    if(!fileBrowserOpened || !initialPath){
-        Paths = InitList(sizeof(char*));
+    if(!fileBrowser.opened || !initialPath){
+        fileBrowser.paths = InitList(sizeof(char*));
         char *firstPath = malloc(_TINYDIR_PATH_MAX*sizeof(char));
-        memcpy(firstPath,filePath,_TINYDIR_PATH_MAX*sizeof(char));
-        InsertListEnd(&Paths,&firstPath);
-        indexPath = 0;
+        memcpy(firstPath,fileBrowser.filePath,_TINYDIR_PATH_MAX*sizeof(char));
+        InsertListEnd(&fileBrowser.paths,&firstPath);
+        fileBrowser.indexPath = 0;
     }
-    memset(fileName,'\0',_TINYDIR_FILENAME_MAX*sizeof(char));
+    memset(fileBrowser.fileName,'\0',_TINYDIR_FILENAME_MAX*sizeof(char));
 
     tinydir_dir dir;
-    if(tinydir_open(&dir, filePath) < 0){
+    if(tinydir_open(&dir, fileBrowser.filePath) < 0){
         //Set as invalid folder path
-        fileBrowserOpened = -1;
+        fileBrowser.opened = -1;
         return;
     }
     while(dir.has_next){
@@ -2625,11 +2885,11 @@ void OpenFileBrowser(char *initialPath,void (*onOpen)()){
         tinydir_readfile(&dir, &file);
         if (file.is_dir)
         {
-            InsertListEnd(&Folders,&file);
+            InsertListEnd(&fileBrowser.folders,&file);
         }else{
             
-            InsertListEnd(&Files,&file);
-            char ** extStr = &((tinydir_file*)GetLastElement(Files))->extension;
+            InsertListEnd(&fileBrowser.files,&file);
+            char ** extStr = &((tinydir_file*)GetLastElement(fileBrowser.files))->extension;
             *extStr = malloc(strlen(file.extension) * sizeof(char));
             strcpy(*extStr,file.extension);
         }
@@ -2638,42 +2898,65 @@ void OpenFileBrowser(char *initialPath,void (*onOpen)()){
     }
     tinydir_close(&dir);
 
-    fileBrowserOpened = 1;
+    fileBrowser.opened = 1+mode;
 }
 
 void FileBrowserExtension(char *ext){
     if(ext){
-        strncpy(fileExtension,ext,_TINYDIR_FILENAME_MAX);
+        strncpy(fileBrowser.fileExtension,ext,_TINYDIR_FILENAME_MAX);
     }else{
-        strncpy(fileExtension,"",_TINYDIR_FILENAME_MAX);
+        strncpy(fileBrowser.fileExtension,"",_TINYDIR_FILENAME_MAX);
     }
 }
 
 void CloseFileBrowser(){
-    fileBrowserOpened = 0;
-    FreeList(&Folders);
-    FreeList(&Files);
+    fileBrowser.opened = 0;
+    FreeList(&fileBrowser.folders);
+    FreeList(&fileBrowser.files);
 
     ListCellPointer cell;
-    ListForEach(cell,Paths){
+    ListForEach(cell,fileBrowser.paths){
         free(*((char**)GetElement(*cell)));
     }
-    FreeList(&Paths);
+    FreeList(&fileBrowser.paths);
+}
+
+void FBOverrideFileDialogConfirmation(){
+    fileBrowser.onConfirmFunction();
+    CloseFileBrowser();
+}
+
+void FBOverrideFileDialogCancel(){
+    //As NULL functions are identitied as not existent options in the dialog window
+    //use this empty function as cancel option
 }
 
 void FBLoadModel(){
-    printf("(%s)(%s)\n",filePath,fileName);
-    if(IsMultiVoxelModelFile(filePath,fileName)){
-        LoadMultiVoxelModel(GetElementAsType(GetFirstCell(SelectedEntities),EntityID),filePath,fileName);
+    printf("(%s)(%s)\n",fileBrowser.filePath,fileBrowser.fileName);
+    if(IsMultiVoxelModelFile(fileBrowser.filePath,fileBrowser.fileName)){
+        LoadMultiVoxelModel(GetElementAsType(GetFirstCell(SelectedEntities),EntityID),fileBrowser.filePath,fileBrowser.fileName);
     }else{
-        LoadVoxelModel(GetElementAsType(GetFirstCell(SelectedEntities),EntityID),filePath,fileName);
+        LoadVoxelModel(GetElementAsType(GetFirstCell(SelectedEntities),EntityID),fileBrowser.filePath,fileBrowser.fileName);
     }
 }
 
 void FBLoadScene(){
-    strcpy(scenePath,filePath);
-    strcpy(sceneName,fileName);
+    strcpy(scenePath,fileBrowser.filePath);
+    strcpy(sceneName,fileBrowser.fileName);
     printf("(%s)(%s)\n",scenePath,sceneName);
-    LoadScene(filePath,fileName);
+    LoadScene(fileBrowser.filePath,fileBrowser.fileName);
+    menuOpened = 0;
+}
+
+void FBSaveScene(){
+    strcpy(scenePath,fileBrowser.filePath);
+    strcpy(sceneName,fileBrowser.fileName);
+    printf("(%s)(%s)\n",scenePath,sceneName);
+    ExportScene(fileBrowser.filePath,fileBrowser.fileName);
+    menuOpened = 0;
+}
+
+void FBExportPrefab(){
+    ExportEntityPrefab(GetElementAsType(GetFirstCell(SelectedEntities),EntityID), fileBrowser.filePath, fileBrowser.fileName);
     menuOpened = 0;
 }

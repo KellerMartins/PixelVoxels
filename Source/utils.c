@@ -225,10 +225,12 @@ void* GetElement(ListCell c){
 }
 
 void* GetLastElement(List list){
+	if(!list.last) return NULL;
 	return list.last->element;
 }
 
 void* GetFirstElement(List list){
+	if(!list.first) return NULL;
 	return list.first->element;
 }
 

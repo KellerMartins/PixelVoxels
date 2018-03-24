@@ -7,6 +7,7 @@
 
 typedef struct VoxelModel{
 	int enabled;
+	int smallScale;
 
 	char modificationStartX;
 	char modificationEndX;
@@ -21,6 +22,7 @@ typedef struct VoxelModel{
     unsigned char *lighting;
     GLfloat *vertices;
 	GLfloat *vColors;
+	GLfloat *normal;
 	int numberOfVertices;
 
 	unsigned int dimension[3];
@@ -32,6 +34,7 @@ typedef struct VoxelModel{
 
 	char modelPath[512];
 	char modelName[256];
+	char objectName[65];
 }VoxelModel;
 
 void VoxelModelConstructor(void** data);
@@ -46,8 +49,13 @@ Vector3 GetVoxelModelCenter(EntityID entity);
 void SetVoxelModelCenter(EntityID entity, Vector3 center);
 int IsVoxelModelEnabled(EntityID entity);
 void SetVoxelModelEnabled(EntityID entity, int booleanVal);
+int IsVoxelModelSmallScale(EntityID entity);
+void SetVoxelModelSmallScale(EntityID entity, int booleanVal);
 
 void LoadVoxelModel(EntityID entity, char modelPath[], char modelName[]);
+void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[]);
+int IsMultiVoxelModelFile(char modelPath[], char modelName[]);
+
 void CalculateRendered(EntityID entity);
 void CalculateLighting(EntityID entity);
 //void LoadMultiVoxelModel(EntityID entity, char modelPath[]);

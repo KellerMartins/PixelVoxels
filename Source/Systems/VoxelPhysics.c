@@ -32,7 +32,6 @@ void VoxelPhysicsInit(){
 //Simple collision and kinematic movement
 //Warning: Not even close to be physically or mathematically correct!
 void VoxelPhysicsUpdate(){
-
     //Runs for all entities that use voxel physics
     EntityID entity;
 	for(entity = 0; entity <= ECS.maxUsedIndex; entity++){
@@ -45,7 +44,7 @@ void VoxelPhysicsUpdate(){
         if(!IsEmptyComponentMask(ThisSystem->excluded) && EntityContainsMask(entity,ThisSystem->excluded) ) continue;
 
 
-        if(IsStaticRigidbody(entity)) {
+        if(IsStaticRigidbody(entity) || EntityIsChild(entity)) {
             SetVelocity(entity,VECTOR3_ZERO);
             SetAcceleration(entity,VECTOR3_ZERO);
             continue;
@@ -101,6 +100,7 @@ void VoxelPhysicsFree(){
 }
 
 int VoxelModelVsVoxelModelCollision(EntityID entityA, EntityID entityB,Vector3 *collisionPoint){
+
     
     VoxelModel *objA = GetVoxelModelPointer(entityA);
     VoxelModel *objB = GetVoxelModelPointer(entityB);
@@ -109,10 +109,15 @@ int VoxelModelVsVoxelModelCollision(EntityID entityA, EntityID entityB,Vector3 *
         return 0;
     }
 
-    Vector3 posA = Add(GetPosition(entityA),GetVoxelModelCenter(entityA));
-    Vector3 posB =  Add(GetPosition(entityB),GetVoxelModelCenter(entityB));
-    //Vector3 rotA = GetRotation(entityA);
-    //Vector3 rotB = GetRotation(entityB);
+    Vector3 posA = GetPosition(entityA);
+    Vector3 posB = GetPosition(entityB);
+    Vector3 rotA = GetRotation(entityA);
+    Vector3 rotB = GetRotation(entityB);
+    Vector3 centerA = GetVoxelModelCenter(entityA);
+    Vector3 centerB = GetVoxelModelCenter(entityB);
+
+    if(IsVoxelModelSmallScale(entityA)) centerA = (Vector3){centerA.x/2,centerA.y/2,centerA.z/2};
+    if(IsVoxelModelSmallScale(entityB)) centerB = (Vector3){centerB.x/2,centerB.y/2,centerB.z/2};
 
     Vector3 velA = GetVelocity(entityA);
     Vector3 velB = GetVelocity(entityB);
@@ -132,8 +137,31 @@ int VoxelModelVsVoxelModelCollision(EntityID entityA, EntityID entityB,Vector3 *
     if(norm(movementA)>1){
         printf("Step needed!(%f)\n",norm(movementA));
     }
-    
-    //int collisions = 0;
+
+    //Simplificated rotation matrix terms
+    //ObjA rotation matrix
+    float sinx = sin(rotA.x * PI_OVER_180);
+    float cosx = cos(rotA.x * PI_OVER_180);
+    float siny = sin(rotA.y * PI_OVER_180);
+    float cosy = cos(rotA.y * PI_OVER_180);
+    float sinz = sin(rotA.z * PI_OVER_180);
+    float cosz = cos(rotA.z * PI_OVER_180);
+
+    float arxt1 = cosy*cosz, arxt2 = (cosz*sinx*siny - cosx*sinz), arxt3 = (cosx*cosz*siny + sinx*sinz);
+    float aryt1 = cosy*sinz, aryt2 = (cosx*siny*sinz - cosz*sinx), aryt3 = (cosx*cosz + sinx*siny*sinz);
+    float arzt1 = cosx*cosy, arzt2 = sinx*cosy,                    arzt3 = siny;
+
+    //ObjB Transposed rotation matrix
+    sinx = sin(rotB.x * PI_OVER_180);
+    cosx = cos(rotB.x * PI_OVER_180);
+    siny = sin(rotB.y * PI_OVER_180);
+    cosy = cos(rotB.y * PI_OVER_180);
+    sinz = sin(rotB.z * PI_OVER_180);
+    cosz = cos(rotB.z * PI_OVER_180);
+
+    float brxt1 = cosy*cosz, brxt2 = siny,                         brxt3 = cosy*sinz;
+    float bryt1 = cosy*sinx, bryt2 = (cosz*sinx*siny - cosx*sinz), bryt3 = (cosx*cosz + sinx*siny*sinz);
+    float brzt1 = cosx*cosy, brzt2 = (cosx*cosz*siny + sinx*sinz), brzt3 = (cosx*siny*sinz - cosz*sinx);
 
     for(i = 0; i <objA->numberOfVertices*3  ; i+=3){
 
@@ -144,20 +172,55 @@ int VoxelModelVsVoxelModelCollision(EntityID entityA, EntityID entityB,Vector3 *
         //Ignore invalid voxels
         if(x<0 || y<0 || z<0) continue;
 
+        if(objA->smallScale){
+            x /= 2;
+            y /= 2;
+            z /= 2;
+        }
+
+        //Apply A rotation matrix
+        Vector3 p = {x - centerA.x, y - centerA.y, z - centerA.z};
+        x = p.x*arxt1 + p.y*arxt2 + p.z*arxt3;
+        y = p.x*aryt1 + p.z*aryt2 + p.y*aryt3;
+        z = p.z*arzt1 + p.y*arzt2 - p.x*arzt3;
+
+        //Apply A position and movement
         x += posA.x + movementA.x;
         y += posA.y + movementA.y;
         z += posA.z + movementA.z;
 
-        Vector3 localPosAinB = { roundf(x-posB.x-movementB.x), roundf(y-posB.y-movementB.y), roundf(z-posB.z-movementB.z)};
+        //Set origin as B position
+        Vector3 localPosAinB = { x - posB.x-movementB.x, y - posB.y-movementB.y, z - posB.z-movementB.z};
+
+        //Apply B (Transposed) rotation matrix
+        p = (Vector3){localPosAinB.x, localPosAinB.y, localPosAinB.z};
+        localPosAinB.x = p.x*brxt1 - p.z*brxt2 + p.y*brxt3;
+        localPosAinB.y = p.z*bryt1 + p.x*bryt2 + p.y*bryt3;
+        localPosAinB.z = p.z*brzt1 + p.x*brzt2 + p.y*brzt3;
+
+        localPosAinB = (Vector3){roundf(localPosAinB.x +centerB.x), roundf(localPosAinB.y +centerB.y), roundf(localPosAinB.z +centerB.z)};
 
         //If voxel of entityA is inside the entityB volume
-        if(localPosAinB.x < objB->dimension[0] && localPosAinB.x > -1 && localPosAinB.z < objB->dimension[2] && localPosAinB.z >-1 && localPosAinB.y <objB->dimension[1] && localPosAinB.y >-1){
-            index = localPosAinB.x + localPosAinB.z * objB->dimension[0] + localPosAinB.y * objB->dimension[0] * objB->dimension[2];
-            if(objB->model[index]!=0){
-                collisionPoint->x += x;
-                collisionPoint->y += y;
-                collisionPoint->z += z;
-                return 1;
+        if(!objB->smallScale){
+            if(localPosAinB.x < objB->dimension[0] && localPosAinB.x >= 0 && localPosAinB.z < objB->dimension[2] && localPosAinB.z >= 0 && localPosAinB.y <objB->dimension[1] && localPosAinB.y >= 0){
+                index = localPosAinB.x + localPosAinB.z * objB->dimension[0] + localPosAinB.y * objB->dimension[0] * objB->dimension[2];
+                if(objB->model[index]!=0){
+                    collisionPoint->x += x;
+                    collisionPoint->y += y;
+                    collisionPoint->z += z;
+
+                    return 1;
+                }
+            }
+        }else{
+            if(localPosAinB.x < objB->dimension[0]/2 && localPosAinB.x >= 0 && localPosAinB.z < objB->dimension[2]/2 && localPosAinB.z >= 0 && localPosAinB.y <objB->dimension[1]/2 && localPosAinB.y >= 0){
+                index = localPosAinB.x*2 + localPosAinB.z*2 * objB->dimension[0] + localPosAinB.y*2 * objB->dimension[0] * objB->dimension[2];
+                if(objB->model[index]!=0){
+                    collisionPoint->x += x;
+                    collisionPoint->y += y;
+                    collisionPoint->z += z;
+                    return 1;
+                }
             }
         }
     }

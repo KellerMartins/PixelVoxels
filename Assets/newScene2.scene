@@ -36,7 +36,8 @@
 				"acceleration":	[0, 0, 0],
 				"useGravity":	true,
 				"isStatic":	false
-			}
+			},
+			"childs":	[]
 		}, {
 			"Transform":	{
 				"position":	[59.84381103515625, 89.750968933105469, 36.391265869140625],
@@ -46,7 +47,7 @@
 				"modelPath":	"Assets/Game/Models/",
 				"modelName":	"dune.vox",
 				"smallScale":	true,
-				"center":	[0, 100, 0]
+				"center":	[0, 0, 0]
 			},
 			"RigidBody":	{
 				"mass":	1,
@@ -58,7 +59,7 @@
 			}
 		}, {
 			"Transform":	{
-				"position":	[59.298297882080078, 61.687290191650391, 75.633026123046875],
+				"position":	[59.298297882080078, 88.788925170898437, 75.633026123046875],
 				"rotation":	[0, 0, 0]
 			},
 			"VoxelModel":	{

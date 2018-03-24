@@ -189,13 +189,14 @@ void DestroyEntity(EntityID entity){
 		}
 	}
 
-	int i, mask = ECS.Entities[entity].mask.mask;
-	for(i=0;i<GetLength(ECS.ComponentTypes);i++){
+	int c = 0, mask = ECS.Entities[entity].mask.mask;
+	ListCellPointer compCell;
+	ListForEach(compCell,ECS.ComponentTypes){
 		if(mask & 1){
-			free(ECS.Components[i][entity].data);
-			ECS.Components[i][entity].data = NULL;
+			((ComponentType*)(GetElement(*compCell)))->destructor(&ECS.Components[c][entity].data);
 		}
 		mask >>=1;
+		c++;
 	}
 
 	ECS.Entities[entity].mask.mask = 0;
@@ -849,13 +850,16 @@ int InitEngine(){
     glBindVertexArray(Rendering.vao);
 
     // Color and vertex VBO generation and binding
-    glGenBuffers(2, Rendering.vbo);
+    glGenBuffers(3, Rendering.vbo);
 
     glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[0]);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
     glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[1]);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[2]);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	
     //Compile shaders
     if(!CompileAndLinkShader("Shaders/ScreenVert.vs","Shaders/ScreenFrag.fs",0)) printf(">Failed to compile/link shader! Description above\n\n");
@@ -864,8 +868,11 @@ int InitEngine(){
      if(!CompileAndLinkShader("Shaders/VoxelVert.vs","Shaders/VoxelFrag.fs",1)) printf(">Failed to compile/link shader! Description above\n\n");
     else printf(">Compiled/linked shader sucessfully!\n");
 
+	if(!CompileAndLinkShader("Shaders/VoxelSmallVert.vs","Shaders/VoxelSmallFrag.fs",2)) printf(">Failed to compile/link shader! Description above\n\n");
+    else printf(">Compiled/linked shader sucessfully!\n");
+
 	//Load voxel palette
-	LoadVoxelPalette("Textures/magicaPalette.png");
+	LoadVoxelPalette("Assets/Game/Textures/magicaPalette.png");
 
 
 
@@ -1002,6 +1009,8 @@ int GameExited(){
 
 Vector3 PositionToGameScreenCoords(Vector3 position){
 	Vector3 screenPos;
+	position = (Vector3){roundf(position.x),roundf(position.y),roundf(position.z)};
+
 	screenPos.x = (int)(((position.x) - (position.y))*2 + roundf(-Rendering.cameraPosition.x)) + 0.375;
     screenPos.y = (int)(((position.x) + (position.y)) + (position.z + Rendering.cameraPosition.z )*2 + roundf(-Rendering.cameraPosition.y)) + 0.375;
 	screenPos.z = (position.z)/256.0;
@@ -1258,6 +1267,11 @@ void ReloadShaders(){
         printf(">Failed to compile/link shader! Description above\n\n");
     else 
         printf(">Compiled/linked shader sucessfully!\n\n");
+
+	if(!CompileAndLinkShader("Shaders/VoxelSmallVert.vs","Shaders/VoxelSmallFrag.fs",2)) 
+        printf(">Failed to compile/link shader! Description above\n\n");
+    else 
+        printf(">Compiled/linked shader sucessfully!\n\n");
 }
 
 void LoadVoxelPalette(char path[]){
@@ -1402,33 +1416,41 @@ void InputUpdate(){
 
 	
 	if(SDL_IsTextInputActive()){
-		
+
+		//Repeat action if the key is hold
+		static double keyboardHold = 0;
+		keyboardHold+= Time.deltaTime;
+
 		//Backspace delete
-		if(GetKeyDown(SDL_SCANCODE_BACKSPACE)){
+		if(GetKeyDown(SDL_SCANCODE_BACKSPACE) || (GetKey(SDL_SCANCODE_BACKSPACE) && keyboardHold >= 0.05)){
 			if(Input.textInputCursorPos>0){
 				memmove(Input.textInput + Input.textInputCursorPos-1,Input.textInput + Input.textInputCursorPos,Input.textInputLength - Input.textInputCursorPos);
 				memset(Input.textInput + Input.textInputLength-1, '\0',1);
 				Input.textInputLength -= 1;
 				Input.textInputCursorPos -=1;
 			}
+			keyboardHold = 0;
 		}
 		
 		//Del delete
-		if(GetKeyDown(SDL_SCANCODE_DELETE)){//string
+		if(GetKeyDown(SDL_SCANCODE_DELETE) || (GetKey(SDL_SCANCODE_DELETE) && keyboardHold >= 0.05)){//string
 			if(Input.textInputLength-Input.textInputCursorPos>0){
 				//Deletes the character in the cursor position by moving the sucessing characters to the left and setting the last character as a '\0'
 				memmove(Input.textInput + Input.textInputCursorPos,Input.textInput + Input.textInputCursorPos+1,Input.textInputLength - (Input.textInputCursorPos + 1));
 				memset(Input.textInput + Input.textInputLength-1, '\0',1);
 				Input.textInputLength -= 1;
 			}
+			keyboardHold = 0;
 		}
 		
 		//Cursor movement
-		if(GetKeyDown(SDL_SCANCODE_LEFT)){
+		if(GetKeyDown(SDL_SCANCODE_LEFT) || (GetKey(SDL_SCANCODE_LEFT) && keyboardHold >= 0.05)){
 			Input.textInputCursorPos = Input.textInputCursorPos<1? 0:Input.textInputCursorPos-1;
+			keyboardHold = 0;
 		}
-		if(GetKeyDown(SDL_SCANCODE_RIGHT)){
+		if(GetKeyDown(SDL_SCANCODE_RIGHT) || (GetKey(SDL_SCANCODE_RIGHT) && keyboardHold >= 0.05)){
 			Input.textInputCursorPos = Input.textInputCursorPos<Input.textInputLength? Input.textInputCursorPos+1:Input.textInputLength;
+			keyboardHold = 0;
 		}
 
 		//Home and End shortcuts
@@ -1438,6 +1460,10 @@ void InputUpdate(){
 		if(GetKeyDown(SDL_SCANCODE_END)){
 			Input.textInputCursorPos = Input.textInputLength;
 		}
+
+		//Increase delay between the key press and key repetition
+		if(GetKeyDown(SDL_SCANCODE_BACKSPACE) || GetKeyDown(SDL_SCANCODE_DELETE) || GetKeyDown(SDL_SCANCODE_LEFT) || GetKeyDown(SDL_SCANCODE_RIGHT))
+			keyboardHold = -0.5;
 	}
 }
 

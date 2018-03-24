@@ -3,6 +3,7 @@
 #include "../Engine.h"
 #include "../Components/VoxelModel.h"
 #include "../Components/RigidBody.h"
+#include "../Components/PointLight.h"
 #include "../Libs/tinydir.h"
 #include <ctype.h>
 

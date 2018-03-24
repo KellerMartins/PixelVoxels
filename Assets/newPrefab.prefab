@@ -1,61 +1,64 @@
 {
 	"Transform":	{
-		"position":	[-0.54064583778381348, 13.021892547607422, 97.0519027709961],
+		"position":	[0, 0, 32.856109619140625],
 		"rotation":	[0, 0, 0]
 	},
 	"VoxelModel":	{
-		"modelPath":	"Models/",
-		"modelName":	"bullet.vox",
-		"center":	[0, 0, 0]
-	},
-	"RigidBody":	{
-		"mass":	1,
-		"bounciness":	0.699999988079071,
-		"velocity":	[0.10000000149011612, 0, 0],
-		"acceleration":	[0, 0, 0],
-		"useGravity":	true,
-		"isStatic":	false
+		"modelPath":	"Assets/Game/Models/",
+		"modelName":	"Sea.vox",
+		"smallScale":	false,
+		"center":	[16, 16, 32]
 	},
 	"childs":	[{
 			"Transform":	{
-				"position":	[-0.54064583778381348, -2.7348709106445313, 125.54105377197266],
-				"rotation":	[0, 0, 0]
+				"position":	[-5.7850866317749023, -8.19351863861084, -14.140583992004395],
+				"rotation":	[0, 0, -45]
 			},
 			"VoxelModel":	{
-				"modelPath":	"Models/",
-				"modelName":	"bullet.vox",
-				"center":	[0, 0, 0]
+				"modelPath":	"Assets/Game/Models/",
+				"modelName":	"minichar.vox",
+				"smallScale":	true,
+				"center":	[5, 2, 10]
 			}
 		}, {
 			"Transform":	{
-				"position":	[-46.236427307128906, -9.4577693939208984, 132.40335083007812],
+				"position":	[6.7544994354248047, -27.898147583007813, -8.7946491241455078],
 				"rotation":	[0, 0, 0]
 			},
-			"VoxelModel":	{
-				"modelPath":	"Models/",
-				"modelName":	"bullet.vox",
-				"center":	[0, 0, 0]
-			},
-			"childs":	[{
-					"Transform":	{
-						"position":	[-32.717948913574219, -42.1268196105957, 132.40335083007812],
-						"rotation":	[0, 0, 0]
-					},
-					"VoxelModel":	{
-						"modelPath":	"Models/",
-						"modelName":	"bullet.vox",
-						"center":	[0, 0, 0]
-					}
-				}]
+			"PointLight":	{
+				"color":	[0, 0, 1],
+				"intensity":	0.75,
+				"range":	1000
+			}
 		}, {
 			"Transform":	{
-				"position":	[-10.399734497070312, 10.500801086425781, 128.24441528320312],
+				"position":	[-7.6591143608093262, -1.2605419158935547, 9.7737417221069336],
 				"rotation":	[0, 0, 0]
 			},
-			"VoxelModel":	{
-				"modelPath":	"Models/",
-				"modelName":	"bullet.vox",
-				"center":	[0, 0, 0]
+			"PointLight":	{
+				"color":	[1, 1, 1],
+				"intensity":	0.75,
+				"range":	100
+			}
+		}, {
+			"Transform":	{
+				"position":	[-17.273767471313477, -2.9412636756896973, -21.626775741577148],
+				"rotation":	[0, 0, 0]
+			},
+			"PointLight":	{
+				"color":	[1, 1, 1],
+				"intensity":	0.75,
+				"range":	100
+			}
+		}, {
+			"Transform":	{
+				"position":	[-12.629406929016113, -17.962718963623047, -11.437139511108398],
+				"rotation":	[0, 0, 0]
+			},
+			"PointLight":	{
+				"color":	[1, 1, 1],
+				"intensity":	0.75,
+				"range":	100
 			}
 		}]
 }

@@ -1,6 +1,7 @@
 #include "Transform.h"
 
 //Can't exist without being an component from an entity
+//Defines the local transform of an entity
 typedef struct Transform{
     Vector3 position;
     Vector3 rotation;
@@ -91,23 +92,7 @@ void SetPosition(EntityID entity, Vector3 pos){
         return;
     }
     Transform *transform = (Transform *)ECS.Components[ThisComponentID()][entity].data;
-    Vector3 oldPos = transform->position;
     transform->position = pos;
-
-    //Modify childs position too
-    if(EntityIsParent(entity)){
-        Vector3 deltaPos = Subtract(transform->position,oldPos);
-        
-        ListCellPointer current = GetFirstCell(ECS.Entities[entity].childs);
-        while(current){
-            EntityID child = *((EntityID*) GetElement(*current));
-
-            if(EntityContainsComponent(child, ThisComponentID())){
-                SetPosition(child, Add(GetPosition(child),deltaPos));
-            }
-            current = GetNextCell(current);
-        }
-    }
 }
 
 void SetRotation(EntityID entity, Vector3 rot){
@@ -117,4 +102,46 @@ void SetRotation(EntityID entity, Vector3 rot){
     }
     Transform *transform = (Transform *)ECS.Components[ThisComponentID()][entity].data;
     transform->rotation = rot;
+}
+
+void GetGlobalTransform(EntityID entity, Vector3 *outPos, Vector3 *outRot){
+    if(!EntityContainsComponent(entity, ThisComponentID())){
+        printf("GetGlobalTransform: Entity doesn't have a Transform component. (%d)\n",entity);
+        return;
+    }
+    Transform *transform = (Transform *)ECS.Components[ThisComponentID()][entity].data;
+
+    if(EntityIsChild(entity)){
+        Vector3 parentGlobalPos, parentGlobalRot;
+        GetGlobalTransform(GetEntityParent(entity),&parentGlobalPos, &parentGlobalRot);
+        Vector3 rot = (Vector3){parentGlobalRot.x,parentGlobalRot.y,parentGlobalRot.z};
+
+        float sinx = sin(rot.x * PI_OVER_180);
+        float cosx = cos(rot.x * PI_OVER_180);
+        float siny = sin(rot.y * PI_OVER_180);
+        float cosy = cos(rot.y * PI_OVER_180);
+        float sinz = sin(rot.z * PI_OVER_180);
+        float cosz = cos(rot.z * PI_OVER_180);
+
+        float rxt1 = cosy*cosz, rxt2 = (cosz*sinx*siny - cosx*sinz), rxt3 = (cosx*cosz*siny + sinx*sinz);
+        float ryt1 = cosy*sinz, ryt2 = (cosx*siny*sinz - cosz*sinx), ryt3 = (cosx*cosz + sinx*siny*sinz);
+        float rzt1 = cosx*cosy, rzt2 = sinx*cosy,                    rzt3 = siny;
+        
+        Vector3 rotatedPos;
+        //Apply rotation matrix
+        Vector3 p = (Vector3){transform->position.x, transform->position.y, transform->position.z};
+        rotatedPos.x = p.x*rxt1 + p.y*rxt2 + p.z*rxt3;
+        rotatedPos.y = p.x*ryt1 + p.z*ryt2 + p.y*ryt3;
+        rotatedPos.z = p.z*rzt1 + p.y*rzt2 - p.x*rzt3;
+
+        rotatedPos = (Vector3){ rotatedPos.x + parentGlobalPos.x, rotatedPos.y + parentGlobalPos.y, rotatedPos.z + parentGlobalPos.z};
+
+        if(outPos) *outPos = rotatedPos;
+        //Currently incorrect, need to fix
+        if(outRot) *outRot = Add(transform->rotation, parentGlobalRot);
+        
+    }else{
+        if(outPos) *outPos = transform->position;
+        if(outRot) *outRot = transform->rotation;
+    }
 }

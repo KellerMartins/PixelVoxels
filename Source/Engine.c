@@ -46,7 +46,7 @@ int InitECS(unsigned max_entities){
 	return 1;
 }
 
-int RegisterNewComponent(char componentName[25],void (*constructorFunc)(void** data),void (*destructorFunc)(void** data),void*(*copyFunc)(void*),cJSON*(*encodeFunc)(void** data),void* (*decodeFunc)(cJSON** data)){
+int RegisterNewComponent(char componentName[25],void (*constructorFunc)(void** data),void (*destructorFunc)(void** data),void*(*copyFunc)(void*),cJSON*(*encodeFunc)(void** data, cJSON* currentData),void* (*decodeFunc)(cJSON** data)){
 	if(!initializedECS){
 		printf("ECS not initialized! Initialize ECS before registering the components and systems\n");
 		return -1;
@@ -208,6 +208,26 @@ int IsValidEntity(EntityID entity){
 	return ECS.Entities[entity].isSpawned;
 }
 
+int EntityIsPrefab(EntityID entity){
+	if(entity<0 || entity>=ECS.maxEntities) return 0;
+	return ECS.Entities[entity].isPrefab;
+}
+
+char *GetPrefabPath(EntityID entity){
+	if(!EntityIsPrefab(entity)){
+		printf("GetPrefabPath: Entity is not a prefab! (%d)", entity);
+		return NULL;
+	}
+	return ECS.Entities[entity].prefabPath;
+}
+char *GetPrefabName(EntityID entity){
+	if(!EntityIsPrefab(entity)){
+		printf("GetPrefabName: Entity is not a prefab! (%d)", entity);
+		return NULL;
+	}
+	return ECS.Entities[entity].prefabName;
+}
+
 void AddComponentToEntity(ComponentID component, EntityID entity){
 	if(!IsValidEntity(entity)){
 		printf("AddComponentToEntity: Entity is not spawned or out of range!(%d)\n",entity);
@@ -286,26 +306,101 @@ EntityID DuplicateEntity(EntityID entity){
 	return newEntity;
 }
 
-cJSON *EncodeEntity(EntityID entity){
+cJSON *OpenJSON(char path[], char name[]){
+
+	char fullPath[512+256];
+    strncpy(fullPath,path,512);
+    if(path[strlen(path)-1] != '/'){
+        strcat(fullPath,"/");
+    }
+    strcat(fullPath,name);
+    printf("Opening JSON: (%s)\n",fullPath);
+    FILE* file = fopen(fullPath,"rb");
+
+	if(file){
+		fseek(file,0,SEEK_END);
+		unsigned size = ftell(file);
+		rewind(file);
+
+		char *jsonString = malloc((size+1) * sizeof(char));
+		fread(jsonString, sizeof(char), size, file);
+		jsonString[size] = '\0';
+		fclose(file);
+
+		cJSON *json = cJSON_Parse(jsonString);
+		if (!json)
+		{
+			//Error treatment
+			const char *error_ptr = cJSON_GetErrorPtr();
+			if (error_ptr != NULL)
+			{
+				fprintf(stderr, "OpenJSON: JSON error: %s\n", error_ptr);
+			}
+			free(jsonString);
+			return NULL;
+
+		}else{
+			free(jsonString);
+			return json;
+		}
+		
+	}else{
+		printf("OpenJSON: Failed to open json file!\n");
+	}
+	return NULL;
+}
+
+//Warning: the encodingToPrefab flag is only valid for the first caller of this function,
+//as if you are encoding to prefab, you will only encode the full data of the first, and the childs will still
+//encode as normal prefabs (prefab path, name and changes) or normal objects
+
+//Limitations:
+//	* When not encoding to prefab (like when saving a scene with a prefab), only the local changes made to the first parent
+//    are saved. Ex: Saving a scene with a character prefab positioned and with his child weapon translated, the translation of
+//    the weapon will not be saved on the scene. But if you save the character prefab with his child weapon translated before saving
+//    the scene, the translation will not be discarted
+
+cJSON *EncodeEntity(EntityID entity,int encodingToPrefab){
 	cJSON *entityObj = cJSON_CreateObject();
+	cJSON *currentData = NULL;
+
+	//When encoding to a scene or to a child of a prefab json, encode the path to this prefab and the changes made to the prefab
+	if(EntityIsPrefab(entity) && !encodingToPrefab){
+		cJSON_AddStringToObject(entityObj, "prefabPath", ECS.Entities[entity].prefabPath);
+		cJSON_AddStringToObject(entityObj, "prefabName", ECS.Entities[entity].prefabName);
+
+		currentData = OpenJSON(ECS.Entities[entity].prefabPath, ECS.Entities[entity].prefabName);
+	}
 
 	ListCellPointer compCell;
 	ComponentID compID = 0;
 	ListForEach(compCell,ECS.ComponentTypes){
 		if(EntityContainsComponent(entity, compID)){
 			ComponentType compType = GetElementAsType(compCell,ComponentType);
-			cJSON_AddItemToObject(entityObj, compType.name, compType.encode(&ECS.Components[compID][entity].data));
+
+			//Get current json data if it exists
+			cJSON *currentCompJSON = NULL;
+			if(currentData)
+				currentCompJSON = cJSON_GetObjectItemCaseSensitive(currentData, compType.name);
+
+			cJSON *compEncoded = compType.encode(&ECS.Components[compID][entity].data,currentCompJSON);
+			if(compEncoded){
+				cJSON_AddItemToObject(entityObj, compType.name, compEncoded);
+			}
 		}
 		compID++;
 	}
 
-	if(EntityIsParent(entity)){
+	if(currentData)
+		cJSON_Delete(currentData);
+
+	if(EntityIsParent(entity) && ((EntityIsPrefab(entity) && encodingToPrefab) || !EntityIsPrefab(entity))){
 
 		cJSON *childsArray = cJSON_AddArrayToObject(entityObj, "childs");
 
 		ListCellPointer childCell;
 		ListForEach(childCell, *GetChildsList(entity)){
-			cJSON_AddItemToArray(childsArray, EncodeEntity(GetElementAsType(childCell,EntityID)));
+			cJSON_AddItemToArray(childsArray, EncodeEntity(GetElementAsType(childCell,EntityID),0));
 		}
 	}
 
@@ -313,7 +408,19 @@ cJSON *EncodeEntity(EntityID entity){
 }
 
 EntityID DecodeEntity(cJSON **entityObj){
-	EntityID newEntity = CreateEntity();
+	EntityID newEntity;
+
+	cJSON *prefabPath = cJSON_GetObjectItem(*entityObj,"prefabPath");
+	//Entity being decoded is a prefab
+	if(prefabPath){
+		cJSON *prefabName = cJSON_GetObjectItem(*entityObj,"prefabName");
+		newEntity = ImportEntityPrefab(prefabPath->valuestring,prefabName->valuestring);
+		if(newEntity<0)
+			return -1;
+	}else{
+		//Entity being decoded is not a prefab
+		newEntity = CreateEntity();
+	}
 
 	ListCellPointer compCell;
 	ComponentID compID = 0;
@@ -322,7 +429,14 @@ EntityID DecodeEntity(cJSON **entityObj){
 
 		cJSON *comp = cJSON_GetObjectItemCaseSensitive(*entityObj, compType.name);
 		if(comp){
-			ECS.Components[compID][newEntity].data = compType.decode(&comp);
+			void *compData = compType.decode(&comp);
+
+			//In case of a prefab, replace the prefab component with the override component
+			if(ECS.Components[compID][newEntity].data){
+				compType.destructor(&ECS.Components[compID][newEntity].data);
+			}
+
+			ECS.Components[compID][newEntity].data = compData;
 			ECS.Entities[newEntity].mask.mask |= 1<<compID;
 		}
 		compID++;
@@ -333,14 +447,16 @@ EntityID DecodeEntity(cJSON **entityObj){
 		cJSON *child;
 		cJSON_ArrayForEach(child,childsArray){
 			EntityID newChild = DecodeEntity(&child);
-			SetEntityParent(newChild,newEntity);
+
+			if(newChild>=0)
+				SetEntityParent(newChild,newEntity);
 		}
 	}
 	return newEntity;
 }
 
 int ExportEntityPrefab(EntityID entity, char path[], char name[]){
-	cJSON *entityObj = EncodeEntity(entity);
+	cJSON *entityObj = EncodeEntity(entity,1);
 
 	char fullPath[512+256];
     strncpy(fullPath,path,512);
@@ -358,6 +474,11 @@ int ExportEntityPrefab(EntityID entity, char path[], char name[]){
 		free(jsonString);
 		fclose(file);
 
+		ECS.Entities[entity].isPrefab = 1;
+		strncpy(ECS.Entities[entity].prefabPath,path,512);
+		strncpy(ECS.Entities[entity].prefabName,name,256);
+		strcat(ECS.Entities[entity].prefabName,".prefab");
+
 		return 1;
 	}else{
 		printf("ExportEntityPrefab: Failed to create/open json file!\n");
@@ -368,47 +489,19 @@ int ExportEntityPrefab(EntityID entity, char path[], char name[]){
 }
 
 EntityID ImportEntityPrefab(char path[], char name[]){
+	cJSON *entityObj = OpenJSON(path, name);
+	if(entityObj){
+		EntityID newEntity = DecodeEntity(&entityObj);
 
-	char fullPath[512+256];
-    strncpy(fullPath,path,512);
-    if(path[strlen(path)-1] != '/'){
-        strcat(fullPath,"/");
-    }
-    strcat(fullPath,name);
-    printf("Opening prefab: (%s)\n",fullPath);
-    FILE* file = fopen(fullPath,"rb");
-
-	if(file){
-		fseek(file,0,SEEK_END);
-		unsigned size = ftell(file);
-		rewind(file);
-
-		char *jsonString = malloc((size+1) * sizeof(char));
-		fread(jsonString, sizeof(char), size, file);
-		jsonString[size] = '\0';
-		fclose(file);
-
-		cJSON *entityObj = cJSON_Parse(jsonString);
-		if (!entityObj)
-		{
-			//Error treatment
-			const char *error_ptr = cJSON_GetErrorPtr();
-			if (error_ptr != NULL)
-			{
-				fprintf(stderr, "ImportEntityPrefab: JSON error: %s\n", error_ptr);
-			}
-			free(jsonString);
+		if(newEntity<0)
 			return -1;
 
-		}else{
-			free(jsonString);
-			EntityID newEntity = DecodeEntity(&entityObj);
-			cJSON_Delete(entityObj);
-			return newEntity;
-		}
-		
-	}else{
-		printf("ImportEntityPrefab: Failed to open json file!\n");
+		ECS.Entities[newEntity].isPrefab = 1;
+		strcpy(ECS.Entities[newEntity].prefabPath,path);
+		strcpy(ECS.Entities[newEntity].prefabName,name);
+
+		cJSON_Delete(entityObj);
+		return newEntity;
 	}
 	return -1;
 }
@@ -421,7 +514,7 @@ int ExportScene(char path[], char name[]){
 	int i;
 	for(i=0;i<=ECS.maxUsedIndex;i++){
 		if(IsValidEntity(i) && !EntityIsChild(i)){
-			cJSON_AddItemToArray(entitiesArray, EncodeEntity(i));
+			cJSON_AddItemToArray(entitiesArray, EncodeEntity(i,0));
 		}
 	}
 
@@ -460,54 +553,17 @@ int LoadScene(char path[], char name[]){
 }
 
 int LoadSceneAdditive(char path[], char name[]){
-
-	char fullPath[512+256];
-    strncpy(fullPath,path,512);
-    if(path[strlen(path)-1] != '/'){
-        strcat(fullPath,"/");
-    }
-    strcat(fullPath,name);
-    printf("Opening Scene: (%s)\n",fullPath);
-    FILE* file = fopen(fullPath,"rb");
-
-	if(file){
-		fseek(file,0,SEEK_END);
-		unsigned size = ftell(file);
-		rewind(file);
-
-		char *jsonString = malloc((size+1) * sizeof(char));
-		fread(jsonString, sizeof(char), size, file);
-		jsonString[size] = '\0';
-		fclose(file);
-
-		cJSON *sceneObj = cJSON_Parse(jsonString);
-		if (!sceneObj)
-		{
-			//Error treatment
-			const char *error_ptr = cJSON_GetErrorPtr();
-			if (error_ptr != NULL)
-			{
-				fprintf(stderr, "LoadScene: JSON error: %s\n", error_ptr);
-			}
-			free(jsonString);
-			return -1;
-
-		}else{
-			free(jsonString);
-
-			cJSON *entityArray = cJSON_GetObjectItemCaseSensitive(sceneObj, "entities");
-			cJSON *entityObj = NULL;
-			cJSON_ArrayForEach(entityObj, entityArray){	
-				//Entity construction
-				DecodeEntity(&entityObj);
-			}
-
-			cJSON_Delete(sceneObj);
-			return 1;
+	cJSON *sceneObj = OpenJSON(path, name);
+	if(sceneObj){
+		cJSON *entityArray = cJSON_GetObjectItemCaseSensitive(sceneObj, "entities");
+		cJSON *entityObj = NULL;
+		cJSON_ArrayForEach(entityObj, entityArray){	
+			//Entity construction
+			DecodeEntity(&entityObj);
 		}
-		
-	}else{
-		printf("LoadScene: Failed to open json file!\n");
+
+		cJSON_Delete(sceneObj);
+		return 1;
 	}
 	return 0;
 }

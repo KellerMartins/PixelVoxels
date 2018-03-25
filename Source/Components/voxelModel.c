@@ -72,23 +72,59 @@ void* VoxelModelCopy(void* data){
 	return newVoxelModel;
 }
 
-cJSON* VoxelModelEncode(void** data){
+cJSON* VoxelModelEncode(void** data, cJSON* currentData){
+    if(!data) return NULL;
+    printf("Voxel\n");
     VoxelModel *v = *data; 
-    cJSON *obj = cJSON_CreateObject();
 
-    cJSON_AddStringToObject(obj, "modelPath", v->modelPath);
-    cJSON_AddStringToObject(obj, "modelName", v->modelName);
-    if(v->objectName[0] != '\0')
-        cJSON_AddStringToObject(obj, "objectName", v->objectName);
+    int hasChanged = 0;
+    if(currentData){
+        //Check if any data has changed
+        cJSON *curCenter = cJSON_GetObjectItem(currentData,"center");
+        if(v->center.x != (cJSON_GetArrayItem(curCenter,0))->valuedouble ||
+           v->center.y != (cJSON_GetArrayItem(curCenter,1))->valuedouble || 
+           v->center.z != (cJSON_GetArrayItem(curCenter,2))->valuedouble)
+        {
+            hasChanged = 1;
+        }
 
-    cJSON_AddBoolToObject(obj,"smallScale",v->smallScale);
+        cJSON *curScale = cJSON_GetObjectItem(currentData,"smallScale");
+        if(curScale && v->smallScale != cJSON_IsTrue(curScale)){
+            hasChanged = 1;
+        }
+        printf("V\n");
+        cJSON *curObjName = cJSON_GetObjectItem(currentData, "objectName");
+        if(curObjName && v->objectName[0] == '\0'){
+            hasChanged = 1;
+        }
+        printf("O\n");
+        if(!StringCompareEqual(v->modelPath, cJSON_GetObjectItem(currentData, "modelPath")->valuestring) || 
+           !StringCompareEqual(v->modelName, cJSON_GetObjectItem(currentData, "modelName")->valuestring))
+        {
+            hasChanged = 1;
+        }
+    }
 
-    cJSON *center = cJSON_AddArrayToObject(obj,"center");
-    cJSON_AddItemToArray(center, cJSON_CreateNumber(v->center.x));
-    cJSON_AddItemToArray(center, cJSON_CreateNumber(v->center.y));
-    cJSON_AddItemToArray(center, cJSON_CreateNumber(v->center.z));
+    printf("X\n");
+    //Encode this component if its not from a prefab (who has currentData) or if it has changed
+    if(!currentData || hasChanged){
+        cJSON *obj = cJSON_CreateObject();
 
-    return obj;
+        cJSON_AddStringToObject(obj, "modelPath", v->modelPath);
+        cJSON_AddStringToObject(obj, "modelName", v->modelName);
+        if(v->objectName[0] != '\0')
+            cJSON_AddStringToObject(obj, "objectName", v->objectName);
+
+        cJSON_AddBoolToObject(obj,"smallScale",v->smallScale);
+
+        cJSON *center = cJSON_AddArrayToObject(obj,"center");
+        cJSON_AddItemToArray(center, cJSON_CreateNumber(v->center.x));
+        cJSON_AddItemToArray(center, cJSON_CreateNumber(v->center.y));
+        cJSON_AddItemToArray(center, cJSON_CreateNumber(v->center.z));
+
+        return obj;
+    }
+    return NULL;
 }
 
 void* VoxelModelDecode(cJSON **data){

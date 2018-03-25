@@ -11,7 +11,7 @@ typedef struct PointLightData{
 void PointLightConstructor(void** data);
 void PointLightDestructor(void** data);
 void* PointLightCopy(void* data);
-cJSON* PointLightEncode(void** data);
+cJSON* PointLightEncode(void** data, cJSON* currentData);
 void* PointLightDecode(cJSON **data);
 
 Vector3 GetPointLightColor(EntityID entity);

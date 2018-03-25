@@ -35,19 +35,41 @@ void* PointLightCopy(void* data){
 	return newPointLightData;
 }
 
-cJSON* PointLightEncode(void** data){
+cJSON* PointLightEncode(void** data, cJSON* currentData){
+    if(!data) return NULL;
+    printf("Point\n");
     PointLightData *pl = *data; 
-    cJSON *obj = cJSON_CreateObject();
+   
+    int hasChanged = 0;
+    if(currentData){
+        //Check if any data has changed
+        cJSON *curColor = cJSON_GetObjectItem(currentData,"color");
+        
+        if(pl->color.x != (cJSON_GetArrayItem(curColor,0))->valuedouble ||
+           pl->color.y != (cJSON_GetArrayItem(curColor,1))->valuedouble || 
+           pl->color.z != (cJSON_GetArrayItem(curColor,2))->valuedouble || 
+           pl->intensity != cJSON_GetObjectItem(currentData,"intensity")->valuedouble || 
+           pl->range != cJSON_GetObjectItem(currentData,"range")->valuedouble
+        ){
+            hasChanged = 1;
+        }
+    }
 
-    cJSON *colorArr = cJSON_AddArrayToObject(obj,"color");
-    cJSON_AddItemToArray(colorArr,cJSON_CreateNumber(pl->color.x));
-    cJSON_AddItemToArray(colorArr,cJSON_CreateNumber(pl->color.y));
-    cJSON_AddItemToArray(colorArr,cJSON_CreateNumber(pl->color.z));
+    //Encode this component if its not from a prefab (who has currentData) or if it has changed
+    if(!currentData || hasChanged){
+        cJSON *obj = cJSON_CreateObject();
+        
+        cJSON *colorArr = cJSON_AddArrayToObject(obj,"color");
+        cJSON_AddItemToArray(colorArr,cJSON_CreateNumber(pl->color.x));
+        cJSON_AddItemToArray(colorArr,cJSON_CreateNumber(pl->color.y));
+        cJSON_AddItemToArray(colorArr,cJSON_CreateNumber(pl->color.z));
 
-    cJSON_AddNumberToObject(obj,"intensity",pl->intensity);
-    cJSON_AddNumberToObject(obj,"range",pl->range);
+        cJSON_AddNumberToObject(obj,"intensity",pl->intensity);
+        cJSON_AddNumberToObject(obj,"range",pl->range);
 
-    return obj;
+        return obj;
+    }
+    return NULL;
 }
 
 void* PointLightDecode(cJSON **data){

@@ -36,21 +36,44 @@ void* TransformCopy(void* data){
 	return newTransform;
 }
 
-cJSON* TransformEncode(void** data){
+cJSON* TransformEncode(void** data, cJSON* currentData){
+    if(!data) return NULL;
+    printf("Transform\n");
     Transform *tr = *data; 
-    cJSON *obj = cJSON_CreateObject();
 
-    cJSON *position = cJSON_AddArrayToObject(obj,"position");
-    cJSON_AddItemToArray(position, cJSON_CreateNumber(tr->position.x));
-    cJSON_AddItemToArray(position, cJSON_CreateNumber(tr->position.y));
-    cJSON_AddItemToArray(position, cJSON_CreateNumber(tr->position.z));
+    int hasChanged = 0;
+    if(currentData){
+        //Check if any data has changed
+        cJSON *curPos = cJSON_GetObjectItem(currentData,"position");
+        cJSON *curRot = cJSON_GetObjectItem(currentData,"rotation");
+        if(tr->position.x != (cJSON_GetArrayItem(curPos,0))->valuedouble ||
+           tr->position.y != (cJSON_GetArrayItem(curPos,1))->valuedouble || 
+           tr->position.z != (cJSON_GetArrayItem(curPos,2))->valuedouble || 
+           tr->rotation.x != (cJSON_GetArrayItem(curRot,0))->valuedouble || 
+           tr->rotation.y != (cJSON_GetArrayItem(curRot,1))->valuedouble || 
+           tr->rotation.z != (cJSON_GetArrayItem(curRot,2))->valuedouble
+        ){
+            hasChanged = 1;
+        }
+    }
 
-    cJSON *rotation = cJSON_AddArrayToObject(obj,"rotation");
-    cJSON_AddItemToArray(rotation, cJSON_CreateNumber(tr->rotation.x));
-    cJSON_AddItemToArray(rotation, cJSON_CreateNumber(tr->rotation.y));
-    cJSON_AddItemToArray(rotation, cJSON_CreateNumber(tr->rotation.z));
+    //Encode this component if its not from a prefab (who has currentData) or if it has changed
+    if(!currentData || hasChanged){
+        cJSON *obj = cJSON_CreateObject();
 
-    return obj;
+        cJSON *position = cJSON_AddArrayToObject(obj,"position");
+        cJSON_AddItemToArray(position, cJSON_CreateNumber(tr->position.x));
+        cJSON_AddItemToArray(position, cJSON_CreateNumber(tr->position.y));
+        cJSON_AddItemToArray(position, cJSON_CreateNumber(tr->position.z));
+
+        cJSON *rotation = cJSON_AddArrayToObject(obj,"rotation");
+        cJSON_AddItemToArray(rotation, cJSON_CreateNumber(tr->rotation.x));
+        cJSON_AddItemToArray(rotation, cJSON_CreateNumber(tr->rotation.y));
+        cJSON_AddItemToArray(rotation, cJSON_CreateNumber(tr->rotation.z));
+
+        return obj;
+    }
+    return NULL;
 }
 
 void* TransformDecode(cJSON **data){

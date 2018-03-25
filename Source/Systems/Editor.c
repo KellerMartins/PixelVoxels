@@ -817,12 +817,19 @@ int movingComponentsScrollbar = 0;
 void DrawComponentsPanel(){
     int currentComponentField = 0;
     if(!IsListEmpty(SelectedEntities)){
+        
+        int singlePrefabSelected = 0;
+        int ComponentsPanelHeight = Screen.windowHeight;
+        if(GetLength(SelectedEntities)==1 && EntityIsPrefab(GetElementAsType(GetFirstCell(SelectedEntities),EntityID))){
+            ComponentsPanelHeight -= 50;
+            singlePrefabSelected = 1;
+        }
 
         //Panel background
         glBegin(GL_QUADS);
             glColor3f(bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
-            glVertex2f( Screen.windowWidth-componentWindowLength,  Screen.windowHeight);
-            glVertex2f( Screen.windowWidth,  Screen.windowHeight);
+            glVertex2f( Screen.windowWidth-componentWindowLength,  ComponentsPanelHeight);
+            glVertex2f( Screen.windowWidth,  ComponentsPanelHeight);
             glVertex2f( Screen.windowWidth, 0);
             glVertex2f( Screen.windowWidth-componentWindowLength, 0);
         glEnd();
@@ -840,7 +847,7 @@ void DrawComponentsPanel(){
         if(!addComponentWindowOpened){
 
             //Show the panel of the components contained by the selected entities
-            int c,componentHeight = Screen.windowHeight + componentStartHeight;
+            int c,componentHeight = ComponentsPanelHeight + componentStartHeight;
             for(c=0;c<GetLength(ECS.ComponentTypes);c++){
 
                 if(MaskContainsComponent(mask,c)){
@@ -1285,11 +1292,11 @@ void DrawComponentsPanel(){
             
             //Scrollbar
             
-            int mouseOverComponentPanel = MouseOverBox(mousePos, (Vector3){Screen.windowWidth-componentWindowLength,0,0}, (Vector3){Screen.windowWidth,Screen.windowHeight,0},0);
+            int mouseOverComponentPanel = MouseOverBox(mousePos, (Vector3){Screen.windowWidth-componentWindowLength,0,0}, (Vector3){Screen.windowWidth,ComponentsPanelHeight,0},0);
             glLineWidth(clamp((componentWindowWidthSpacing/2 - 2) * 2/Screen.gameScale,1,Screen.windowWidth));
-            int offscreenPixels = -clamp(componentHeight-componentStartHeight-componentWindowBottomSpacing,-(Screen.windowHeight-10),0);
+            int offscreenPixels = -clamp(componentHeight-componentStartHeight-componentWindowBottomSpacing,-(ComponentsPanelHeight-10),0);
             glBegin(GL_LINES);  
-                Vector3 scrollbarStart = {Screen.windowWidth - componentWindowWidthSpacing/2 ,Screen.windowHeight-componentStartHeight -2,0};
+                Vector3 scrollbarStart = {Screen.windowWidth - componentWindowWidthSpacing/2 ,ComponentsPanelHeight-componentStartHeight -2,0};
                 Vector3 scrollbarEnd = {Screen.windowWidth - componentWindowWidthSpacing/2 ,offscreenPixels - componentStartHeight +componentWindowBottomSpacing+ 1,0};
                 
                 if(mouseOverComponentPanel){
@@ -1349,7 +1356,7 @@ void DrawComponentsPanel(){
             }
         }else{
             //Show components to be added
-            int buttonHeight = Screen.windowHeight - (addComponentScroll>0? 22:0);
+            int buttonHeight = ComponentsPanelHeight - (addComponentScroll>0? 22:0);
             int w,h,i = 0;
             ListCellPointer cellComp;
             ListForEach(cellComp,ECS.ComponentTypes){
@@ -1387,8 +1394,8 @@ void DrawComponentsPanel(){
             if(GetLength(ECS.ComponentTypes) > 16){
                 Vector3 scrollbarDownMin = {Screen.windowWidth - componentWindowLength,componentWindowBottomSpacing+2};
                 Vector3 scrollbarDownMax = {Screen.windowWidth,componentWindowBottomSpacing+22};
-                Vector3 scrollbarUpMin = {Screen.windowWidth - componentWindowLength,Screen.windowHeight-22};
-                Vector3 scrollbarUpMax = {Screen.windowWidth,Screen.windowHeight-2};
+                Vector3 scrollbarUpMin = {Screen.windowWidth - componentWindowLength,ComponentsPanelHeight-22};
+                Vector3 scrollbarUpMax = {Screen.windowWidth,ComponentsPanelHeight-2};
 
                 if(addComponentScroll < GetLength(ECS.ComponentTypes)-15){
                     if(MouseOverBox(mousePos,scrollbarDownMin,scrollbarDownMax,0)){
@@ -1464,6 +1471,18 @@ void DrawComponentsPanel(){
         }else{
             TTF_SizeText(gizmosFont,"Back",&w,&h);
             RenderText("Back", brightWhite, cbMin.x + ((cbMax.x-cbMin.x)-w)/2, cbMin.y + ((cbMax.y-cbMin.y)-h)/2, gizmosFont);
+        }
+
+        //Draw the prefab name
+
+        if(singlePrefabSelected){
+            Vector3 prefabBgMin = {Screen.windowWidth-componentWindowLength, ComponentsPanelHeight};
+            Vector3 prefabBgMax = {Screen.windowWidth, Screen.windowHeight};
+            DrawRectangle(prefabBgMin,prefabBgMax,bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
+
+            prefabBgMin.y += 2;
+            DrawRectangle(prefabBgMin,prefabBgMax,0.2,0.2,0.35);
+            RenderText(GetPrefabName(GetElementAsType(GetFirstCell(SelectedEntities),EntityID)), brightWhite, Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, prefabBgMin.y + (prefabBgMax.y - prefabBgMin.y - TTF_FontHeight(gizmosFontSmall))/2, gizmosFontSmall);
         }
     }
 }

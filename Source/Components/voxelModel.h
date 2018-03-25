@@ -40,7 +40,7 @@ typedef struct VoxelModel{
 void VoxelModelConstructor(void** data);
 void VoxelModelDestructor(void** data);
 void* VoxelModelCopy(void* data);
-cJSON* VoxelModelEncode(void** data);
+cJSON* VoxelModelEncode(void** data, cJSON* currentData);
 void* VoxelModelDecode(cJSON **data);
 
 VoxelModel* GetVoxelModelPointer(EntityID entity);
@@ -58,7 +58,6 @@ int IsMultiVoxelModelFile(char modelPath[], char modelName[]);
 
 void CalculateRendered(EntityID entity);
 void CalculateLighting(EntityID entity);
-//void LoadMultiVoxelModel(EntityID entity, char modelPath[]);
 
 
 #endif

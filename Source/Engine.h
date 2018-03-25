@@ -100,6 +100,10 @@ typedef struct Entity{
     int isSpawned;
     int isParent;
     int isChild;
+    int isPrefab;
+    char prefabPath[4096];
+    char prefabName[256];
+
     //If parent: List of his child EntityIDs
     List childs;
     //If child: ID of his parent
@@ -118,7 +122,7 @@ typedef struct ComponentType{
     void (*destructor)(void** data);
     void*(*copy)(void*);
 
-    cJSON*(*encode)(void** data);
+    cJSON*(*encode)(void** data, cJSON* currentData);
     void* (*decode)(cJSON** data);
 }ComponentType;
 
@@ -159,7 +163,7 @@ typedef struct engineECS{
 //ECS functions
 int InitECS(unsigned max_entities);
 
-int RegisterNewComponent(char componentName[25],void (*constructorFunc)(void** data),void (*destructorFunc)(void** data),void*(*copyFunc)(void*),cJSON*(*encodeFunc)(void** data),void* (*decodeFunc)(cJSON** data));
+int RegisterNewComponent(char componentName[25],void (*constructorFunc)(void** data),void (*destructorFunc)(void** data),void*(*copyFunc)(void*),cJSON*(*encodeFunc)(void** data, cJSON* currentData),void* (*decodeFunc)(cJSON** data));
 int RegisterNewSystem(char systemName[25], int priority, ComponentMask required, ComponentMask excluded, void (*initFunc)(), void (*updateFunc)(), void (*freeFunc)());
 
 ComponentID GetComponentID(char componentName[25]);
@@ -172,6 +176,9 @@ ComponentMask CreateComponentMaskByID(int numComp, ...);
 EntityID CreateEntity();
 void DestroyEntity();
 int IsValidEntity(EntityID entity);
+int EntityIsPrefab(EntityID entity);
+char *GetPrefabPath(EntityID entity);
+char *GetPrefabName(EntityID entity);
 void AddComponentToEntity(ComponentID component, EntityID entity);
 void RemoveComponentFromEntity(ComponentID component, EntityID entity);
 EntityID DuplicateEntity(EntityID entity);

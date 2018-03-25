@@ -5,7 +5,7 @@
 void TransformConstructor(void** data);
 void TransformDestructor(void** data);
 void* TransformCopy(void* data);
-cJSON* TransformEncode(void** data);
+cJSON* TransformEncode(void** data, cJSON* currentData);
 void* TransformDecode(cJSON **data);
 
 Vector3 GetPosition(EntityID entity);

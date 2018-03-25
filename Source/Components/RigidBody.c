@@ -42,27 +42,73 @@ void* RigidBodyCopy(void* data){
 	return newRigidBody;
 }
 
-cJSON* RigidBodyEncode(void** data){
-    RigidBody *rb = *data; 
-    cJSON *obj = cJSON_CreateObject();
+cJSON* RigidBodyEncode(void** data, cJSON* currentData){
+    if(!data) return NULL;
+    printf("RB\n");
+    RigidBody *rb = *data;
+    
+    
+    int hasChanged = 0;
+    if(currentData){
+        //Check if any data has changed
+        cJSON *curVelocity = cJSON_GetObjectItem(currentData,"velocity");
+        if(rb->velocity.x != (cJSON_GetArrayItem(curVelocity,0))->valuedouble ||
+           rb->velocity.y != (cJSON_GetArrayItem(curVelocity,1))->valuedouble || 
+           rb->velocity.z != (cJSON_GetArrayItem(curVelocity,2))->valuedouble)
+        {
+            hasChanged = 1;
+        }
 
-    cJSON_AddNumberToObject(obj,"mass",rb->mass);
-    cJSON_AddNumberToObject(obj,"bounciness",rb->bounciness);
+        cJSON *curAcceleration = cJSON_GetObjectItem(currentData,"acceleration");
+        if(rb->acceleration.x != (cJSON_GetArrayItem(curAcceleration,0))->valuedouble ||
+           rb->acceleration.y != (cJSON_GetArrayItem(curAcceleration,1))->valuedouble || 
+           rb->acceleration.z != (cJSON_GetArrayItem(curAcceleration,2))->valuedouble)
+        {
+            hasChanged = 1;
+        }
 
-    cJSON *velocity = cJSON_AddArrayToObject(obj,"velocity");
-    cJSON_AddItemToArray(velocity, cJSON_CreateNumber(rb->velocity.x));
-    cJSON_AddItemToArray(velocity, cJSON_CreateNumber(rb->velocity.y));
-    cJSON_AddItemToArray(velocity, cJSON_CreateNumber(rb->velocity.z));
+        cJSON *curUseGravity= cJSON_GetObjectItem(currentData,"useGravity");
+        if(rb->useGravity != cJSON_IsTrue(curUseGravity)){
+            hasChanged = 1;
+        }
 
-    cJSON *acceleration = cJSON_AddArrayToObject(obj,"acceleration");
-    cJSON_AddItemToArray(acceleration, cJSON_CreateNumber(rb->acceleration.x));
-    cJSON_AddItemToArray(acceleration, cJSON_CreateNumber(rb->acceleration.y));
-    cJSON_AddItemToArray(acceleration, cJSON_CreateNumber(rb->acceleration.z));
+        cJSON *curIsStatic= cJSON_GetObjectItem(currentData,"isStatic");
+        if(rb->isStatic != cJSON_IsTrue(curIsStatic)){
+            hasChanged = 1;
+        }
 
-    cJSON_AddBoolToObject(obj,"useGravity",rb->useGravity);
-    cJSON_AddBoolToObject(obj,"isStatic",rb->isStatic);
+        if(rb->mass != (cJSON_GetObjectItem(currentData,"mass"))->valuedouble){
+            hasChanged = 1;
+        }
 
-    return obj;
+        if(rb->bounciness != (cJSON_GetObjectItem(currentData,"bounciness"))->valuedouble){
+            hasChanged = 1;
+        }
+    }
+
+    //Encode this component if its not from a prefab (who has currentData) or if it has changed
+    if(!currentData || hasChanged){           
+        cJSON *obj = cJSON_CreateObject();
+
+        cJSON_AddNumberToObject(obj,"mass",rb->mass);
+        cJSON_AddNumberToObject(obj,"bounciness",rb->bounciness);
+
+        cJSON *velocity = cJSON_AddArrayToObject(obj,"velocity");
+        cJSON_AddItemToArray(velocity, cJSON_CreateNumber(rb->velocity.x));
+        cJSON_AddItemToArray(velocity, cJSON_CreateNumber(rb->velocity.y));
+        cJSON_AddItemToArray(velocity, cJSON_CreateNumber(rb->velocity.z));
+
+        cJSON *acceleration = cJSON_AddArrayToObject(obj,"acceleration");
+        cJSON_AddItemToArray(acceleration, cJSON_CreateNumber(rb->acceleration.x));
+        cJSON_AddItemToArray(acceleration, cJSON_CreateNumber(rb->acceleration.y));
+        cJSON_AddItemToArray(acceleration, cJSON_CreateNumber(rb->acceleration.z));
+
+        cJSON_AddBoolToObject(obj,"useGravity",rb->useGravity);
+        cJSON_AddBoolToObject(obj,"isStatic",rb->isStatic);
+
+        return obj;
+    }
+    return NULL;
 }
 
 void* RigidBodyDecode(cJSON **data){

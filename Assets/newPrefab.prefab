@@ -1,64 +1,49 @@
 {
 	"Transform":	{
-		"position":	[0, 0, 32.856109619140625],
-		"rotation":	[0, 0, 0]
+		"position":	[6.99801778793335, 68.699623107910156, 17.615171432495117],
+		"rotation":	[0, -0, 0]
 	},
 	"VoxelModel":	{
 		"modelPath":	"Assets/Game/Models/",
-		"modelName":	"Sea.vox",
-		"smallScale":	false,
-		"center":	[16, 16, 32]
+		"modelName":	"char.vox",
+		"smallScale":	true,
+		"center":	[0, 10, 0]
+	},
+	"RigidBody":	{
+		"mass":	1,
+		"bounciness":	0.699999988079071,
+		"velocity":	[0.10000000149011612, 0, 0],
+		"acceleration":	[0, 0, 0],
+		"useGravity":	true,
+		"isStatic":	false
 	},
 	"childs":	[{
+			"prefabPath":	"Assets",
+			"prefabName":	"newPrefab1.prefab",
 			"Transform":	{
-				"position":	[-5.7850866317749023, -8.19351863861084, -14.140583992004395],
-				"rotation":	[0, 0, -45]
+				"position":	[14.459394454956055, -10.672171592712402, -9.56568717956543],
+				"rotation":	[0, 0, -90]
+			}
+		}, {
+			"prefabPath":	"Assets",
+			"prefabName":	"newPrefab1.prefab",
+			"Transform":	{
+				"position":	[-34.8926887512207, -21.298358917236328, 1.186846137046814],
+				"rotation":	[0, 0, 0]
 			},
 			"VoxelModel":	{
 				"modelPath":	"Assets/Game/Models/",
-				"modelName":	"minichar.vox",
-				"smallScale":	true,
-				"center":	[5, 2, 10]
-			}
-		}, {
-			"Transform":	{
-				"position":	[6.7544994354248047, -27.898147583007813, -8.7946491241455078],
-				"rotation":	[0, 0, 0]
+				"modelName":	"bullet.vox",
+				"smallScale":	false,
+				"center":	[0, 0, 0]
 			},
-			"PointLight":	{
-				"color":	[0, 0, 1],
-				"intensity":	0.75,
-				"range":	1000
-			}
-		}, {
-			"Transform":	{
-				"position":	[-7.6591143608093262, -1.2605419158935547, 9.7737417221069336],
-				"rotation":	[0, 0, 0]
-			},
-			"PointLight":	{
-				"color":	[1, 1, 1],
-				"intensity":	0.75,
-				"range":	100
-			}
-		}, {
-			"Transform":	{
-				"position":	[-17.273767471313477, -2.9412636756896973, -21.626775741577148],
-				"rotation":	[0, 0, 0]
-			},
-			"PointLight":	{
-				"color":	[1, 1, 1],
-				"intensity":	0.75,
-				"range":	100
-			}
-		}, {
-			"Transform":	{
-				"position":	[-12.629406929016113, -17.962718963623047, -11.437139511108398],
-				"rotation":	[0, 0, 0]
-			},
-			"PointLight":	{
-				"color":	[1, 1, 1],
-				"intensity":	0.75,
-				"range":	100
+			"RigidBody":	{
+				"mass":	1,
+				"bounciness":	0.699999988079071,
+				"velocity":	[1.1000000238418579, 0, 0],
+				"acceleration":	[0, 0, 0],
+				"useGravity":	true,
+				"isStatic":	false
 			}
 		}]
 }

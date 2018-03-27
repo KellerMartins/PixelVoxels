@@ -918,7 +918,8 @@ int InitEngine(){
 	//Load voxel palette
 	LoadVoxelPalette("Assets/Game/Textures/magicaPalette.png");
 
-
+	Core.lua = luaL_newstate();
+	luaL_openlibs(Core.lua);
 
 	//Call initialization function of all systems
 	ListCellPointer current = GetFirstCell(ECS.SystemList);
@@ -1032,6 +1033,9 @@ void EndEngine(int errorOcurred){
 
 	if(SDL_WasInit(SDL_INIT_EVERYTHING)!=0)
     	SDL_Quit();
+
+	if(Core.lua)
+		lua_close(Core.lua);
 
     if(errorOcurred){
 		printf("Engine finished with errors!\n");

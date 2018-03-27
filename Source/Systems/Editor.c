@@ -268,9 +268,13 @@ void EditorUpdate(){
         //Parent shortcut
         if(GetKeyDown(SDL_SCANCODE_P)){
             ListCellPointer cellp = GetFirstCell(SelectedEntities);
-            while(cellp != GetLastCell(SelectedEntities)){
-                SetEntityParent(GetElementAsType(cellp,EntityID),GetElementAsType(GetLastCell(SelectedEntities),EntityID));
-                cellp = GetNextCell(cellp);
+            if(GetLength(SelectedEntities) == 1){
+                UnsetParent(GetElementAsType(cellp,EntityID));
+            }else{
+                while(cellp != GetLastCell(SelectedEntities)){
+                    SetEntityParent(GetElementAsType(cellp,EntityID),GetElementAsType(GetLastCell(SelectedEntities),EntityID));
+                    cellp = GetNextCell(cellp);
+                }
             }
         }
 

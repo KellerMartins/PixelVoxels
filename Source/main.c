@@ -3,7 +3,7 @@
 
 #include "Components/VoxelModel.h"
 #include "Components/Transform.h"
-#include "Components/Rigidbody.h"
+#include "Components/RigidBody.h"
 #include "Components/PointLight.h"
 
 #include "Systems/VoxelRenderer.h"

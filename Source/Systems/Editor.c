@@ -63,7 +63,7 @@ typedef struct {
     int opened; //File browser open status (0 = not opened, 1 = opened (load mode), 2 = opened (save mode), -1 failed to open)
     int itemsScroll;     //Line of items scrolled
 }FileBrowserData;
-FileBrowserData fileBrowser = {.fileExtension = "", .itemsScroll = 0, .opened = 0};
+FileBrowserData fileBrowser = {.fileExtension = "", .fileName = "", .filePath = "", .fileExtension = "", .itemsScroll = 0, .opened = 0};
 
 //Dialog window "namespace"
 typedef struct {
@@ -166,12 +166,12 @@ void EditorInit(System *systemObject){
         }
     }
     
-    gizmosFont = TTF_OpenFont("Interface/Fonts/gros/GROS.ttf",16);
+    gizmosFont = TTF_OpenFont("Interface/Fonts/gros/GROS.TTF",16);
 	if(!gizmosFont){
 		printf("Font: Error loading font!");
 	}
 
-    gizmosFontSmall= TTF_OpenFont("Interface/Fonts/coolthre/COOLTHRE.ttf",12);
+    gizmosFontSmall= TTF_OpenFont("Interface/Fonts/coolthre/COOLTHRE.TTF",12);
     if(!gizmosFontSmall){
 		printf("Font: Error loading small font!");
 	}
@@ -1910,7 +1910,7 @@ void DrawFileBrowser(){
             if(PointButton((Vector3){x,y,0},10,3, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){0.5,0.5,0.5}) == 1){
                 char *path = calloc(_TINYDIR_PATH_MAX,sizeof(char));
                 strncpy(path,file.path,_TINYDIR_PATH_MAX);
-
+                printf("(%s)\n", path);
                 OpenFileBrowser(mode,path,fileBrowser.onConfirmFunction);
                 memcpy(fileBrowser.filePath,path,_TINYDIR_PATH_MAX*sizeof(char));
 
@@ -2877,12 +2877,11 @@ void OpenFileBrowser(int mode, char *initialPath,void (*onOpen)()){
     }else{
         char DefaultPath[] = "Assets";
         memcpy(fileBrowser.filePath,DefaultPath,sizeof(DefaultPath));
-
         if(fileBrowser.opened){
             //Free the paths list when returning to default path
             ListCellPointer cell;
             ListForEach(cell,fileBrowser.paths){
-                free(GetElement(*cell));
+                free(GetElementAsType(cell,char*));
             }
             FreeList(&fileBrowser.paths);
         }
@@ -2913,8 +2912,9 @@ void OpenFileBrowser(int mode, char *initialPath,void (*onOpen)()){
             
             InsertListEnd(&fileBrowser.files,&file);
             char ** extStr = &((tinydir_file*)GetLastElement(fileBrowser.files))->extension;
-            *extStr = malloc(strlen(file.extension) * sizeof(char));
-            strcpy(*extStr,file.extension);
+            int extLen = strlen(file.extension)+1;
+            *extStr = malloc(extLen * sizeof(char));
+            strncpy(*extStr,file.extension, extLen);
         }
 
         tinydir_next(&dir);
@@ -2939,7 +2939,7 @@ void CloseFileBrowser(){
 
     ListCellPointer cell;
     ListForEach(cell,fileBrowser.paths){
-        free(*((char**)GetElement(*cell)));
+        free(GetElementAsType(cell,char*));
     }
     FreeList(&fileBrowser.paths);
 }

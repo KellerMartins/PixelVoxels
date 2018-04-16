@@ -7,11 +7,7 @@
 #include <time.h>
 #include <string.h>
 
-#include <lua.h>
-#include <lualib.h>
-#include <lauxlib.h>
-
-#include <soloud_c.h>
+//#include <soloud_c.h>
 #include "Libs/cJSON.h"
 
 #include <SDL2/SDL.h>
@@ -27,8 +23,8 @@ typedef struct engineCore{
     SDL_Renderer * renderer;
     SDL_Window* window;	
     SDL_GLContext glContext;
-    Soloud *soloud;
-    lua_State *lua;
+    //Soloud *soloud;
+    //lua_State *lua;
 }engineCore;
 
 typedef struct engineInput{

@@ -770,12 +770,12 @@ int InitEngine(){
 
 	srand( (unsigned)time(NULL) );
 	
-	Core.soloud = Soloud_create();
+	/*Core.soloud = Soloud_create();
 	if(Soloud_initEx(Core.soloud,SOLOUD_CLIP_ROUNDOFF | SOLOUD_ENABLE_VISUALIZATION, SOLOUD_AUTO, SOLOUD_AUTO, SOLOUD_AUTO, SOLOUD_AUTO)<0){
 		printf("SoLoud could not initialize! \n");
 		EndEngine(1);
         return 0;
-	}
+	}*/
 
 	if(IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG){
 		printf("SDL Image could not initialize! \n");
@@ -918,8 +918,8 @@ int InitEngine(){
 	//Load voxel palette
 	LoadVoxelPalette("Assets/Game/Textures/magicaPalette.png");
 
-	Core.lua = luaL_newstate();
-	luaL_openlibs(Core.lua);
+	/*Core.lua = luaL_newstate();
+	luaL_openlibs(Core.lua);*/
 
 	//Call initialization function of all systems
 	ListCellPointer current = GetFirstCell(ECS.SystemList);
@@ -1015,10 +1015,10 @@ void EndEngine(int errorOcurred){
 	FreeInput();
 
 	//Finish core systems
-	if(Core.soloud){
+	/*if(Core.soloud){
 		Soloud_deinit(Core.soloud);
 		Soloud_destroy(Core.soloud);
-	}
+	}*/
 			
 	if(Core.renderer)
 		SDL_DestroyRenderer(Core.renderer);
@@ -1034,8 +1034,8 @@ void EndEngine(int errorOcurred){
 	if(SDL_WasInit(SDL_INIT_EVERYTHING)!=0)
     	SDL_Quit();
 
-	if(Core.lua)
-		lua_close(Core.lua);
+	/*if(Core.lua)
+		lua_close(Core.lua);*/
 
     if(errorOcurred){
 		printf("Engine finished with errors!\n");
@@ -1116,6 +1116,7 @@ void RenderToScreen(){
 
 void RenderText(char *text, SDL_Color color, int x, int y, TTF_Font* font) 
 {	
+	if(!font) return;
 	if(!text) return;
 	if(text[0] == '\0') return;
 
@@ -1179,7 +1180,7 @@ const GLchar *LoadShaderSource(char *filename) {
     FILE *file = fopen(filename, "r");             // open 
     fseek(file, 0L, SEEK_END);                     // find the end
     size_t size = ftell(file);                     // get the size in bytes
-    GLchar *shaderSource = calloc(1, size);        // allocate enough bytes
+    GLchar *shaderSource = calloc(sizeof(GLchar), size + 1);        // allocate enough bytes
     rewind(file);                                  // go back to file beginning
     fread(shaderSource, size, sizeof(char), file); // read each char into ourblock
     fclose(file);                                  // close the stream

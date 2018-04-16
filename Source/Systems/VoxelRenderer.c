@@ -1,4 +1,4 @@
-#include "voxelRenderer.h"
+#include "VoxelRenderer.h"
 
 static System *ThisSystem;
 

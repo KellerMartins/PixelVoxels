@@ -846,12 +846,10 @@ int InitEngine(){
 	}
 
 	//Initialize OpenGL features
-	glShadeModel(GL_SMOOTH);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClearDepth(1.0f);
-    glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
-    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+    //glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
 	Rendering.cameraPosition = (Vector3){0,0,0};
 	Rendering.clearScreenColor = (SDL_Color){0,0,0,0};
@@ -906,14 +904,17 @@ int InitEngine(){
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	
     //Compile shaders
-    if(!CompileAndLinkShader("Shaders/ScreenVert.vs","Shaders/ScreenFrag.fs",0)) printf(">Failed to compile/link shader! Description above\n\n");
-    else printf(">Compiled/linked shader sucessfully!\n");
+    if(!CompileAndLinkShader("Shaders/ScreenVert.vs","Shaders/ScreenFrag.fs",0)) printf(">Failed to compile/link Screen shader! Description above\n\n");
+    else printf(">Compiled/linked Screen shader sucessfully!\n");
 
-     if(!CompileAndLinkShader("Shaders/VoxelVert.vs","Shaders/VoxelFrag.fs",1)) printf(">Failed to compile/link shader! Description above\n\n");
-    else printf(">Compiled/linked shader sucessfully!\n");
+    if(!CompileAndLinkShader("Shaders/VoxelVert.vs","Shaders/VoxelFrag.fs",1)) printf(">Failed to compile/link VoxelVert shader! Description above\n\n");
+    else printf(">Compiled/linked Voxel shader sucessfully!\n");
 
-	if(!CompileAndLinkShader("Shaders/VoxelSmallVert.vs","Shaders/VoxelSmallFrag.fs",2)) printf(">Failed to compile/link shader! Description above\n\n");
-    else printf(">Compiled/linked shader sucessfully!\n");
+	if(!CompileAndLinkShader("Shaders/VoxelSmallVert.vs","Shaders/VoxelSmallFrag.fs",2)) printf(">Failed to compile/link VoxelSmall shader! Description above\n\n");
+    else printf(">Compiled/linked VoxelSmall shader sucessfully!\n");
+
+	if(!CompileAndLinkShader("Shaders/UIVert.vs","Shaders/UIFrag.fs",3)) printf(">Failed to compile/link UI shader! Description above\n\n");
+    else printf(">Compiled/linked UI shader sucessfully!\n");
 
 	//Load voxel palette
 	LoadVoxelPalette("Assets/Game/Textures/magicaPalette.png");
@@ -1308,19 +1309,24 @@ void ReloadShaders(){
     }
 
     if(!CompileAndLinkShader("Shaders/ScreenVert.vs","Shaders/ScreenFrag.fs",0)) 
-        printf(">Failed to compile/link shader! Description above\n\n");
+        printf(">Failed to compile/link Screen shader! Description above\n\n");
     else 
-        printf(">Compiled/linked shader sucessfully!\n\n");
+        printf(">Compiled/linked Screen shader sucessfully!\n\n");
 
     if(!CompileAndLinkShader("Shaders/VoxelVert.vs","Shaders/VoxelFrag.fs",1)) 
-        printf(">Failed to compile/link shader! Description above\n\n");
+        printf(">Failed to compile/link Voxel shader! Description above\n\n");
     else 
-        printf(">Compiled/linked shader sucessfully!\n\n");
+        printf(">Compiled/linked Voxel shader sucessfully!\n\n");
 
 	if(!CompileAndLinkShader("Shaders/VoxelSmallVert.vs","Shaders/VoxelSmallFrag.fs",2)) 
-        printf(">Failed to compile/link shader! Description above\n\n");
+        printf(">Failed to compile/link VoxelSmall shader! Description above\n\n");
     else 
-        printf(">Compiled/linked shader sucessfully!\n\n");
+        printf(">Compiled/linked VoxelSmall shader sucessfully!\n\n");
+
+	if(!CompileAndLinkShader("Shaders/UIVert.vs","Shaders/UIFrag.fs",3)) 
+		printf(">Failed to compile/link UI shader! Description above\n\n");
+    else 
+		printf(">Compiled/linked UI shader sucessfully!\n");
 }
 
 void LoadVoxelPalette(char path[]){

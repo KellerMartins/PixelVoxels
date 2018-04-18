@@ -849,7 +849,6 @@ int InitEngine(){
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClearDepth(1.0f);
     glDepthFunc(GL_LEQUAL);
-    //glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
 	Rendering.cameraPosition = (Vector3){0,0,0};
 	Rendering.clearScreenColor = (SDL_Color){0,0,0,0};
@@ -894,13 +893,13 @@ int InitEngine(){
     // Color and vertex VBO generation and binding
     glGenBuffers(3, Rendering.vbo);
 
-    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[0]);
+    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[0]); //Vertex
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[1]);
+    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[1]); //Color
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[2]);
+	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[2]); //Normal
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	
     //Compile shaders
@@ -1115,7 +1114,7 @@ void RenderToScreen(){
     glUseProgram(0);
 }
 
-void RenderText(char *text, SDL_Color color, int x, int y, TTF_Font* font) 
+void RenderTextLegacy(char *text, SDL_Color color, int x, int y, TTF_Font* font) 
 {	
 	if(!font) return;
 	if(!text) return;

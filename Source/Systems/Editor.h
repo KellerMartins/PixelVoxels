@@ -5,6 +5,7 @@
 #include "../Components/RigidBody.h"
 #include "../Components/PointLight.h"
 #include "../Libs/tinydir.h"
+#include "UIRenderer.h"
 #include <ctype.h>
 
 void EditorInit();

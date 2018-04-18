@@ -46,6 +46,14 @@ void VoxelRendererFree(){
 
 void VoxelRendererUpdate(){
 
+    //Configure OpenGL parameters to render point sprites
+
+    glBindFramebuffer(GL_FRAMEBUFFER, Rendering.frameBuffer);
+    glViewport(0,0,Screen.gameWidth,Screen.gameHeight);
+
+    glEnable(GL_DEPTH_TEST);
+    glAlphaFunc (GL_NOTEQUAL, 0.0f);
+
     EntityID entity;
 	for(entity = 0; entity <= ECS.maxUsedIndex; entity++){
 
@@ -63,24 +71,12 @@ void VoxelRendererUpdate(){
         Vector3 position;
         Vector3 rotation;
         GetGlobalTransform(entity, &position, &rotation);
-        //Configure OpenGL parameters to render point sprites
-
-        //Render game objects only in the [0.01,1.0] range, as [0,0.01] is reserved for UI rendering
-        glDepthRange(0.01, 1.0);
-
-        glBindFramebuffer(GL_FRAMEBUFFER, Rendering.frameBuffer);
-        glViewport(0,0,Screen.gameWidth,Screen.gameHeight);
-
-        glEnable(GL_DEPTH_TEST);
-        glAlphaFunc (GL_NOTEQUAL, 0.0f);
 
         if(obj->smallScale){    
             glPointSize(2);
         }else{
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, CubeTex[0]);
-
-            glEnable(GL_TEXTURE_2D);
 
             glPointSize(cubeTexDimension);
             glEnable(GL_POINT_SPRITE);
@@ -117,6 +113,7 @@ void VoxelRendererUpdate(){
 
         glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[1]);
         glBufferData(GL_ARRAY_BUFFER, obj->numberOfVertices * 3 * sizeof(GLfloat), obj->vColors, GL_STREAM_DRAW);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(1);
 
         glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[2]);
@@ -150,14 +147,16 @@ void VoxelRendererUpdate(){
 
         glUseProgram(0);
 
-        glDisable(GL_DEPTH_TEST);
+        
 
         if(!obj->smallScale){
             glDisable(GL_POINT_SPRITE);
-            glDisable(GL_TEXTURE_2D);
         }
-
-        //Return depth to default valuess
-        glDepthRange(0, 1.0);
     }
+
+    glDisable(GL_DEPTH_TEST);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glDisableVertexAttribArray(0);
+    glDisableVertexAttribArray(1);
+    glDisableVertexAttribArray(2);
 }

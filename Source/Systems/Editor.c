@@ -2,10 +2,7 @@
 
 static System *ThisSystem;
 
-static SystemID VoxRenderSystem;
-static SystemID PointLightSystem;
-static SystemID VoxModifSystem;
-static SystemID EditorSystem;
+static SystemID VoxPhysicsSystem;
 
 
 extern engineECS ECS;
@@ -154,14 +151,11 @@ void EditorInit(System *systemObject){
 
     entitiesPlaymodeCopy = calloc(ECS.maxEntities,sizeof(Entity));
 
-    VoxRenderSystem = GetSystemID("VoxelRenderer");
-    PointLightSystem = GetSystemID("PointLighting");
-    VoxModifSystem = GetSystemID("VoxelModification");
-    EditorSystem = GetSystemID("Editor");
+    VoxPhysicsSystem = GetSystemID("VoxelPhysics");
 
-    //Disable all game systems, except the rendering, editor and voxel modification
+    //Disable all the dynamic systems (only the VoxelPhysics for now)
     for(i=0;i<GetLength(ECS.SystemList);i++){
-        if(i != EditorSystem && i!= VoxRenderSystem && i!= VoxModifSystem && i!= PointLightSystem){
+        if(i == VoxPhysicsSystem){
             DisableSystem(i);
         }
     }
@@ -249,7 +243,7 @@ void EditorUpdate(){
         }else{
             DrawRectangle(bMin,bMax,0.2,0.2,0.35);
         }
-        RenderText("Menu", brightWhite, 16, Screen.windowHeight-(entityWindowTopHeightSpacing/2)+5, gizmosFont);
+        DrawText("Menu", brightWhite, 16, Screen.windowHeight-(entityWindowTopHeightSpacing/2)+5, gizmosFont);
 
         //Delete shortcut
         if(GetKeyDown(SDL_SCANCODE_DELETE) && editingField<0  && !fileBrowser.opened){
@@ -367,7 +361,7 @@ void DrawMenuWindow(){
 
     int w,h;
     TTF_SizeText(gizmosFont,"Menu",&w,&h);
-    RenderText("Menu", lightWhite, headerMin.x + 10, headerMin.y+ ((headerMax.y-headerMin.y)-h)/2, gizmosFont);
+    DrawText("Menu", lightWhite, headerMin.x + 10, headerMin.y+ ((headerMax.y-headerMin.y)-h)/2, gizmosFont);
 
     Vector3 tabMin = {Screen.windowWidth/2 -300,Screen.windowHeight/2 +35};
     Vector3 tabMax = {Screen.windowWidth/2 -300,Screen.windowHeight/2 +65};
@@ -400,13 +394,13 @@ void DrawMenuWindow(){
         //Tabs title
         switch(tabIndex){
             case 0:
-                RenderText("Scene", lightWhite, tabMin.x + 3, tabMin.y+ ((tabMax.y-tabMin.y)-h)/2, gizmosFont);
+                DrawText("Scene", lightWhite, tabMin.x + 3, tabMin.y+ ((tabMax.y-tabMin.y)-h)/2, gizmosFont);
             break;
             case 1:
-                RenderText("Entities", lightWhite, tabMin.x + 3, tabMin.y+ ((tabMax.y-tabMin.y)-h)/2, gizmosFont);
+                DrawText("Entities", lightWhite, tabMin.x + 3, tabMin.y+ ((tabMax.y-tabMin.y)-h)/2, gizmosFont);
             break;
             case 2:
-                RenderText("Options", lightWhite, tabMin.x + 3, tabMin.y+ ((tabMax.y-tabMin.y)-h)/2, gizmosFont);
+                DrawText("Options", lightWhite, tabMin.x + 3, tabMin.y+ ((tabMax.y-tabMin.y)-h)/2, gizmosFont);
             break;
         }
 
@@ -419,7 +413,7 @@ void DrawMenuWindow(){
         Vector3 bMax;
         switch(selectedTab){
             case 0:
-                RenderText("file", lightWhite, optionsBgMin.x + 10, optionsBgMax.y-20, gizmosFontSmall);
+                DrawText("file", lightWhite, optionsBgMin.x + 10, optionsBgMax.y-20, gizmosFontSmall);
 
                 //New Scene button
                 bMin = (Vector3){optionsBgMin.x + 10,optionsBgMax.y-55};
@@ -433,7 +427,7 @@ void DrawMenuWindow(){
                     DrawRectangle(bMin,bMax,0.2,0.2,0.35);
                 }
                 TTF_SizeText(gizmosFont,"New Scene",&btw,&bth);
-                RenderText("New Scene", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
+                DrawText("New Scene", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
 
                 //Open Scene button
                 spacing = bMax.y-bMin.y + 4;
@@ -453,7 +447,7 @@ void DrawMenuWindow(){
                     DrawRectangle(bMin,bMax,0.2,0.2,0.35);
                 }
                 TTF_SizeText(gizmosFont,"Open Scene",&btw,&bth);
-                RenderText("Open Scene", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
+                DrawText("Open Scene", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
 
                 //Save Scene
                 spacing = bMax.y-bMin.y + 4;
@@ -474,7 +468,7 @@ void DrawMenuWindow(){
                     DrawRectangle(bMin,bMax,0.2,0.2,0.35);
                 }
                 TTF_SizeText(gizmosFont,"Save Scene",&btw,&bth);
-                RenderText("Save Scene", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
+                DrawText("Save Scene", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
 
                 //Line separating the buttons category
                 DrawRectangle((Vector3){bMax.x + 10,bMin.y}, (Vector3){bMax.x + 12,optionsBgMax.y-10},bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
@@ -488,7 +482,7 @@ void DrawMenuWindow(){
                 bMin.y = optionsBgMax.y-55;
                 bMax.y = optionsBgMax.y-25;
 
-                RenderText("settings", lightWhite, bMin.x, optionsBgMax.y-20, gizmosFontSmall);
+                DrawText("settings", lightWhite, bMin.x, optionsBgMax.y-20, gizmosFontSmall);
 
                 if(MouseOverBox(mousePos, bMin, bMax,0)){
                     DrawRectangle(bMin,bMax,0.3,0.3,0.4);
@@ -499,11 +493,11 @@ void DrawMenuWindow(){
                     DrawRectangle(bMin,bMax,0.2,0.2,0.35);
                 }
                 TTF_SizeText(gizmosFont,"Save Scene",&btw,&bth);
-                RenderText("Save Scene", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
+                DrawText("Save Scene", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
 
             break;
             case 1:
-                RenderText("file", lightWhite, optionsBgMin.x + 10, optionsBgMax.y-20, gizmosFontSmall);
+                DrawText("file", lightWhite, optionsBgMin.x + 10, optionsBgMax.y-20, gizmosFontSmall);
 
                 //New Scene button
                 bMin = (Vector3){optionsBgMin.x + 10,optionsBgMax.y-55};
@@ -522,7 +516,7 @@ void DrawMenuWindow(){
                     DrawRectangle(bMin,bMax,0.2,0.2,0.2);
                 }
                 TTF_SizeText(gizmosFont,"Export selected",&btw,&bth);
-                RenderText("Export selected", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
+                DrawText("Export selected", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
 
                 spacing = bMax.y-bMin.y + 4;
                 bMin.y -= spacing;
@@ -536,7 +530,7 @@ void DrawMenuWindow(){
                     DrawRectangle(bMin,bMax,0.2,0.2,0.35);
                 }
                 TTF_SizeText(gizmosFont,"Import prefab",&btw,&bth);
-                RenderText("Import prefab", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
+                DrawText("Import prefab", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
 
                 spacing = bMax.y-bMin.y + 4;
                 bMin.y -= spacing;
@@ -550,7 +544,7 @@ void DrawMenuWindow(){
                     DrawRectangle(bMin,bMax,0.2,0.2,0.35);
                 }
                 TTF_SizeText(gizmosFont,"Import scene entities",&btw,&bth);
-                RenderText("Import scene entities", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
+                DrawText("Import scene entities", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
 
                 //Line separating the buttons category
                 DrawRectangle((Vector3){bMax.x + 10,bMin.y}, (Vector3){bMax.x + 12,optionsBgMax.y-10},bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
@@ -564,7 +558,7 @@ void DrawMenuWindow(){
                 bMin.y = optionsBgMax.y-55;
                 bMax.y = optionsBgMax.y-25;
 
-                RenderText("Selection", lightWhite, bMin.x, optionsBgMax.y-20, gizmosFontSmall);
+                DrawText("Selection", lightWhite, bMin.x, optionsBgMax.y-20, gizmosFontSmall);
 
                 //Select all button
                 if(MouseOverBox(mousePos, bMin, bMax,0)){
@@ -582,7 +576,7 @@ void DrawMenuWindow(){
                     DrawRectangle(bMin,bMax,0.2,0.2,0.35);
                 }
                 TTF_SizeText(gizmosFont,"Select all",&btw,&bth);
-                RenderText("Select all", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
+                DrawText("Select all", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
 
                 //Deselect all button
                 spacing = bMax.y-bMin.y + 4;
@@ -598,7 +592,7 @@ void DrawMenuWindow(){
                     DrawRectangle(bMin,bMax,0.2,0.2,0.35);
                 }
                 TTF_SizeText(gizmosFont,"Deselect all",&btw,&bth);
-                RenderText("Deselect all", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
+                DrawText("Deselect all", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
 
                 //Remove selected button
                 spacing = bMax.y-bMin.y + 4;
@@ -618,7 +612,7 @@ void DrawMenuWindow(){
                     DrawRectangle(bMin,bMax,0.2,0.2,0.35);
                 }
                 TTF_SizeText(gizmosFont,"Remove selected",&btw,&bth);
-                RenderText("Remove selected", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
+                DrawText("Remove selected", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
 
             break;
             case 2:
@@ -652,7 +646,7 @@ void DrawTransformGizmos(){
 
             if(!IsSelected(entity)){
                 //Entity not selected, show selection point
-                glBegin(GL_POINTS);
+                //glBegin(GL_POINTS);
                     if(MouseOverPointGizmos(mousePos, originPos, selectMouseOverDistance)){
                         glColor3f(1,1,1);
                         
@@ -668,12 +662,12 @@ void DrawTransformGizmos(){
                         glColor3f(0.5,0.5,0.5);
                     }
                     glVertex2f(screenPos.x,screenPos.y);
-                glEnd();
+                //glEnd();
 
             }else{
                 //Entity selected, show transform gizmos and deselection point
                 //Forward (X) line
-                glBegin(GL_LINES);
+                //glBegin(GL_LINES);
 
                     Vector3 lineXEndPos = PositionToGameScreenCoords(Add(position,(Vector3){positionGizmosLength * 2/Screen.gameScale,0,0}));
 
@@ -698,14 +692,14 @@ void DrawTransformGizmos(){
 
                     glVertex2f(screenPos.x,screenPos.y);
                     glVertex2f(lineXEndPos.x,lineXEndPos.y);
-                glEnd();
+                //glEnd();
                 //Forward (X) point
-                glBegin(GL_POINTS);
+                //glBegin(GL_POINTS);
                     glVertex2f(lineXEndPos.x,lineXEndPos.y);
-                glEnd();
+                //glEnd();
 
                 //Left (Y) line
-                glBegin(GL_LINES);
+                //glBegin(GL_LINES);
 
                     Vector3 lineYEndPos = PositionToGameScreenCoords(Add(position,(Vector3){0,positionGizmosLength* 2/Screen.gameScale,0}));
 
@@ -729,14 +723,14 @@ void DrawTransformGizmos(){
 
                     glVertex2f(screenPos.x,screenPos.y);
                     glVertex2f(lineYEndPos.x,lineYEndPos.y);
-                glEnd();
+                //glEnd();
                 //Left (Y) point
-                glBegin(GL_POINTS);
+                //glBegin(GL_POINTS);
                     glVertex2f(lineYEndPos.x,lineYEndPos.y);
-                glEnd();
+                //glEnd();
 
                 //Up (Z) line
-                glBegin(GL_LINES);
+                //glBegin(GL_LINES);
 
                     Vector3 lineZEndPos = PositionToGameScreenCoords(Add(position,(Vector3){0,0,positionGizmosLength* 2/Screen.gameScale}));
 
@@ -761,9 +755,9 @@ void DrawTransformGizmos(){
 
                     glVertex2f(screenPos.x,screenPos.y);
                     glVertex2f(lineZEndPos.x,lineZEndPos.y);
-                glEnd();
+                //glEnd();
                 //Up (Z) point and origin point
-                glBegin(GL_POINTS);
+                //glBegin(GL_POINTS);
 
                     glVertex2f(lineZEndPos.x,lineZEndPos.y);
 
@@ -777,7 +771,7 @@ void DrawTransformGizmos(){
                         glColor3f(1,1,1);
                     }
                     glVertex2f(screenPos.x,screenPos.y);
-                glEnd();
+                //glEnd();
 
                 //Arrow movement
                 if(movingX){
@@ -808,7 +802,7 @@ void DrawTransformGizmos(){
                 }
                 //int w, h;
                 //TTF_SizeText(gizmosFont,"Some random text",&w,&h);
-                //RenderText("Some random text", lightWhite, screenPos.x-w/2, screenPos.y-h*1.5,gizmosDepth, gizmosFont);  
+                //DrawText("Some random text", lightWhite, screenPos.x-w/2, screenPos.y-h*1.5,gizmosDepth, gizmosFont);  
             }
         }
     }
@@ -830,13 +824,9 @@ void DrawComponentsPanel(){
         }
 
         //Panel background
-        glBegin(GL_QUADS);
-            glColor3f(bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
-            glVertex2f( Screen.windowWidth-componentWindowLength,  ComponentsPanelHeight);
-            glVertex2f( Screen.windowWidth,  ComponentsPanelHeight);
-            glVertex2f( Screen.windowWidth, 0);
-            glVertex2f( Screen.windowWidth-componentWindowLength, 0);
-        glEnd();
+        Vector3 bgMin = {Screen.windowWidth-componentWindowLength, 0,0};
+        Vector3 bgMax = {Screen.windowWidth, ComponentsPanelHeight,0};
+        DrawRectangle(bgMin, bgMax, bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
 
         //Set mask as the components of the first entity selected
         ComponentMask mask = GetEntityComponents(*((EntityID*)GetFirstElement(SelectedEntities)));
@@ -861,14 +851,10 @@ void DrawComponentsPanel(){
                     if(DrawComponentHeader(c, &componentHeight)){
                         //Component specific drawing
                         if(c == GetComponentID("Transform")){
-                            glBegin(GL_QUADS);
-                                //Component background
-                                glColor3f(0.1,0.1,0.15);
-                                glVertex2f( Screen.windowWidth-componentWindowLength,  componentHeight);
-                                glVertex2f( Screen.windowWidth-componentWindowWidthSpacing,  componentHeight);
-                                glVertex2f( Screen.windowWidth-componentWindowWidthSpacing, componentHeight-95);
-                                glVertex2f( Screen.windowWidth-componentWindowLength, componentHeight-95);
-                            glEnd();
+                            //Component background
+                            Vector3 bgMin = {Screen.windowWidth-componentWindowLength, componentHeight-95,0};
+                            Vector3 bgMax = {Screen.windowWidth-componentWindowWidthSpacing, componentHeight,0};
+                            DrawRectangle(bgMin, bgMax, 0.1,0.1,0.15);
 
                             int ommitPosX = 0, ommitPosY = 0, ommitPosZ = 0;
                             int ommitRotX = 0, ommitRotY = 0, ommitRotZ = 0;
@@ -955,14 +941,10 @@ void DrawComponentsPanel(){
                             }
 
                             if(!isStatic){
-                                glBegin(GL_QUADS);
-                                    //Component background
-                                    glColor3f(0.1,0.1,0.15);
-                                    glVertex2f( Screen.windowWidth-componentWindowLength,  componentHeight);
-                                    glVertex2f( Screen.windowWidth-componentWindowWidthSpacing,  componentHeight);
-                                    glVertex2f( Screen.windowWidth-componentWindowWidthSpacing, componentHeight-225);
-                                    glVertex2f( Screen.windowWidth-componentWindowLength, componentHeight-225);
-                                glEnd();
+                                //Component background
+                                Vector3 bgMin = {Screen.windowWidth-componentWindowLength, componentHeight-225,0};
+                                Vector3 bgMax = {Screen.windowWidth-componentWindowWidthSpacing, componentHeight,0};
+                                DrawRectangle(bgMin, bgMax, 0.1,0.1,0.15);
 
                                 componentHeight-=2;
                                 if(1 == PointToggle(&isStatic,(Vector3){Screen.windowWidth-componentWindowLength + 12,componentHeight - 10},14,15,16,1, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1})){
@@ -970,7 +952,7 @@ void DrawComponentsPanel(){
                                         SetStaticRigidbody(GetElementAsType(selEntity,int),isStatic);
                                     }
                                 }
-                                RenderText("Is Static", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+                                DrawText("Is Static", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
                                 componentHeight-=20;
 
                                 if(1 == PointToggle(&useGravity,(Vector3){Screen.windowWidth-componentWindowLength + 12,componentHeight - 10},14,15,16,1, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1})){
@@ -978,7 +960,7 @@ void DrawComponentsPanel(){
                                         SetUseGravity(GetElementAsType(selEntity,int),useGravity);
                                     }
                                 }
-                                RenderText("use gravity", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+                                DrawText("use gravity", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
                                 componentHeight-=20;
 
                                 int ommitVelX = 0, ommitVelY = 0, ommitVelZ = 0;
@@ -1074,14 +1056,9 @@ void DrawComponentsPanel(){
                                 }
                                 componentHeight -= 7;
                             }else{
-                                glBegin(GL_QUADS);
-                                    //Component background
-                                    glColor3f(0.1,0.1,0.15);
-                                    glVertex2f( Screen.windowWidth-componentWindowLength,  componentHeight);
-                                    glVertex2f( Screen.windowWidth-componentWindowWidthSpacing,  componentHeight);
-                                    glVertex2f( Screen.windowWidth-componentWindowWidthSpacing, componentHeight-22);
-                                    glVertex2f( Screen.windowWidth-componentWindowLength, componentHeight-22);
-                                glEnd();
+                                Vector3 bgMin = {Screen.windowWidth-componentWindowLength, componentHeight-22,0};
+                                Vector3 bgMax = {Screen.windowWidth-componentWindowWidthSpacing, componentHeight,0};
+                                DrawRectangle(bgMin, bgMax, 0.1,0.1,0.15);
 
                                 componentHeight-=2;
                                 if(1 == PointToggle(&isStatic,(Vector3){Screen.windowWidth-componentWindowLength + 12,componentHeight - 10},14,15,16,1, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1})){
@@ -1089,7 +1066,7 @@ void DrawComponentsPanel(){
                                         SetStaticRigidbody(GetElementAsType(selEntity,int),isStatic);
                                     }
                                 }
-                                RenderText("Is Static", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+                                DrawText("Is Static", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
                                 componentHeight-=20;
                             }
                         }else if(c == GetComponentID("VoxelModel")){
@@ -1109,22 +1086,18 @@ void DrawComponentsPanel(){
                                 }
                             }
                             int backgroundHeight = (GetLength(SelectedEntities)==1? (isSubModel? 138:118): 96);
-                            glBegin(GL_QUADS);
-                                //Component background
-                                glColor3f(0.1,0.1,0.15);
-                                glVertex2f( Screen.windowWidth-componentWindowLength,  componentHeight);
-                                glVertex2f( Screen.windowWidth-componentWindowWidthSpacing,  componentHeight);
-                                glVertex2f( Screen.windowWidth-componentWindowWidthSpacing, componentHeight - backgroundHeight);
-                                glVertex2f( Screen.windowWidth-componentWindowLength, componentHeight - backgroundHeight);
-                            glEnd();
 
+                            //Component background
+                            Vector3 bgMin = {Screen.windowWidth-componentWindowLength, componentHeight-backgroundHeight,0};
+                            Vector3 bgMax = {Screen.windowWidth-componentWindowWidthSpacing, componentHeight,0};
+                            DrawRectangle(bgMin, bgMax, 0.1,0.1,0.15);
                             
                             if(1 == PointToggle(&isEnabled,(Vector3){Screen.windowWidth-componentWindowLength + 12,componentHeight - 10},14,15,16,1, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1})){
                                 ListForEach(selEntity, SelectedEntities){
                                     SetVoxelModelEnabled(GetElementAsType(selEntity,int),isEnabled);
                                 }
                             }
-                            RenderText("Enabled", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+                            DrawText("Enabled", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
                             componentHeight-=22;
 
                             if(1 == PointToggle(&isSmall,(Vector3){Screen.windowWidth-componentWindowLength + 12,componentHeight - 10},14,15,16,1, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1})){
@@ -1132,7 +1105,7 @@ void DrawComponentsPanel(){
                                     SetVoxelModelSmallScale(GetElementAsType(selEntity,EntityID),isSmall);
                                 }
                             }
-                            RenderText("small scale", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+                            DrawText("small scale", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
                             componentHeight-=22;
 
                             //Only show the model load button and name if only one entity is selected
@@ -1151,14 +1124,14 @@ void DrawComponentsPanel(){
                                 }
                                 
                                 if(m->modelName[0] != '\0'){
-                                    RenderText(m->modelName, lightWhite, Screen.windowWidth-componentWindowLength + 28, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+                                    DrawText(m->modelName, lightWhite, Screen.windowWidth-componentWindowLength + 28, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
                                 }else{
-                                    RenderText("No model", lightWhite, Screen.windowWidth-componentWindowLength + 28, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+                                    DrawText("No model", lightWhite, Screen.windowWidth-componentWindowLength + 28, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
                                 }
                                 componentHeight-=22;
 
                                 if(isSubModel){
-                                    RenderText(m->objectName, lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+                                    DrawText(m->objectName, lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
                                     componentHeight-=22;
                                 }
                             }
@@ -1208,14 +1181,10 @@ void DrawComponentsPanel(){
                             componentHeight -= 7;
                         }else if(c == GetComponentID("PointLight")){
 
-                            glBegin(GL_QUADS);
-                                //Component background
-                                glColor3f(0.1,0.1,0.15);
-                                glVertex2f( Screen.windowWidth-componentWindowLength,  componentHeight);
-                                glVertex2f( Screen.windowWidth-componentWindowWidthSpacing,  componentHeight);
-                                glVertex2f( Screen.windowWidth-componentWindowWidthSpacing, componentHeight - 170);
-                                glVertex2f( Screen.windowWidth-componentWindowLength, componentHeight - 170);
-                            glEnd();
+                            //Component background
+                            Vector3 bgMin = {Screen.windowWidth-componentWindowLength, componentHeight-170,0};
+                            Vector3 bgMax = {Screen.windowWidth-componentWindowWidthSpacing, componentHeight,0};
+                            DrawRectangle(bgMin, bgMax, 0.1,0.1,0.15);
 
                             int ommitColorX = 0, ommitColorY = 0, ommitColorZ = 0;
                             int ommitIntensity = 0, ommitRange = 0;
@@ -1299,7 +1268,7 @@ void DrawComponentsPanel(){
             int mouseOverComponentPanel = MouseOverBox(mousePos, (Vector3){Screen.windowWidth-componentWindowLength,0,0}, (Vector3){Screen.windowWidth,ComponentsPanelHeight,0},0);
             glLineWidth(clamp((componentWindowWidthSpacing/2 - 2) * 2/Screen.gameScale,1,Screen.windowWidth));
             int offscreenPixels = -clamp(componentHeight-componentStartHeight-componentWindowBottomSpacing,-(ComponentsPanelHeight-10),0);
-            glBegin(GL_LINES);  
+            //glBegin(GL_LINES);  
                 Vector3 scrollbarStart = {Screen.windowWidth - componentWindowWidthSpacing/2 ,ComponentsPanelHeight-componentStartHeight -2,0};
                 Vector3 scrollbarEnd = {Screen.windowWidth - componentWindowWidthSpacing/2 ,offscreenPixels - componentStartHeight +componentWindowBottomSpacing+ 1,0};
                 
@@ -1325,7 +1294,7 @@ void DrawComponentsPanel(){
 
                 glVertex2f(scrollbarStart.x,scrollbarStart.y);
                 glVertex2f(scrollbarEnd.x,scrollbarEnd.y);
-            glEnd();
+            //glEnd();
 
             if(mouseOverComponentPanel){
                 if(Input.mouseWheelY!=0) movingComponentsScrollbar = 2;
@@ -1387,7 +1356,7 @@ void DrawComponentsPanel(){
                     DrawRectangle(cbMin, cbMax,0.1,0.1,0.1);
                 }
                 TTF_SizeText(gizmosFont,GetElementAsType(cellComp,ComponentType).name,&w,&h);
-                RenderText(GetElementAsType(cellComp,ComponentType).name, lightWhite, cbMin.x + ((cbMax.x-cbMin.x)-w)/2, cbMin.y + ((cbMax.y-cbMin.y)-h)/2, gizmosFont);
+                DrawText(GetElementAsType(cellComp,ComponentType).name, lightWhite, cbMin.x + ((cbMax.x-cbMin.x)-w)/2, cbMin.y + ((cbMax.y-cbMin.y)-h)/2, gizmosFont);
 
                 buttonHeight-= 42;
                 i++;
@@ -1442,39 +1411,34 @@ void DrawComponentsPanel(){
         //Line separating the add component buttom from the components
         glLineWidth(2/Screen.gameScale);
         glColor3f(bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
-        glBegin(GL_LINES);  
+        //glBegin(GL_LINES);  
             glVertex2f(Screen.windowWidth - componentWindowLength,componentWindowBottomSpacing+2);
             glVertex2f(Screen.windowWidth,componentWindowBottomSpacing+2);
             glVertex2f(Screen.windowWidth - componentWindowLength,1);
             glVertex2f(Screen.windowWidth,1);
-        glEnd();
+        //glEnd();
 
         //Add component button
-        glBegin(GL_QUADS);
 
-            Vector3 cbMin = {Screen.windowWidth - componentWindowLength,2,0};
-            Vector3 cbMax = {Screen.windowWidth-2,componentWindowBottomSpacing,0};
-            if(MouseOverBox(mousePos, cbMin, cbMax,0)){
-                glColor3f(0.3,0.3,0.4);
+        Vector3 cbMin = {Screen.windowWidth - componentWindowLength,2,0};
+        Vector3 cbMax = {Screen.windowWidth-2,componentWindowBottomSpacing,0};
+        Vector3 cbColor = {0.2,0.2,0.35};
+        if(MouseOverBox(mousePos, cbMin, cbMax,0)){
+            cbColor = (Vector3){0.3,0.3,0.4};
 
-                if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
-                    addComponentWindowOpened = !addComponentWindowOpened;
-                }
-            }else{
-                glColor3f(0.2,0.2,0.35);
+            if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
+                addComponentWindowOpened = !addComponentWindowOpened;
             }
-            glVertex2f( cbMax.x, cbMax.y);
-            glVertex2f( cbMin.x, cbMax.y);
-            glVertex2f( cbMin.x, cbMin.y);
-            glVertex2f( cbMax.x, cbMin.y);
-        glEnd();
+        }
+        DrawRectangle(cbMin, cbMax, cbColor.x, cbColor.y, cbColor.z);
+
         int w,h;
         if(!addComponentWindowOpened){
             TTF_SizeText(gizmosFont,"Add Component",&w,&h);
-            RenderText("Add Component", brightWhite, cbMin.x + ((cbMax.x-cbMin.x)-w)/2, cbMin.y + ((cbMax.y-cbMin.y)-h)/2, gizmosFont);
+            DrawText("Add Component", brightWhite, cbMin.x + ((cbMax.x-cbMin.x)-w)/2, cbMin.y + ((cbMax.y-cbMin.y)-h)/2, gizmosFont);
         }else{
             TTF_SizeText(gizmosFont,"Back",&w,&h);
-            RenderText("Back", brightWhite, cbMin.x + ((cbMax.x-cbMin.x)-w)/2, cbMin.y + ((cbMax.y-cbMin.y)-h)/2, gizmosFont);
+            DrawText("Back", brightWhite, cbMin.x + ((cbMax.x-cbMin.x)-w)/2, cbMin.y + ((cbMax.y-cbMin.y)-h)/2, gizmosFont);
         }
 
         //Draw the prefab name
@@ -1486,22 +1450,19 @@ void DrawComponentsPanel(){
 
             prefabBgMin.y += 2;
             DrawRectangle(prefabBgMin,prefabBgMax,0.2,0.2,0.35);
-            RenderText(GetPrefabName(GetElementAsType(GetFirstCell(SelectedEntities),EntityID)), brightWhite, Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, prefabBgMin.y + (prefabBgMax.y - prefabBgMin.y - TTF_FontHeight(gizmosFontSmall))/2, gizmosFontSmall);
+            DrawText(GetPrefabName(GetElementAsType(GetFirstCell(SelectedEntities),EntityID)), brightWhite, Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, prefabBgMin.y + (prefabBgMax.y - prefabBgMin.y - TTF_FontHeight(gizmosFontSmall))/2, gizmosFontSmall);
         }
     }
 }
 
 //Return 0 if removed, 1 if not
 int DrawComponentHeader(ComponentID component, int* curHeight){
-    glBegin(GL_QUADS);
-        //Top panel
-        glColor3f(0.2,0.2,0.35);
-        glVertex2f( Screen.windowWidth-componentWindowLength,  *curHeight);
-        glVertex2f( Screen.windowWidth-componentWindowWidthSpacing,  *curHeight);
-        glVertex2f( Screen.windowWidth-componentWindowWidthSpacing, *curHeight-TTF_FontHeight(gizmosFont)-2);
-        glVertex2f( Screen.windowWidth-componentWindowLength, *curHeight-TTF_FontHeight(gizmosFont)-2);
-    glEnd();
-
+    
+    //Top panel
+    Vector3 panelMin = {Screen.windowWidth - componentWindowLength,*curHeight-TTF_FontHeight(gizmosFont)-2,0};
+    Vector3 panelMax = {Screen.windowWidth - componentWindowWidthSpacing,*curHeight,0};
+    Vector3 panelColor = {0.2,0.2,0.35};
+    DrawRectangle(panelMin, panelMax, panelColor.x, panelColor.y, panelColor.z);
 
     //Remove component button
     Vector3 removePos = {Screen.windowWidth-componentWindowWidthSpacing - (TTF_FontHeight(gizmosFont)-2)/2 -2,*curHeight - (TTF_FontHeight(gizmosFont))/2};
@@ -1522,9 +1483,9 @@ int DrawComponentHeader(ComponentID component, int* curHeight){
     if(strlen(type->name)>11){
         char cName[14] = "OOOOOOOOOO...";
         strncpy(cName,type->name,10);
-        RenderText(cName, brightWhite, Screen.windowWidth-componentWindowLength+componentNameLeftSpacing, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+        DrawText(cName, brightWhite, Screen.windowWidth-componentWindowLength+componentNameLeftSpacing, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
     }else{
-        RenderText(type->name, brightWhite, Screen.windowWidth-componentWindowLength+componentNameLeftSpacing, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+        DrawText(type->name, brightWhite, Screen.windowWidth-componentWindowLength+componentNameLeftSpacing, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
     }
 
     *curHeight -= TTF_FontHeight(gizmosFont)+2;
@@ -1536,13 +1497,9 @@ int movingEntitiesScrollbar = 0;
 void DrawEntitiesPanel(){
     EntityID entity;
     //Entities Panel background
-    glBegin(GL_QUADS);
-        glColor3f(bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
-        glVertex2f( entityWindowLength,  Screen.windowHeight);
-        glVertex2f( 0,  Screen.windowHeight);
-        glVertex2f( 0, 0);
-        glVertex2f( entityWindowLength, 0);
-    glEnd();
+    Vector3 panelMin = {0,0,0};
+    Vector3 panelMax = {entityWindowLength,Screen.windowHeight,0};
+    DrawRectangle(panelMin, panelMax, bgPanelColor.x, bgPanelColor.y, bgPanelColor.z);
 
     //Draw Entities boxes
     int entityHeight = Screen.windowHeight + entityStartHeight-entityWindowTopHeightSpacing;
@@ -1556,7 +1513,7 @@ void DrawEntitiesPanel(){
     int mouseOverEntityPanel = MouseOverBox(mousePos, (Vector3){-1,-1,0}, (Vector3){entityWindowLength,Screen.windowHeight-entityWindowTopHeightSpacing,0},0);
     glLineWidth(clamp((entityWindowWidthSpacing/2 - 2) * 2/Screen.gameScale,1,Screen.windowWidth));
     int offscreenPixels = -clamp(entityHeight-entityStartHeight,-INFINITY,0);
-    glBegin(GL_LINES);  
+    //glBegin(GL_LINES);  
     
         Vector3 scrollbarStart = {entityWindowWidthSpacing/2 ,Screen.windowHeight-entityStartHeight - entityWindowTopHeightSpacing,0};
         Vector3 scrollbarEnd = {entityWindowWidthSpacing/2 ,offscreenPixels - entityStartHeight + 1,0};
@@ -1591,7 +1548,7 @@ void DrawEntitiesPanel(){
 
         glVertex2f(scrollbarStart.x,scrollbarStart.y);
         glVertex2f(scrollbarEnd.x,scrollbarEnd.y);
-    glEnd();
+    //glEnd();
 
     if(mouseOverEntityPanel){
         if(Input.mouseWheelY!=0) movingEntitiesScrollbar = 2;
@@ -1629,30 +1586,24 @@ void DrawEntitiesPanel(){
     //New Entity button
     glLineWidth(2 * 2/Screen.gameScale);
     glColor3f(bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
-    glBegin(GL_LINES);  
+    //glBegin(GL_LINES);  
         //Line separating new entity button from the entities and the scrollbar
         glVertex2f(0,Screen.windowHeight-entityWindowTopHeightSpacing);
         glVertex2f(entityWindowLength,Screen.windowHeight-entityWindowTopHeightSpacing);
-    glEnd();
-    glBegin(GL_QUADS);
-        //Entity element
-        Vector3 bMin = {0,Screen.windowHeight-entityWindowTopHeightSpacing+2,0};
-        Vector3 bMax = {entityWindowLength,Screen.windowHeight-(entityWindowTopHeightSpacing * 2.0/3.0),0};
-        if(MouseOverBox(mousePos, bMin, bMax,0)){
-            glColor3f(0.3,0.3,0.4);
-            if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
-                CreateEntity();
-                glColor3f(0.3,0.3,0.4);
-            }
-        }else{
-            glColor3f(0.2,0.2,0.35);
+    //glEnd();
+
+    //Entity element
+    Vector3 bMin = {0,Screen.windowHeight-entityWindowTopHeightSpacing+2,0};
+    Vector3 bMax = {entityWindowLength,Screen.windowHeight-(entityWindowTopHeightSpacing * 2.0/3.0),0};
+    Vector3 bColor = {0.2,0.2,0.35};
+    if(MouseOverBox(mousePos, bMin, bMax,0)){
+        bColor = (Vector3){0.3,0.3,0.4};
+        if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
+            CreateEntity();
         }
-        glVertex2f( bMax.x, bMax.y);
-        glVertex2f( bMin.x, bMax.y);
-        glVertex2f( bMin.x, bMin.y);
-        glVertex2f( bMax.x, bMin.y);
-    glEnd();
-    RenderText("+ Entity", brightWhite, 5, Screen.windowHeight-(entityWindowTopHeightSpacing)+5, gizmosFont);
+    }
+    DrawRectangle(bMin, bMax, bColor.x, bColor.y, bColor.z);
+    DrawText("+ Entity", brightWhite, 5, Screen.windowHeight-(entityWindowTopHeightSpacing)+5, gizmosFont);
 }
 
 void DrawEntityElement(EntityID entity, int *entityHeight, int depth){
@@ -1702,7 +1653,7 @@ void DrawEntityElement(EntityID entity, int *entityHeight, int depth){
         int w,h;
         TTF_SizeText(gizmosFont,entityName,&w,&h);
         if(entityWindowLength - (entityNameLeftSpacing +depth*10)>= w){
-            RenderText(entityName, lightWhite, entityNameLeftSpacing +depth*10, (*entityHeight) - TTF_FontHeight(gizmosFont), gizmosFont);
+            DrawText(entityName, lightWhite, entityNameLeftSpacing +depth*10, (*entityHeight) - TTF_FontHeight(gizmosFont), gizmosFont);
         }
     }
 
@@ -1768,10 +1719,10 @@ void DrawFileBrowser(){
         char minifiedPath[] = "0000000000000000000000000000000000...";
         memcpy(minifiedPath,fileBrowser.filePath,34*sizeof(char));
         TTF_SizeText(gizmosFont,minifiedPath,&w,&h);
-        RenderText(minifiedPath, lightWhite, filepathBgMin.x + 6, filepathBgMin.y+ ((filepathBgMax.y-filepathBgMin.y)-h)/2 -1, gizmosFont);    
+        DrawText(minifiedPath, lightWhite, filepathBgMin.x + 6, filepathBgMin.y+ ((filepathBgMax.y-filepathBgMin.y)-h)/2 -1, gizmosFont);    
     }else{
         TTF_SizeText(gizmosFont,fileBrowser.filePath,&w,&h);
-        RenderText(fileBrowser.filePath, lightWhite, filepathBgMin.x + 6, filepathBgMin.y+ ((filepathBgMax.y-filepathBgMin.y)-h)/2 -1, gizmosFont);    
+        DrawText(fileBrowser.filePath, lightWhite, filepathBgMin.x + 6, filepathBgMin.y+ ((filepathBgMax.y-filepathBgMin.y)-h)/2 -1, gizmosFont);    
     }
 
 
@@ -1788,7 +1739,7 @@ void DrawFileBrowser(){
         DrawRectangle(cancelButtonMin,cancelButtonMax,0.2,0.2,0.35);
     }
     TTF_SizeText(gizmosFont,"Cancel",&w,&h);
-    RenderText("Cancel", lightWhite, cancelButtonMin.x + ((cancelButtonMax.x-cancelButtonMin.x)-w)/2, cancelButtonMin.y+ ((cancelButtonMax.y-cancelButtonMin.y)-h)/2, gizmosFont);
+    DrawText("Cancel", lightWhite, cancelButtonMin.x + ((cancelButtonMax.x-cancelButtonMin.x)-w)/2, cancelButtonMin.y+ ((cancelButtonMax.y-cancelButtonMin.y)-h)/2, gizmosFont);
 
     //Open/Save button
     Vector3 openButtonMin = {Screen.windowWidth/2 +207 - (cancelButtonMax.x-cancelButtonMin.x) - 10,Screen.windowHeight/2 -197};
@@ -1834,7 +1785,7 @@ void DrawFileBrowser(){
         }
     }
     TTF_SizeText(gizmosFont,mode?"Save":"Open",&w,&h);
-    RenderText(mode?"Save":"Open", lightWhite, openButtonMin.x + ((openButtonMax.x-openButtonMin.x)-w)/2, openButtonMin.y+ ((openButtonMax.y-openButtonMin.y)-h)/2, gizmosFont);
+    DrawText(mode?"Save":"Open", lightWhite, openButtonMin.x + ((openButtonMax.x-openButtonMin.x)-w)/2, openButtonMin.y+ ((openButtonMax.y-openButtonMin.y)-h)/2, gizmosFont);
 
     //File name
     if(mode == 1){
@@ -1866,22 +1817,22 @@ void DrawFileBrowser(){
             //Cursor line
             glColor3f(0.7,0.7,0.7);
             glLineWidth(2/Screen.gameScale);
-            glBegin(GL_LINES);
+            //glBegin(GL_LINES);
                 glVertex2f( cursorPos, filenameBgMin.y+2);
                 glVertex2f( cursorPos, filenameBgMax.y-2);
-            glEnd();
+            //glEnd();
         }
         
-        RenderText("file name", lightWhite, filenameBgMin.x, filenameBgMax.y +1, gizmosFontSmall);
+        DrawText("file name", lightWhite, filenameBgMin.x, filenameBgMax.y +1, gizmosFontSmall);
         TTF_SizeText(gizmosFont,fileBrowser.fileName,&w,&h);
-        RenderText(fileBrowser.fileName, lightWhite, filenameBgMin.x + 5, filenameBgMin.y+ ((filenameBgMax.y-filenameBgMin.y)-h)/2 +1, gizmosFont);
+        DrawText(fileBrowser.fileName, lightWhite, filenameBgMin.x + 5, filenameBgMin.y+ ((filenameBgMax.y-filenameBgMin.y)-h)/2 +1, gizmosFont);
     }else{
         Vector3 filenameBgMin = {Screen.windowWidth/2 -295,Screen.windowHeight/2 -195};
         Vector3 filenameBgMax = {openButtonMin.x -10,Screen.windowHeight/2 -164};
         DrawRectangle(filenameBgMin,filenameBgMax,0.2, 0.2, 0.2);
-        RenderText("file name", lightWhite, filenameBgMin.x, filenameBgMax.y +1, gizmosFontSmall);
+        DrawText("file name", lightWhite, filenameBgMin.x, filenameBgMax.y +1, gizmosFontSmall);
         TTF_SizeText(gizmosFont,fileBrowser.fileName,&w,&h);
-        RenderText(fileBrowser.fileName, lightWhite, filenameBgMin.x + 5, filenameBgMin.y+ ((filenameBgMax.y-filenameBgMin.y)-h)/2 +1, gizmosFont);
+        DrawText(fileBrowser.fileName, lightWhite, filenameBgMin.x + 5, filenameBgMin.y+ ((filenameBgMax.y-filenameBgMin.y)-h)/2 +1, gizmosFont);
     }
 
     //Browser Items
@@ -1929,10 +1880,10 @@ void DrawFileBrowser(){
                 char minifiedName[] = "00000...";
                 memcpy(minifiedName,file.name,5*sizeof(char));
                 TTF_SizeText(gizmosFont,minifiedName,&w,&h);
-                RenderText(minifiedName, lightWhite, x-(iconsSize[10] * 3) +((iconsSize[10] * 6) - w)/2, y - (iconsSize[10] * 3) - h, gizmosFont);
+                DrawText(minifiedName, lightWhite, x-(iconsSize[10] * 3) +((iconsSize[10] * 6) - w)/2, y - (iconsSize[10] * 3) - h, gizmosFont);
             }else{
                 TTF_SizeText(gizmosFont,file.name,&w,&h);
-                RenderText(file.name, lightWhite, x-(iconsSize[10] * 3) +((iconsSize[10] * 6) - w)/2, y - (iconsSize[10] * 3) - h, gizmosFont);
+                DrawText(file.name, lightWhite, x-(iconsSize[10] * 3) +((iconsSize[10] * 6) - w)/2, y - (iconsSize[10] * 3) - h, gizmosFont);
             }
             x += iconsSize[10] * 6 + 30;
             i++;
@@ -1984,10 +1935,10 @@ void DrawFileBrowser(){
                 char minifiedName[] = "00000...";
                 memcpy(minifiedName,file.name,5*sizeof(char));
                 TTF_SizeText(gizmosFont,minifiedName,&w,&h);
-                RenderText(minifiedName, lightWhite, x-(iconsSize[icon] * 3) +((iconsSize[icon] * 6) - w)/2, y - (iconsSize[icon] * 3) - h, gizmosFont);
+                DrawText(minifiedName, lightWhite, x-(iconsSize[icon] * 3) +((iconsSize[icon] * 6) - w)/2, y - (iconsSize[icon] * 3) - h, gizmosFont);
             }else{
                 TTF_SizeText(gizmosFont,file.name,&w,&h);
-                RenderText(file.name, lightWhite, x-(iconsSize[icon] * 3) +((iconsSize[icon] * 6) - w)/2, y - (iconsSize[icon] * 3) - h, gizmosFont);
+                DrawText(file.name, lightWhite, x-(iconsSize[icon] * 3) +((iconsSize[icon] * 6) - w)/2, y - (iconsSize[icon] * 3) - h, gizmosFont);
             }
             x += iconsSize[icon] * 6 + 30;
             i++;
@@ -2041,7 +1992,7 @@ void DrawFileBrowser(){
     }else if (fileBrowser.opened == -1){
         //Invalid folder message
         TTF_SizeText(gizmosFont,"Invalid or nonexistent path!",&w,&h);
-        RenderText("Invalid or nonexistent path!", lightWhite, fbMin.x+ ((fbMax.x-fbMin.x)-w)/2, fbMin.y+ ((fbMax.y-fbMin.y)-h)/2, gizmosFont);
+        DrawText("Invalid or nonexistent path!", lightWhite, fbMin.x+ ((fbMax.x-fbMin.x)-w)/2, fbMin.y+ ((fbMax.y-fbMin.y)-h)/2, gizmosFont);
     }
 }
 
@@ -2060,10 +2011,10 @@ void DrawPlayModeWidget(){
         if(1 == PointButton((Vector3){Screen.windowWidth/2 - iconSize * 2 -2,  Screen.windowHeight-iconSize * 2 -1 },4, 2, (Vector3){0.1,0.1,0.1}, (Vector3){1,1,1}, (Vector3){1,1,1})){
             playMode = 2;
 
-            //Disable all game systems
+            //Disable all dynamic game systems
             int i;
             for(i=0;i<GetLength(ECS.SystemList);i++){
-                if(i != EditorSystem && i!= VoxRenderSystem && i!= VoxModifSystem && i!= PointLightSystem){
+                if(i == VoxPhysicsSystem){
                     DisableSystem(i);
                 }
             }
@@ -2072,10 +2023,10 @@ void DrawPlayModeWidget(){
         if(1 == PointButton((Vector3){Screen.windowWidth/2 + iconSize * 2 +2,  Screen.windowHeight-iconSize * 2 -1 },5, 2, (Vector3){0.1,0.1,0.1}, (Vector3){1,1,1}, (Vector3){1,1,1})){
             playMode = 0;
             ExitPlayMode();
-            //Disable all game systems
+            //Disable all dynamic game systems
             int i;
             for(i=0;i<GetLength(ECS.SystemList);i++){
-                if(i != EditorSystem && i!= VoxRenderSystem && i!= VoxModifSystem && i!= PointLightSystem){
+                if(i == VoxPhysicsSystem){
                     DisableSystem(i);
                 }
             }
@@ -2087,10 +2038,10 @@ void DrawPlayModeWidget(){
         //Play button
         if(1 == PointButton((Vector3){Screen.windowWidth/2 - iconSize * 2 -2,  Screen.windowHeight-iconSize * 2 -1 },3, 2, (Vector3){0.1,0.1,0.1}, (Vector3){1,1,1}, (Vector3){1,1,1})){
             playMode = 1;
-            //Enable all game systems
+            //Enable all dynamic game systems
             int i;
             for(i=0;i<GetLength(ECS.SystemList);i++){
-                if(i != EditorSystem && i!= VoxRenderSystem && i!= VoxModifSystem && i!= PointLightSystem){
+                if(i == VoxPhysicsSystem){
                     EnableSystem(i);
                 }
             }
@@ -2100,10 +2051,10 @@ void DrawPlayModeWidget(){
             playMode = 0;
             ExitPlayMode();
 
-            //Disable all game systems
+            //Disable all dynamic game systems
             int i;
             for(i=0;i<GetLength(ECS.SystemList);i++){
-                if(i != EditorSystem && i!= VoxRenderSystem && i!= VoxModifSystem && i!= PointLightSystem){
+                if(i == VoxPhysicsSystem){
                     DisableSystem(i);
                 }
             }
@@ -2116,10 +2067,10 @@ void DrawPlayModeWidget(){
         if(1 == PointButton((Vector3){Screen.windowWidth/2 - iconSize * 2 -2,  Screen.windowHeight-iconSize * 2 -1 },3, 2, (Vector3){0.7,0.7,0.7}, (Vector3){1,1,1}, (Vector3){1,1,1})){
             playMode = 1;
             EnterPlayMode();
-            //Enable all game systems
+            //Enable all dynamic game systems
             int i;
             for(i=0;i<GetLength(ECS.SystemList);i++){
-                if(i != EditorSystem && i!= VoxRenderSystem && i!= VoxModifSystem && i!= PointLightSystem){
+                if(i == VoxPhysicsSystem){
                     EnableSystem(i);
                 }
             }
@@ -2168,7 +2119,7 @@ void DrawDialogWindow(){
             lineHeight -= h;
             //Print the current line
             TTF_SizeText(gizmosFont,contentLine,&w,&h);
-            RenderText(contentLine, lightWhite, contentMin.x + 40, lineHeight, gizmosFont);
+            DrawText(contentLine, lightWhite, contentMin.x + 40, lineHeight, gizmosFont);
             
             //Parse the next line
             contentLine = strtok(NULL,"\n");
@@ -2191,7 +2142,7 @@ void DrawDialogWindow(){
             DrawRectangle(option1Min,option1Max,0.2,0.2,0.35);
         }
         TTF_SizeText(gizmosFont,dialog.option1String,&w,&h);
-        RenderText(dialog.option1String, lightWhite, option1Min.x + ((option1Max.x-option1Min.x)-w)/2, option1Min.y+ ((option1Max.y-option1Min.y)-h)/2, gizmosFont);
+        DrawText(dialog.option1String, lightWhite, option1Min.x + ((option1Max.x-option1Min.x)-w)/2, option1Min.y+ ((option1Max.y-option1Min.y)-h)/2, gizmosFont);
     }
 
     //Option 2 Button
@@ -2209,7 +2160,7 @@ void DrawDialogWindow(){
             DrawRectangle(option2Min,option2Max,0.2,0.2,0.35);
         }
         TTF_SizeText(gizmosFont,dialog.option2String,&w,&h);
-        RenderText(dialog.option2String, lightWhite, option2Min.x + ((option2Max.x-option2Min.x)-w)/2, option2Min.y+ ((option2Max.y-option2Min.y)-h)/2, gizmosFont);
+        DrawText(dialog.option2String, lightWhite, option2Min.x + ((option2Max.x-option2Min.x)-w)/2, option2Min.y+ ((option2Max.y-option2Min.y)-h)/2, gizmosFont);
     }
 
     //Option 3 Button
@@ -2227,7 +2178,7 @@ void DrawDialogWindow(){
             DrawRectangle(option3Min,option3Max,0.2,0.2,0.35);
         }
         TTF_SizeText(gizmosFont,dialog.option3String,&w,&h);
-        RenderText(dialog.option3String, lightWhite, option3Min.x + ((option3Max.x-option3Min.x)-w)/2, option3Min.y+ ((option3Max.y-option3Min.y)-h)/2, gizmosFont);
+        DrawText(dialog.option3String, lightWhite, option3Min.x + ((option3Max.x-option3Min.x)-w)/2, option3Min.y+ ((option3Max.y-option3Min.y)-h)/2, gizmosFont);
     }
 }
 
@@ -2266,7 +2217,7 @@ int PointButton(Vector3 pos,int iconID, int scale, Vector3 defaultColor, Vector3
     glBindTexture(GL_TEXTURE_2D, iconsTex[iconID]);
     glEnable(GL_POINT_SPRITE);
 
-    glBegin(GL_POINTS);
+    //glBegin(GL_POINTS);
         if(MouseOverPointGizmos(mousePos, pos, scale * iconsSize[iconID])){
             glColor3f(mouseOverColor.x,mouseOverColor.y,mouseOverColor.z);
 
@@ -2285,7 +2236,7 @@ int PointButton(Vector3 pos,int iconID, int scale, Vector3 defaultColor, Vector3
         }
 
         glVertex2f( roundf(pos.x) + 0.375, roundf(pos.y) + 0.375);
-    glEnd();
+    //glEnd();
     glDisable(GL_TEXTURE_2D);
     glDisable(GL_BLEND);
 
@@ -2313,7 +2264,7 @@ int PointToggle(int *data,Vector3 pos,int onIconID, int offIconID, int undefined
     }
     glEnable(GL_POINT_SPRITE);
 
-    glBegin(GL_POINTS);
+    //glBegin(GL_POINTS);
         if(MouseOverPointGizmos(mousePos, pos, scale * iconSize)){
             glColor3f(mouseOverColor.x,mouseOverColor.y,mouseOverColor.z);
 
@@ -2331,7 +2282,7 @@ int PointToggle(int *data,Vector3 pos,int onIconID, int offIconID, int undefined
         }
 
         glVertex2f( roundf(pos.x) + 0.375, roundf(pos.y) + 0.375);
-    glEnd();
+    //glEnd();
     glDisable(GL_TEXTURE_2D);
     glDisable(GL_BLEND);
 
@@ -2347,17 +2298,17 @@ void DrawPointIcon(Vector3 pos,int iconID, int scale, Vector3 color){
     glBindTexture(GL_TEXTURE_2D, iconsTex[iconID]);
     glEnable(GL_POINT_SPRITE);
 
-    glBegin(GL_POINTS);
+    //glBegin(GL_POINTS);
         glColor3f(color.x,color.y,color.z);
         glVertex2f( roundf(pos.x) + 0.375, roundf(pos.y) + 0.375);
-    glEnd();
+    //glEnd();
     glDisable(GL_TEXTURE_2D);
     glDisable(GL_BLEND);
 }
 
 void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,int x, int w, int fieldsSpacing, int* curField, int* curHeight){
     *curHeight -= 2;
-    RenderText(title, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+    DrawText(title, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
     *curHeight -= 2 + TTF_FontHeight(gizmosFontSmall);
 
     int fieldW = w/3;
@@ -2387,13 +2338,13 @@ void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,in
         //Cursor line
         glColor3f(0.7,0.7,0.7);
         glLineWidth(2/Screen.gameScale);
-        glBegin(GL_LINES);
+        //glBegin(GL_LINES);
             glVertex2f( cursorPos, min1.y);
             glVertex2f( cursorPos, max1.y);
-        glEnd();
+        //glEnd();
 
         //Render the string
-        RenderText(textFieldString, lightWhite, min1.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+        DrawText(textFieldString, lightWhite, min1.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
         //Pass the string as float data
         if(editingField == *curField){
@@ -2446,19 +2397,19 @@ void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,in
             DrawRectangle(min1,max1,0.2, 0.2, 0.2);
             if(!ommitX) snprintf(valueString,5,"%3.1f",data->x);
             else snprintf(valueString,5,"---");
-            RenderText(valueString, lightWhite, min1.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+            DrawText(valueString, lightWhite, min1.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
             //Y field
             DrawRectangle(min2,max2,0.2, 0.2, 0.2);
             if(!ommitY) snprintf(valueString,5,"%3.1f",data->y);
             else snprintf(valueString,5,"---");
-            RenderText(valueString, lightWhite, min2.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+            DrawText(valueString, lightWhite, min2.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
             //Z field
             DrawRectangle(min3,max3,0.2, 0.2, 0.2);
             if(!ommitZ) snprintf(valueString,5,"%3.1f",data->z);
             else snprintf(valueString,5,"---");
-            RenderText(valueString, lightWhite, min3.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+            DrawText(valueString, lightWhite, min3.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
         }
     }
 
@@ -2470,7 +2421,7 @@ void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,in
 
 void FloatField(char *title, float *data,int ommit,int x, int w, int* curField, int* curHeight){
     *curHeight -= 4;
-    RenderText(title, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+    DrawText(title, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
     *curHeight -= 2 + TTF_FontHeight(gizmosFontSmall);
 
     Vector3 min = { x,*curHeight-TTF_FontHeight(gizmosFont)-2,0};
@@ -2493,13 +2444,13 @@ void FloatField(char *title, float *data,int ommit,int x, int w, int* curField, 
         //Cursor line
         glColor3f(0.7,0.7,0.7);
         glLineWidth(2/Screen.gameScale);
-        glBegin(GL_LINES);
+        //glBegin(GL_LINES);
             glVertex2f( cursorPos, min.y);
             glVertex2f( cursorPos, max.y);
-        glEnd();
+        //glEnd();
 
         //Render the string
-        RenderText(textFieldString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+        DrawText(textFieldString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
         //Pass the string as float data
         *data = strtof(textFieldString, NULL);
@@ -2513,7 +2464,7 @@ void FloatField(char *title, float *data,int ommit,int x, int w, int* curField, 
         //Data text
         if(!ommit) snprintf(valueString,12,"%6.6f",*data);
         else snprintf(valueString,4,"---");
-        RenderText(valueString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+        DrawText(valueString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
         //Fields selection
         if(editingField<0 && GetMouseButtonDown(SDL_BUTTON_LEFT)){
@@ -2537,7 +2488,7 @@ void FloatField(char *title, float *data,int ommit,int x, int w, int* curField, 
 
 void IntField(char *title, int *data,int ommit,int x, int w, int* curField, int* curHeight){
     *curHeight -= 4;
-    RenderText(title, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+    DrawText(title, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
     *curHeight -= 2 + TTF_FontHeight(gizmosFontSmall);
 
     Vector3 min = { x,*curHeight-TTF_FontHeight(gizmosFont)-2,0};
@@ -2560,13 +2511,13 @@ void IntField(char *title, int *data,int ommit,int x, int w, int* curField, int*
         //Cursor line
         glColor3f(0.7,0.7,0.7);
         glLineWidth(2/Screen.gameScale);
-        glBegin(GL_LINES);
+        //glBegin(GL_LINES);
             glVertex2f( cursorPos, min.y);
             glVertex2f( cursorPos, max.y);
-        glEnd();
+        //glEnd();
 
         //Render the string
-        RenderText(textFieldString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+        DrawText(textFieldString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
         //Pass the string as float data
         *data = (int) strtol(textFieldString, NULL,0);
@@ -2580,7 +2531,7 @@ void IntField(char *title, int *data,int ommit,int x, int w, int* curField, int*
         //Data text
         if(!ommit) snprintf(valueString,12,"%d",*data);
         else snprintf(valueString,4,"---");
-        RenderText(valueString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+        DrawText(valueString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
         //Fields selection
         if(editingField<0 && GetMouseButtonDown(SDL_BUTTON_LEFT)){
@@ -2610,7 +2561,7 @@ void IntListField(char *title, List *list,int x, int w, int* curField, int* curH
     char *fieldTitle = calloc(titleLen,sizeof(char));
     snprintf(fieldTitle,titleLen,"%s [%d]",title,GetLength(*list));
 
-    RenderText(fieldTitle, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+    DrawText(fieldTitle, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
     free(fieldTitle);
 
     *curHeight -= 2 + TTF_FontHeight(gizmosFontSmall);
@@ -2637,13 +2588,13 @@ void IntListField(char *title, List *list,int x, int w, int* curField, int* curH
             //Cursor line
             glColor3f(0.7,0.7,0.7);
             glLineWidth(2/Screen.gameScale);
-            glBegin(GL_LINES);
+            //glBegin(GL_LINES);
                 glVertex2f( cursorPos, min.y);
                 glVertex2f( cursorPos, max.y);
-            glEnd();
+            //glEnd();
 
             //Render the string
-            RenderText(textFieldString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+            DrawText(textFieldString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
             //Pass the string as float data
             *data = (int) strtol(textFieldString, NULL,0);*/
@@ -2658,7 +2609,7 @@ void IntListField(char *title, List *list,int x, int w, int* curField, int* curH
             //Data text
             if(!ommit) snprintf(valueString,12,"%d",*data);
             else snprintf(valueString,4,"---");
-            RenderText(valueString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+            DrawText(valueString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
             //Fields selection
             if(editingField<0 && GetMouseButtonDown(SDL_BUTTON_LEFT)){
@@ -2683,15 +2634,6 @@ void IntListField(char *title, List *list,int x, int w, int* curField, int* curH
     }
 }
 
-void DrawRectangle(Vector3 min, Vector3 max, float r, float g, float b){
-    glColor3f(r,g,b);
-    glBegin(GL_QUADS);
-        glVertex2f( min.x, max.y);
-        glVertex2f( max.x, max.y);
-        glVertex2f( max.x, min.y);
-        glVertex2f( min.x, min.y);
-    glEnd();
-}
 
 void LoadUITexture(char *path,int index){
     SDL_Surface *img = IMG_Load(path);

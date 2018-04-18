@@ -1,9 +1,9 @@
-#version 120
+#version 330
 uniform sampler2D texture;
 uniform vec3 color;
-//varying vec2 texcoord;
+in vec2 uv;
 
 void main(void) {
-    //vec3 tex = texture2D(texture, texcoord).rgb;
-    gl_FragColor = vec4(color,1);
+    vec4 tex = texture2D(texture, uv).rgba;
+    gl_FragColor = vec4(color,tex.a);
 }

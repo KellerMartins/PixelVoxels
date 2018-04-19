@@ -33,17 +33,30 @@ OBJ_NAME = Space
 #Compilation Targets
 all : $(OBJ_NAME) 
 
+
 $(OBJ_NAME): $(FOLDERS)/ $(OBJS) 
 	@echo "+ Compiling program \"$@\""
+ifeq ($(OS),Windows_NT)
+	@$(CC) $(OBJS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(COMPILER_FLAGS) $(LINKER_FLAGS) -o $(OBJ_NAME)
+else
 	@$(CC) $(OBJS) $(COMPILER_FLAGS) $(LINKER_FLAGS) -o $(OBJ_NAME)
+endif
 
 Build/%.o: %.c %.h
 	@echo "- Compiling object \"$@\""
+ifeq ($(OS),Windows_NT)
+	@$(CC) -c $(INCLUDE_PATHS) $(COMPILER_FLAGS) $< -o $@
+else
 	@$(CC) -c $(COMPILER_FLAGS) $< -o $@
+endif
 
 Build/%.o: %.c
 	@echo "- Compiling object \"$@\""
+ifeq ($(OS),Windows_NT)
+	@$(CC) -c $(INCLUDE_PATHS) $(COMPILER_FLAGS) $< -o $@
+else
 	@$(CC) -c $(COMPILER_FLAGS) $< -o $@
+endif
 
 $(FOLDERS)/:
 	@echo "+ Creating build folders \"$@\""

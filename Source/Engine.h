@@ -74,7 +74,7 @@ typedef struct engineRendering{
     GLuint depthRenderBuffer;
     GLuint vao , vbo[3];
 
-    GLuint Shaders[3];
+    GLuint Shaders[4];
 
     Pixel voxelColors[256];
     SDL_Color clearScreenColor;

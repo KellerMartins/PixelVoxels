@@ -243,7 +243,7 @@ void EditorUpdate(){
         }else{
             DrawRectangle(bMin,bMax,0.2,0.2,0.35);
         }
-        DrawText("Menu", brightWhite, 16, Screen.windowHeight-(entityWindowTopHeightSpacing/2)+5, gizmosFont);
+        DrawTextColored("Menu", brightWhite, 16, Screen.windowHeight-(entityWindowTopHeightSpacing/2)+5, gizmosFont);
 
         //Delete shortcut
         if(GetKeyDown(SDL_SCANCODE_DELETE) && editingField<0  && !fileBrowser.opened){
@@ -361,7 +361,7 @@ void DrawMenuWindow(){
 
     int w,h;
     TTF_SizeText(gizmosFont,"Menu",&w,&h);
-    DrawText("Menu", lightWhite, headerMin.x + 10, headerMin.y+ ((headerMax.y-headerMin.y)-h)/2, gizmosFont);
+    DrawTextColored("Menu", lightWhite, headerMin.x + 10, headerMin.y+ ((headerMax.y-headerMin.y)-h)/2, gizmosFont);
 
     Vector3 tabMin = {Screen.windowWidth/2 -300,Screen.windowHeight/2 +35};
     Vector3 tabMax = {Screen.windowWidth/2 -300,Screen.windowHeight/2 +65};
@@ -394,13 +394,13 @@ void DrawMenuWindow(){
         //Tabs title
         switch(tabIndex){
             case 0:
-                DrawText("Scene", lightWhite, tabMin.x + 3, tabMin.y+ ((tabMax.y-tabMin.y)-h)/2, gizmosFont);
+                DrawTextColored("Scene", lightWhite, tabMin.x + 3, tabMin.y+ ((tabMax.y-tabMin.y)-h)/2, gizmosFont);
             break;
             case 1:
-                DrawText("Entities", lightWhite, tabMin.x + 3, tabMin.y+ ((tabMax.y-tabMin.y)-h)/2, gizmosFont);
+                DrawTextColored("Entities", lightWhite, tabMin.x + 3, tabMin.y+ ((tabMax.y-tabMin.y)-h)/2, gizmosFont);
             break;
             case 2:
-                DrawText("Options", lightWhite, tabMin.x + 3, tabMin.y+ ((tabMax.y-tabMin.y)-h)/2, gizmosFont);
+                DrawTextColored("Options", lightWhite, tabMin.x + 3, tabMin.y+ ((tabMax.y-tabMin.y)-h)/2, gizmosFont);
             break;
         }
 
@@ -413,7 +413,7 @@ void DrawMenuWindow(){
         Vector3 bMax;
         switch(selectedTab){
             case 0:
-                DrawText("file", lightWhite, optionsBgMin.x + 10, optionsBgMax.y-20, gizmosFontSmall);
+                DrawTextColored("file", lightWhite, optionsBgMin.x + 10, optionsBgMax.y-20, gizmosFontSmall);
 
                 //New Scene button
                 bMin = (Vector3){optionsBgMin.x + 10,optionsBgMax.y-55};
@@ -427,7 +427,7 @@ void DrawMenuWindow(){
                     DrawRectangle(bMin,bMax,0.2,0.2,0.35);
                 }
                 TTF_SizeText(gizmosFont,"New Scene",&btw,&bth);
-                DrawText("New Scene", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
+                DrawTextColored("New Scene", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
 
                 //Open Scene button
                 spacing = bMax.y-bMin.y + 4;
@@ -447,7 +447,7 @@ void DrawMenuWindow(){
                     DrawRectangle(bMin,bMax,0.2,0.2,0.35);
                 }
                 TTF_SizeText(gizmosFont,"Open Scene",&btw,&bth);
-                DrawText("Open Scene", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
+                DrawTextColored("Open Scene", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
 
                 //Save Scene
                 spacing = bMax.y-bMin.y + 4;
@@ -468,7 +468,7 @@ void DrawMenuWindow(){
                     DrawRectangle(bMin,bMax,0.2,0.2,0.35);
                 }
                 TTF_SizeText(gizmosFont,"Save Scene",&btw,&bth);
-                DrawText("Save Scene", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
+                DrawTextColored("Save Scene", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
 
                 //Line separating the buttons category
                 DrawRectangle((Vector3){bMax.x + 10,bMin.y}, (Vector3){bMax.x + 12,optionsBgMax.y-10},bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
@@ -482,7 +482,7 @@ void DrawMenuWindow(){
                 bMin.y = optionsBgMax.y-55;
                 bMax.y = optionsBgMax.y-25;
 
-                DrawText("settings", lightWhite, bMin.x, optionsBgMax.y-20, gizmosFontSmall);
+                DrawTextColored("settings", lightWhite, bMin.x, optionsBgMax.y-20, gizmosFontSmall);
 
                 if(MouseOverBox(mousePos, bMin, bMax,0)){
                     DrawRectangle(bMin,bMax,0.3,0.3,0.4);
@@ -493,11 +493,11 @@ void DrawMenuWindow(){
                     DrawRectangle(bMin,bMax,0.2,0.2,0.35);
                 }
                 TTF_SizeText(gizmosFont,"Save Scene",&btw,&bth);
-                DrawText("Save Scene", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
+                DrawTextColored("Save Scene", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
 
             break;
             case 1:
-                DrawText("file", lightWhite, optionsBgMin.x + 10, optionsBgMax.y-20, gizmosFontSmall);
+                DrawTextColored("file", lightWhite, optionsBgMin.x + 10, optionsBgMax.y-20, gizmosFontSmall);
 
                 //New Scene button
                 bMin = (Vector3){optionsBgMin.x + 10,optionsBgMax.y-55};
@@ -516,7 +516,7 @@ void DrawMenuWindow(){
                     DrawRectangle(bMin,bMax,0.2,0.2,0.2);
                 }
                 TTF_SizeText(gizmosFont,"Export selected",&btw,&bth);
-                DrawText("Export selected", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
+                DrawTextColored("Export selected", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
 
                 spacing = bMax.y-bMin.y + 4;
                 bMin.y -= spacing;
@@ -530,7 +530,7 @@ void DrawMenuWindow(){
                     DrawRectangle(bMin,bMax,0.2,0.2,0.35);
                 }
                 TTF_SizeText(gizmosFont,"Import prefab",&btw,&bth);
-                DrawText("Import prefab", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
+                DrawTextColored("Import prefab", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
 
                 spacing = bMax.y-bMin.y + 4;
                 bMin.y -= spacing;
@@ -544,7 +544,7 @@ void DrawMenuWindow(){
                     DrawRectangle(bMin,bMax,0.2,0.2,0.35);
                 }
                 TTF_SizeText(gizmosFont,"Import scene entities",&btw,&bth);
-                DrawText("Import scene entities", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
+                DrawTextColored("Import scene entities", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
 
                 //Line separating the buttons category
                 DrawRectangle((Vector3){bMax.x + 10,bMin.y}, (Vector3){bMax.x + 12,optionsBgMax.y-10},bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
@@ -558,7 +558,7 @@ void DrawMenuWindow(){
                 bMin.y = optionsBgMax.y-55;
                 bMax.y = optionsBgMax.y-25;
 
-                DrawText("Selection", lightWhite, bMin.x, optionsBgMax.y-20, gizmosFontSmall);
+                DrawTextColored("Selection", lightWhite, bMin.x, optionsBgMax.y-20, gizmosFontSmall);
 
                 //Select all button
                 if(MouseOverBox(mousePos, bMin, bMax,0)){
@@ -576,7 +576,7 @@ void DrawMenuWindow(){
                     DrawRectangle(bMin,bMax,0.2,0.2,0.35);
                 }
                 TTF_SizeText(gizmosFont,"Select all",&btw,&bth);
-                DrawText("Select all", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
+                DrawTextColored("Select all", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
 
                 //Deselect all button
                 spacing = bMax.y-bMin.y + 4;
@@ -592,7 +592,7 @@ void DrawMenuWindow(){
                     DrawRectangle(bMin,bMax,0.2,0.2,0.35);
                 }
                 TTF_SizeText(gizmosFont,"Deselect all",&btw,&bth);
-                DrawText("Deselect all", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
+                DrawTextColored("Deselect all", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
 
                 //Remove selected button
                 spacing = bMax.y-bMin.y + 4;
@@ -612,7 +612,7 @@ void DrawMenuWindow(){
                     DrawRectangle(bMin,bMax,0.2,0.2,0.35);
                 }
                 TTF_SizeText(gizmosFont,"Remove selected",&btw,&bth);
-                DrawText("Remove selected", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
+                DrawTextColored("Remove selected", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
 
             break;
             case 2:
@@ -802,7 +802,7 @@ void DrawTransformGizmos(){
                 }
                 //int w, h;
                 //TTF_SizeText(gizmosFont,"Some random text",&w,&h);
-                //DrawText("Some random text", lightWhite, screenPos.x-w/2, screenPos.y-h*1.5,gizmosDepth, gizmosFont);  
+                //DrawTextColored("Some random text", lightWhite, screenPos.x-w/2, screenPos.y-h*1.5,gizmosDepth, gizmosFont);  
             }
         }
     }
@@ -952,7 +952,7 @@ void DrawComponentsPanel(){
                                         SetStaticRigidbody(GetElementAsType(selEntity,int),isStatic);
                                     }
                                 }
-                                DrawText("Is Static", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+                                DrawTextColored("Is Static", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
                                 componentHeight-=20;
 
                                 if(1 == PointToggle(&useGravity,(Vector3){Screen.windowWidth-componentWindowLength + 12,componentHeight - 10},14,15,16,1, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1})){
@@ -960,7 +960,7 @@ void DrawComponentsPanel(){
                                         SetUseGravity(GetElementAsType(selEntity,int),useGravity);
                                     }
                                 }
-                                DrawText("use gravity", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+                                DrawTextColored("use gravity", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
                                 componentHeight-=20;
 
                                 int ommitVelX = 0, ommitVelY = 0, ommitVelZ = 0;
@@ -1066,7 +1066,7 @@ void DrawComponentsPanel(){
                                         SetStaticRigidbody(GetElementAsType(selEntity,int),isStatic);
                                     }
                                 }
-                                DrawText("Is Static", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+                                DrawTextColored("Is Static", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
                                 componentHeight-=20;
                             }
                         }else if(c == GetComponentID("VoxelModel")){
@@ -1097,7 +1097,7 @@ void DrawComponentsPanel(){
                                     SetVoxelModelEnabled(GetElementAsType(selEntity,int),isEnabled);
                                 }
                             }
-                            DrawText("Enabled", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+                            DrawTextColored("Enabled", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
                             componentHeight-=22;
 
                             if(1 == PointToggle(&isSmall,(Vector3){Screen.windowWidth-componentWindowLength + 12,componentHeight - 10},14,15,16,1, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1})){
@@ -1105,7 +1105,7 @@ void DrawComponentsPanel(){
                                     SetVoxelModelSmallScale(GetElementAsType(selEntity,EntityID),isSmall);
                                 }
                             }
-                            DrawText("small scale", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+                            DrawTextColored("small scale", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
                             componentHeight-=22;
 
                             //Only show the model load button and name if only one entity is selected
@@ -1124,14 +1124,14 @@ void DrawComponentsPanel(){
                                 }
                                 
                                 if(m->modelName[0] != '\0'){
-                                    DrawText(m->modelName, lightWhite, Screen.windowWidth-componentWindowLength + 28, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+                                    DrawTextColored(m->modelName, lightWhite, Screen.windowWidth-componentWindowLength + 28, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
                                 }else{
-                                    DrawText("No model", lightWhite, Screen.windowWidth-componentWindowLength + 28, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+                                    DrawTextColored("No model", lightWhite, Screen.windowWidth-componentWindowLength + 28, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
                                 }
                                 componentHeight-=22;
 
                                 if(isSubModel){
-                                    DrawText(m->objectName, lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+                                    DrawTextColored(m->objectName, lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
                                     componentHeight-=22;
                                 }
                             }
@@ -1356,7 +1356,7 @@ void DrawComponentsPanel(){
                     DrawRectangle(cbMin, cbMax,0.1,0.1,0.1);
                 }
                 TTF_SizeText(gizmosFont,GetElementAsType(cellComp,ComponentType).name,&w,&h);
-                DrawText(GetElementAsType(cellComp,ComponentType).name, lightWhite, cbMin.x + ((cbMax.x-cbMin.x)-w)/2, cbMin.y + ((cbMax.y-cbMin.y)-h)/2, gizmosFont);
+                DrawTextColored(GetElementAsType(cellComp,ComponentType).name, lightWhite, cbMin.x + ((cbMax.x-cbMin.x)-w)/2, cbMin.y + ((cbMax.y-cbMin.y)-h)/2, gizmosFont);
 
                 buttonHeight-= 42;
                 i++;
@@ -1435,10 +1435,10 @@ void DrawComponentsPanel(){
         int w,h;
         if(!addComponentWindowOpened){
             TTF_SizeText(gizmosFont,"Add Component",&w,&h);
-            DrawText("Add Component", brightWhite, cbMin.x + ((cbMax.x-cbMin.x)-w)/2, cbMin.y + ((cbMax.y-cbMin.y)-h)/2, gizmosFont);
+            DrawTextColored("Add Component", brightWhite, cbMin.x + ((cbMax.x-cbMin.x)-w)/2, cbMin.y + ((cbMax.y-cbMin.y)-h)/2, gizmosFont);
         }else{
             TTF_SizeText(gizmosFont,"Back",&w,&h);
-            DrawText("Back", brightWhite, cbMin.x + ((cbMax.x-cbMin.x)-w)/2, cbMin.y + ((cbMax.y-cbMin.y)-h)/2, gizmosFont);
+            DrawTextColored("Back", brightWhite, cbMin.x + ((cbMax.x-cbMin.x)-w)/2, cbMin.y + ((cbMax.y-cbMin.y)-h)/2, gizmosFont);
         }
 
         //Draw the prefab name
@@ -1450,7 +1450,7 @@ void DrawComponentsPanel(){
 
             prefabBgMin.y += 2;
             DrawRectangle(prefabBgMin,prefabBgMax,0.2,0.2,0.35);
-            DrawText(GetPrefabName(GetElementAsType(GetFirstCell(SelectedEntities),EntityID)), brightWhite, Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, prefabBgMin.y + (prefabBgMax.y - prefabBgMin.y - TTF_FontHeight(gizmosFontSmall))/2, gizmosFontSmall);
+            DrawTextColored(GetPrefabName(GetElementAsType(GetFirstCell(SelectedEntities),EntityID)), brightWhite, Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, prefabBgMin.y + (prefabBgMax.y - prefabBgMin.y - TTF_FontHeight(gizmosFontSmall))/2, gizmosFontSmall);
         }
     }
 }
@@ -1483,9 +1483,9 @@ int DrawComponentHeader(ComponentID component, int* curHeight){
     if(strlen(type->name)>11){
         char cName[14] = "OOOOOOOOOO...";
         strncpy(cName,type->name,10);
-        DrawText(cName, brightWhite, Screen.windowWidth-componentWindowLength+componentNameLeftSpacing, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+        DrawTextColored(cName, brightWhite, Screen.windowWidth-componentWindowLength+componentNameLeftSpacing, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
     }else{
-        DrawText(type->name, brightWhite, Screen.windowWidth-componentWindowLength+componentNameLeftSpacing, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+        DrawTextColored(type->name, brightWhite, Screen.windowWidth-componentWindowLength+componentNameLeftSpacing, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
     }
 
     *curHeight -= TTF_FontHeight(gizmosFont)+2;
@@ -1603,7 +1603,7 @@ void DrawEntitiesPanel(){
         }
     }
     DrawRectangle(bMin, bMax, bColor.x, bColor.y, bColor.z);
-    DrawText("+ Entity", brightWhite, 5, Screen.windowHeight-(entityWindowTopHeightSpacing)+5, gizmosFont);
+    DrawTextColored("+ Entity", brightWhite, 5, Screen.windowHeight-(entityWindowTopHeightSpacing)+5, gizmosFont);
 }
 
 void DrawEntityElement(EntityID entity, int *entityHeight, int depth){
@@ -1653,7 +1653,7 @@ void DrawEntityElement(EntityID entity, int *entityHeight, int depth){
         int w,h;
         TTF_SizeText(gizmosFont,entityName,&w,&h);
         if(entityWindowLength - (entityNameLeftSpacing +depth*10)>= w){
-            DrawText(entityName, lightWhite, entityNameLeftSpacing +depth*10, (*entityHeight) - TTF_FontHeight(gizmosFont), gizmosFont);
+            DrawTextColored(entityName, lightWhite, entityNameLeftSpacing +depth*10, (*entityHeight) - TTF_FontHeight(gizmosFont), gizmosFont);
         }
     }
 
@@ -1719,10 +1719,10 @@ void DrawFileBrowser(){
         char minifiedPath[] = "0000000000000000000000000000000000...";
         memcpy(minifiedPath,fileBrowser.filePath,34*sizeof(char));
         TTF_SizeText(gizmosFont,minifiedPath,&w,&h);
-        DrawText(minifiedPath, lightWhite, filepathBgMin.x + 6, filepathBgMin.y+ ((filepathBgMax.y-filepathBgMin.y)-h)/2 -1, gizmosFont);    
+        DrawTextColored(minifiedPath, lightWhite, filepathBgMin.x + 6, filepathBgMin.y+ ((filepathBgMax.y-filepathBgMin.y)-h)/2 -1, gizmosFont);    
     }else{
         TTF_SizeText(gizmosFont,fileBrowser.filePath,&w,&h);
-        DrawText(fileBrowser.filePath, lightWhite, filepathBgMin.x + 6, filepathBgMin.y+ ((filepathBgMax.y-filepathBgMin.y)-h)/2 -1, gizmosFont);    
+        DrawTextColored(fileBrowser.filePath, lightWhite, filepathBgMin.x + 6, filepathBgMin.y+ ((filepathBgMax.y-filepathBgMin.y)-h)/2 -1, gizmosFont);    
     }
 
 
@@ -1739,7 +1739,7 @@ void DrawFileBrowser(){
         DrawRectangle(cancelButtonMin,cancelButtonMax,0.2,0.2,0.35);
     }
     TTF_SizeText(gizmosFont,"Cancel",&w,&h);
-    DrawText("Cancel", lightWhite, cancelButtonMin.x + ((cancelButtonMax.x-cancelButtonMin.x)-w)/2, cancelButtonMin.y+ ((cancelButtonMax.y-cancelButtonMin.y)-h)/2, gizmosFont);
+    DrawTextColored("Cancel", lightWhite, cancelButtonMin.x + ((cancelButtonMax.x-cancelButtonMin.x)-w)/2, cancelButtonMin.y+ ((cancelButtonMax.y-cancelButtonMin.y)-h)/2, gizmosFont);
 
     //Open/Save button
     Vector3 openButtonMin = {Screen.windowWidth/2 +207 - (cancelButtonMax.x-cancelButtonMin.x) - 10,Screen.windowHeight/2 -197};
@@ -1785,7 +1785,7 @@ void DrawFileBrowser(){
         }
     }
     TTF_SizeText(gizmosFont,mode?"Save":"Open",&w,&h);
-    DrawText(mode?"Save":"Open", lightWhite, openButtonMin.x + ((openButtonMax.x-openButtonMin.x)-w)/2, openButtonMin.y+ ((openButtonMax.y-openButtonMin.y)-h)/2, gizmosFont);
+    DrawTextColored(mode?"Save":"Open", lightWhite, openButtonMin.x + ((openButtonMax.x-openButtonMin.x)-w)/2, openButtonMin.y+ ((openButtonMax.y-openButtonMin.y)-h)/2, gizmosFont);
 
     //File name
     if(mode == 1){
@@ -1823,16 +1823,16 @@ void DrawFileBrowser(){
             //glEnd();
         }
         
-        DrawText("file name", lightWhite, filenameBgMin.x, filenameBgMax.y +1, gizmosFontSmall);
+        DrawTextColored("file name", lightWhite, filenameBgMin.x, filenameBgMax.y +1, gizmosFontSmall);
         TTF_SizeText(gizmosFont,fileBrowser.fileName,&w,&h);
-        DrawText(fileBrowser.fileName, lightWhite, filenameBgMin.x + 5, filenameBgMin.y+ ((filenameBgMax.y-filenameBgMin.y)-h)/2 +1, gizmosFont);
+        DrawTextColored(fileBrowser.fileName, lightWhite, filenameBgMin.x + 5, filenameBgMin.y+ ((filenameBgMax.y-filenameBgMin.y)-h)/2 +1, gizmosFont);
     }else{
         Vector3 filenameBgMin = {Screen.windowWidth/2 -295,Screen.windowHeight/2 -195};
         Vector3 filenameBgMax = {openButtonMin.x -10,Screen.windowHeight/2 -164};
         DrawRectangle(filenameBgMin,filenameBgMax,0.2, 0.2, 0.2);
-        DrawText("file name", lightWhite, filenameBgMin.x, filenameBgMax.y +1, gizmosFontSmall);
+        DrawTextColored("file name", lightWhite, filenameBgMin.x, filenameBgMax.y +1, gizmosFontSmall);
         TTF_SizeText(gizmosFont,fileBrowser.fileName,&w,&h);
-        DrawText(fileBrowser.fileName, lightWhite, filenameBgMin.x + 5, filenameBgMin.y+ ((filenameBgMax.y-filenameBgMin.y)-h)/2 +1, gizmosFont);
+        DrawTextColored(fileBrowser.fileName, lightWhite, filenameBgMin.x + 5, filenameBgMin.y+ ((filenameBgMax.y-filenameBgMin.y)-h)/2 +1, gizmosFont);
     }
 
     //Browser Items
@@ -1880,10 +1880,10 @@ void DrawFileBrowser(){
                 char minifiedName[] = "00000...";
                 memcpy(minifiedName,file.name,5*sizeof(char));
                 TTF_SizeText(gizmosFont,minifiedName,&w,&h);
-                DrawText(minifiedName, lightWhite, x-(iconsSize[10] * 3) +((iconsSize[10] * 6) - w)/2, y - (iconsSize[10] * 3) - h, gizmosFont);
+                DrawTextColored(minifiedName, lightWhite, x-(iconsSize[10] * 3) +((iconsSize[10] * 6) - w)/2, y - (iconsSize[10] * 3) - h, gizmosFont);
             }else{
                 TTF_SizeText(gizmosFont,file.name,&w,&h);
-                DrawText(file.name, lightWhite, x-(iconsSize[10] * 3) +((iconsSize[10] * 6) - w)/2, y - (iconsSize[10] * 3) - h, gizmosFont);
+                DrawTextColored(file.name, lightWhite, x-(iconsSize[10] * 3) +((iconsSize[10] * 6) - w)/2, y - (iconsSize[10] * 3) - h, gizmosFont);
             }
             x += iconsSize[10] * 6 + 30;
             i++;
@@ -1935,10 +1935,10 @@ void DrawFileBrowser(){
                 char minifiedName[] = "00000...";
                 memcpy(minifiedName,file.name,5*sizeof(char));
                 TTF_SizeText(gizmosFont,minifiedName,&w,&h);
-                DrawText(minifiedName, lightWhite, x-(iconsSize[icon] * 3) +((iconsSize[icon] * 6) - w)/2, y - (iconsSize[icon] * 3) - h, gizmosFont);
+                DrawTextColored(minifiedName, lightWhite, x-(iconsSize[icon] * 3) +((iconsSize[icon] * 6) - w)/2, y - (iconsSize[icon] * 3) - h, gizmosFont);
             }else{
                 TTF_SizeText(gizmosFont,file.name,&w,&h);
-                DrawText(file.name, lightWhite, x-(iconsSize[icon] * 3) +((iconsSize[icon] * 6) - w)/2, y - (iconsSize[icon] * 3) - h, gizmosFont);
+                DrawTextColored(file.name, lightWhite, x-(iconsSize[icon] * 3) +((iconsSize[icon] * 6) - w)/2, y - (iconsSize[icon] * 3) - h, gizmosFont);
             }
             x += iconsSize[icon] * 6 + 30;
             i++;
@@ -1992,7 +1992,7 @@ void DrawFileBrowser(){
     }else if (fileBrowser.opened == -1){
         //Invalid folder message
         TTF_SizeText(gizmosFont,"Invalid or nonexistent path!",&w,&h);
-        DrawText("Invalid or nonexistent path!", lightWhite, fbMin.x+ ((fbMax.x-fbMin.x)-w)/2, fbMin.y+ ((fbMax.y-fbMin.y)-h)/2, gizmosFont);
+        DrawTextColored("Invalid or nonexistent path!", lightWhite, fbMin.x+ ((fbMax.x-fbMin.x)-w)/2, fbMin.y+ ((fbMax.y-fbMin.y)-h)/2, gizmosFont);
     }
 }
 
@@ -2119,7 +2119,7 @@ void DrawDialogWindow(){
             lineHeight -= h;
             //Print the current line
             TTF_SizeText(gizmosFont,contentLine,&w,&h);
-            DrawText(contentLine, lightWhite, contentMin.x + 40, lineHeight, gizmosFont);
+            DrawTextColored(contentLine, lightWhite, contentMin.x + 40, lineHeight, gizmosFont);
             
             //Parse the next line
             contentLine = strtok(NULL,"\n");
@@ -2142,7 +2142,7 @@ void DrawDialogWindow(){
             DrawRectangle(option1Min,option1Max,0.2,0.2,0.35);
         }
         TTF_SizeText(gizmosFont,dialog.option1String,&w,&h);
-        DrawText(dialog.option1String, lightWhite, option1Min.x + ((option1Max.x-option1Min.x)-w)/2, option1Min.y+ ((option1Max.y-option1Min.y)-h)/2, gizmosFont);
+        DrawTextColored(dialog.option1String, lightWhite, option1Min.x + ((option1Max.x-option1Min.x)-w)/2, option1Min.y+ ((option1Max.y-option1Min.y)-h)/2, gizmosFont);
     }
 
     //Option 2 Button
@@ -2160,7 +2160,7 @@ void DrawDialogWindow(){
             DrawRectangle(option2Min,option2Max,0.2,0.2,0.35);
         }
         TTF_SizeText(gizmosFont,dialog.option2String,&w,&h);
-        DrawText(dialog.option2String, lightWhite, option2Min.x + ((option2Max.x-option2Min.x)-w)/2, option2Min.y+ ((option2Max.y-option2Min.y)-h)/2, gizmosFont);
+        DrawTextColored(dialog.option2String, lightWhite, option2Min.x + ((option2Max.x-option2Min.x)-w)/2, option2Min.y+ ((option2Max.y-option2Min.y)-h)/2, gizmosFont);
     }
 
     //Option 3 Button
@@ -2178,7 +2178,7 @@ void DrawDialogWindow(){
             DrawRectangle(option3Min,option3Max,0.2,0.2,0.35);
         }
         TTF_SizeText(gizmosFont,dialog.option3String,&w,&h);
-        DrawText(dialog.option3String, lightWhite, option3Min.x + ((option3Max.x-option3Min.x)-w)/2, option3Min.y+ ((option3Max.y-option3Min.y)-h)/2, gizmosFont);
+        DrawTextColored(dialog.option3String, lightWhite, option3Min.x + ((option3Max.x-option3Min.x)-w)/2, option3Min.y+ ((option3Max.y-option3Min.y)-h)/2, gizmosFont);
     }
 }
 
@@ -2308,7 +2308,7 @@ void DrawPointIcon(Vector3 pos,int iconID, int scale, Vector3 color){
 
 void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,int x, int w, int fieldsSpacing, int* curField, int* curHeight){
     *curHeight -= 2;
-    DrawText(title, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+    DrawTextColored(title, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
     *curHeight -= 2 + TTF_FontHeight(gizmosFontSmall);
 
     int fieldW = w/3;
@@ -2344,7 +2344,7 @@ void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,in
         //glEnd();
 
         //Render the string
-        DrawText(textFieldString, lightWhite, min1.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+        DrawTextColored(textFieldString, lightWhite, min1.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
         //Pass the string as float data
         if(editingField == *curField){
@@ -2397,19 +2397,19 @@ void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,in
             DrawRectangle(min1,max1,0.2, 0.2, 0.2);
             if(!ommitX) snprintf(valueString,5,"%3.1f",data->x);
             else snprintf(valueString,5,"---");
-            DrawText(valueString, lightWhite, min1.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+            DrawTextColored(valueString, lightWhite, min1.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
             //Y field
             DrawRectangle(min2,max2,0.2, 0.2, 0.2);
             if(!ommitY) snprintf(valueString,5,"%3.1f",data->y);
             else snprintf(valueString,5,"---");
-            DrawText(valueString, lightWhite, min2.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+            DrawTextColored(valueString, lightWhite, min2.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
             //Z field
             DrawRectangle(min3,max3,0.2, 0.2, 0.2);
             if(!ommitZ) snprintf(valueString,5,"%3.1f",data->z);
             else snprintf(valueString,5,"---");
-            DrawText(valueString, lightWhite, min3.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+            DrawTextColored(valueString, lightWhite, min3.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
         }
     }
 
@@ -2421,7 +2421,7 @@ void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,in
 
 void FloatField(char *title, float *data,int ommit,int x, int w, int* curField, int* curHeight){
     *curHeight -= 4;
-    DrawText(title, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+    DrawTextColored(title, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
     *curHeight -= 2 + TTF_FontHeight(gizmosFontSmall);
 
     Vector3 min = { x,*curHeight-TTF_FontHeight(gizmosFont)-2,0};
@@ -2450,7 +2450,7 @@ void FloatField(char *title, float *data,int ommit,int x, int w, int* curField, 
         //glEnd();
 
         //Render the string
-        DrawText(textFieldString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+        DrawTextColored(textFieldString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
         //Pass the string as float data
         *data = strtof(textFieldString, NULL);
@@ -2464,7 +2464,7 @@ void FloatField(char *title, float *data,int ommit,int x, int w, int* curField, 
         //Data text
         if(!ommit) snprintf(valueString,12,"%6.6f",*data);
         else snprintf(valueString,4,"---");
-        DrawText(valueString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+        DrawTextColored(valueString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
         //Fields selection
         if(editingField<0 && GetMouseButtonDown(SDL_BUTTON_LEFT)){
@@ -2488,7 +2488,7 @@ void FloatField(char *title, float *data,int ommit,int x, int w, int* curField, 
 
 void IntField(char *title, int *data,int ommit,int x, int w, int* curField, int* curHeight){
     *curHeight -= 4;
-    DrawText(title, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+    DrawTextColored(title, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
     *curHeight -= 2 + TTF_FontHeight(gizmosFontSmall);
 
     Vector3 min = { x,*curHeight-TTF_FontHeight(gizmosFont)-2,0};
@@ -2517,7 +2517,7 @@ void IntField(char *title, int *data,int ommit,int x, int w, int* curField, int*
         //glEnd();
 
         //Render the string
-        DrawText(textFieldString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+        DrawTextColored(textFieldString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
         //Pass the string as float data
         *data = (int) strtol(textFieldString, NULL,0);
@@ -2531,7 +2531,7 @@ void IntField(char *title, int *data,int ommit,int x, int w, int* curField, int*
         //Data text
         if(!ommit) snprintf(valueString,12,"%d",*data);
         else snprintf(valueString,4,"---");
-        DrawText(valueString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+        DrawTextColored(valueString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
         //Fields selection
         if(editingField<0 && GetMouseButtonDown(SDL_BUTTON_LEFT)){
@@ -2561,7 +2561,7 @@ void IntListField(char *title, List *list,int x, int w, int* curField, int* curH
     char *fieldTitle = calloc(titleLen,sizeof(char));
     snprintf(fieldTitle,titleLen,"%s [%d]",title,GetLength(*list));
 
-    DrawText(fieldTitle, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+    DrawTextColored(fieldTitle, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
     free(fieldTitle);
 
     *curHeight -= 2 + TTF_FontHeight(gizmosFontSmall);
@@ -2594,7 +2594,7 @@ void IntListField(char *title, List *list,int x, int w, int* curField, int* curH
             //glEnd();
 
             //Render the string
-            DrawText(textFieldString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+            DrawTextColored(textFieldString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
             //Pass the string as float data
             *data = (int) strtol(textFieldString, NULL,0);*/
@@ -2609,7 +2609,7 @@ void IntListField(char *title, List *list,int x, int w, int* curField, int* curH
             //Data text
             if(!ommit) snprintf(valueString,12,"%d",*data);
             else snprintf(valueString,4,"---");
-            DrawText(valueString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+            DrawTextColored(valueString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
             //Fields selection
             if(editingField<0 && GetMouseButtonDown(SDL_BUTTON_LEFT)){

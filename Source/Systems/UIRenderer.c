@@ -172,7 +172,7 @@ void DrawRectangle(Vector3 min, Vector3 max, float r, float g, float b){
     InsertListEnd(&UIElements, &newElement);
 }
 
-void DrawText(char *text, SDL_Color color, int x, int y, TTF_Font* font){
+void DrawTextColored(char *text, SDL_Color color, int x, int y, TTF_Font* font){
     if(!ThisSystem || !ThisSystem->enabled) return;
     if(!font || !text || text[0] == '\0') return;
 

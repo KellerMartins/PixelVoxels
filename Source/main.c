@@ -102,9 +102,9 @@ int main(int argc, char *argv[]){
 		sprintf(dtInfo,"DT : %5.4lf", Time.deltaTime);
 		SDL_Color fontColor = {255,255,255,255};
 
-		RenderTextLegacy(fpsInfo, fontColor, 110, TTF_FontHeight(font)*2 + 10, font);
-		RenderTextLegacy(msInfo, fontColor, 110, TTF_FontHeight(font) + 10, font);
-		RenderTextLegacy(dtInfo, fontColor, 110, 10, font);
+		RenderTextDebug(fpsInfo, fontColor, 110, TTF_FontHeight(font)*2 + 10, font);
+		RenderTextDebug(msInfo, fontColor, 110, TTF_FontHeight(font) + 10, font);
+		RenderTextDebug(dtInfo, fontColor, 110, 10, font);
 		
 		EngineUpdateEnd();
 		ProcessFPS();

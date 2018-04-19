@@ -626,8 +626,6 @@ int movingX = 0;
 int movingY = 0;
 int movingZ = 0;
 void DrawTransformGizmos(){
-    glPointSize(5 * 2/Screen.gameScale);
-    glLineWidth(2* 2/Screen.gameScale);
     EntityID entity;
     for(entity = 0; entity <= ECS.maxUsedIndex; entity++){
         
@@ -646,132 +644,113 @@ void DrawTransformGizmos(){
 
             if(!IsSelected(entity)){
                 //Entity not selected, show selection point
-                //glBegin(GL_POINTS);
-                    if(MouseOverPointGizmos(mousePos, originPos, selectMouseOverDistance)){
-                        glColor3f(1,1,1);
-                        
-                        if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
-                            if(GetKey(SDL_SCANCODE_LSHIFT)){
-                                InsertListEnd(&SelectedEntities,&entity);
-                            }else{
-                                FreeList(&SelectedEntities);
-                                InsertListEnd(&SelectedEntities,&entity);
-                            }
+                Vector3 selPointColor = {0.5,0.5,0.5};
+                if(MouseOverPointGizmos(mousePos, originPos, selectMouseOverDistance)){
+                    selPointColor = (Vector3){1,1,1};
+                    
+                    if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
+                        if(GetKey(SDL_SCANCODE_LSHIFT)){
+                            InsertListEnd(&SelectedEntities,&entity);
+                        }else{
+                            FreeList(&SelectedEntities);
+                            InsertListEnd(&SelectedEntities,&entity);
                         }
-                    }else{
-                        glColor3f(0.5,0.5,0.5);
                     }
-                    glVertex2f(screenPos.x,screenPos.y);
-                //glEnd();
+                }
+                DrawPoint(screenPos, 5, 0, selPointColor.x, selPointColor.y, selPointColor.z);
 
             }else{
                 //Entity selected, show transform gizmos and deselection point
-                //Forward (X) line
-                //glBegin(GL_LINES);
+                //Forward (X) gizmos
+                Vector3 lineXEndPos = PositionToGameScreenCoords(Add(position,(Vector3){positionGizmosLength * 2/Screen.gameScale,0,0}));
 
-                    Vector3 lineXEndPos = PositionToGameScreenCoords(Add(position,(Vector3){positionGizmosLength * 2/Screen.gameScale,0,0}));
+                lineXEndPos.x = Screen.windowWidth/2 + (lineXEndPos.x/(float)Screen.gameWidth) * Screen.windowWidth;
+                lineXEndPos.y = Screen.windowHeight/2 + (lineXEndPos.y/(float)Screen.gameHeight) * Screen.windowHeight;
+                lineXEndPos.z = 0;
 
-                    lineXEndPos.x = Screen.windowWidth/2 + (lineXEndPos.x/(float)Screen.gameWidth) * Screen.windowWidth;
-                    lineXEndPos.y = Screen.windowHeight/2 + (lineXEndPos.y/(float)Screen.gameHeight) * Screen.windowHeight;
-                    lineXEndPos.z = 0;
+                Vector3 gizmosColor = {1,0.75,0.75};
 
-                    if(!movingX){
-                        if(MouseOverLineGizmos(mousePos, originPos, lineXEndPos, axisMouseOverDistance) && !MouseOverPointGizmos(mousePos, originPos, selectMouseOverDistance)){
-                            glColor3f(1,0.75,0.75);
-                            
-                            if(GetMouseButton(SDL_BUTTON_LEFT)){
-                                if(!movingZ && !movingY)
-                                    movingX = 1;
-                            }
-                        }else{
-                            glColor3f(1,0,0);
+                if(!movingX){
+                    if(MouseOverLineGizmos(mousePos, originPos, lineXEndPos, axisMouseOverDistance) && !MouseOverPointGizmos(mousePos, originPos, selectMouseOverDistance)){
+                        if(GetMouseButton(SDL_BUTTON_LEFT)){
+                            if(!movingZ && !movingY)
+                                movingX = 1;
                         }
                     }else{
-                        glColor3f(1,0.75,0.75);
+                        gizmosColor = (Vector3){1,0,0};
                     }
-
-                    glVertex2f(screenPos.x,screenPos.y);
-                    glVertex2f(lineXEndPos.x,lineXEndPos.y);
-                //glEnd();
+                }
+                //Forward (X) line
+                DrawLine(screenPos,lineXEndPos,4, gizmosColor.x, gizmosColor.y, gizmosColor.z);
                 //Forward (X) point
-                //glBegin(GL_POINTS);
-                    glVertex2f(lineXEndPos.x,lineXEndPos.y);
-                //glEnd();
+                DrawPoint(lineXEndPos, 5, 0, gizmosColor.x, gizmosColor.y, gizmosColor.z);
+
+
+
+                //Left (Y) gizmos
+                Vector3 lineYEndPos = PositionToGameScreenCoords(Add(position,(Vector3){0,positionGizmosLength* 2/Screen.gameScale,0}));
+
+                lineYEndPos.x = Screen.windowWidth/2 + (lineYEndPos.x/(float)Screen.gameWidth) * Screen.windowWidth;
+                lineYEndPos.y = Screen.windowHeight/2 + (lineYEndPos.y/(float)Screen.gameHeight) * Screen.windowHeight;
+                lineYEndPos.z = 0;
+
+                gizmosColor = (Vector3){0.75,1,0.75};
+
+                if(!movingY){
+                    if(MouseOverLineGizmos(mousePos, originPos, lineYEndPos, axisMouseOverDistance) && !MouseOverPointGizmos(mousePos, originPos, selectMouseOverDistance)){
+                        
+                        if(GetMouseButton(SDL_BUTTON_LEFT)){
+                            if(!movingX && !movingZ)
+                                movingY = 1;
+                        }
+                    }else{
+                        gizmosColor = (Vector3){0,1,0};
+                    }
+                }
 
                 //Left (Y) line
-                //glBegin(GL_LINES);
-
-                    Vector3 lineYEndPos = PositionToGameScreenCoords(Add(position,(Vector3){0,positionGizmosLength* 2/Screen.gameScale,0}));
-
-                    lineYEndPos.x = Screen.windowWidth/2 + (lineYEndPos.x/(float)Screen.gameWidth) * Screen.windowWidth;
-                    lineYEndPos.y = Screen.windowHeight/2 + (lineYEndPos.y/(float)Screen.gameHeight) * Screen.windowHeight;
-                    lineYEndPos.z = 0;
-
-                    if(!movingY){
-                        if(MouseOverLineGizmos(mousePos, originPos, lineYEndPos, axisMouseOverDistance) && !MouseOverPointGizmos(mousePos, originPos, selectMouseOverDistance)){
-                            glColor3f(0.75,1,0.75);
-                            if(GetMouseButton(SDL_BUTTON_LEFT)){
-                                if(!movingX && !movingZ)
-                                    movingY = 1;
-                            }
-                        }else{
-                            glColor3f(0,1,0);
-                        }
-                    }else{
-                        glColor3f(0.75,1,0.75);
-                    }
-
-                    glVertex2f(screenPos.x,screenPos.y);
-                    glVertex2f(lineYEndPos.x,lineYEndPos.y);
-                //glEnd();
+                DrawLine(screenPos,lineYEndPos,4, gizmosColor.x, gizmosColor.y, gizmosColor.z);
                 //Left (Y) point
-                //glBegin(GL_POINTS);
-                    glVertex2f(lineYEndPos.x,lineYEndPos.y);
-                //glEnd();
+                DrawPoint(lineYEndPos, 5, 0, gizmosColor.x, gizmosColor.y, gizmosColor.z);
 
-                //Up (Z) line
-                //glBegin(GL_LINES);
 
-                    Vector3 lineZEndPos = PositionToGameScreenCoords(Add(position,(Vector3){0,0,positionGizmosLength* 2/Screen.gameScale}));
 
-                    lineZEndPos.x = Screen.windowWidth/2 + (lineZEndPos.x/(float)Screen.gameWidth) * Screen.windowWidth;
-                    lineZEndPos.y = Screen.windowHeight/2 + (lineZEndPos.y/(float)Screen.gameHeight) * Screen.windowHeight;
-                    lineZEndPos.z = 0;
-                    
-                    if(!movingZ){
-                        if(MouseOverLineGizmos(mousePos, originPos, lineZEndPos, axisMouseOverDistance) && !MouseOverPointGizmos(mousePos, originPos, selectMouseOverDistance)){
-                            glColor3f(0.75,0.75,1);
-                            
-                            if(GetMouseButton(SDL_BUTTON_LEFT)){
-                                if(!movingX && !movingY)
-                                    movingZ = 1;
-                            }
-                        }else{
-                            glColor3f(0,0,1);
+                //Up (Z) gizmos
+                Vector3 lineZEndPos = PositionToGameScreenCoords(Add(position,(Vector3){0,0,positionGizmosLength* 2/Screen.gameScale}));
+
+                lineZEndPos.x = Screen.windowWidth/2 + (lineZEndPos.x/(float)Screen.gameWidth) * Screen.windowWidth;
+                lineZEndPos.y = Screen.windowHeight/2 + (lineZEndPos.y/(float)Screen.gameHeight) * Screen.windowHeight;
+                lineZEndPos.z = 0;
+
+                gizmosColor = (Vector3){0.75,0.75,1};
+                
+                if(!movingZ){
+                    if(MouseOverLineGizmos(mousePos, originPos, lineZEndPos, axisMouseOverDistance) && !MouseOverPointGizmos(mousePos, originPos, selectMouseOverDistance)){
+                        if(GetMouseButton(SDL_BUTTON_LEFT)){
+                            if(!movingX && !movingY)
+                                movingZ = 1;
                         }
                     }else{
-                        glColor3f(0.75,0.75,1);
+                        gizmosColor = (Vector3){0,0,1};
                     }
+                }
 
-                    glVertex2f(screenPos.x,screenPos.y);
-                    glVertex2f(lineZEndPos.x,lineZEndPos.y);
-                //glEnd();
-                //Up (Z) point and origin point
-                //glBegin(GL_POINTS);
+                //Left (Z) line
+                DrawLine(screenPos,lineZEndPos,4, gizmosColor.x, gizmosColor.y, gizmosColor.z);
+                //Up (Z) point
+                DrawPoint(lineZEndPos, 5, 0, gizmosColor.x, gizmosColor.y, gizmosColor.z);
 
-                    glVertex2f(lineZEndPos.x,lineZEndPos.y);
+                //Origin point
+                if(MouseOverPointGizmos(mousePos, originPos, selectMouseOverDistance)){
+                    gizmosColor = (Vector3){1,1,0};
 
-                    if(MouseOverPointGizmos(mousePos, originPos, selectMouseOverDistance)){
-                        glColor3f(1,1,0);
-
-                        if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
-                            RemoveFromSelected(entity);
-                        }
-                    }else{
-                        glColor3f(1,1,1);
+                    if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
+                        RemoveFromSelected(entity);
                     }
-                    glVertex2f(screenPos.x,screenPos.y);
-                //glEnd();
+                }else{
+                    gizmosColor = (Vector3){1,1,1};
+                }
+                DrawPoint(screenPos, 5, 0, gizmosColor.x, gizmosColor.y, gizmosColor.z);
 
                 //Arrow movement
                 if(movingX){
@@ -1266,35 +1245,35 @@ void DrawComponentsPanel(){
             //Scrollbar
             
             int mouseOverComponentPanel = MouseOverBox(mousePos, (Vector3){Screen.windowWidth-componentWindowLength,0,0}, (Vector3){Screen.windowWidth,ComponentsPanelHeight,0},0);
-            glLineWidth(clamp((componentWindowWidthSpacing/2 - 2) * 2/Screen.gameScale,1,Screen.windowWidth));
             int offscreenPixels = -clamp(componentHeight-componentStartHeight-componentWindowBottomSpacing,-(ComponentsPanelHeight-10),0);
-            //glBegin(GL_LINES);  
-                Vector3 scrollbarStart = {Screen.windowWidth - componentWindowWidthSpacing/2 ,ComponentsPanelHeight-componentStartHeight -2,0};
-                Vector3 scrollbarEnd = {Screen.windowWidth - componentWindowWidthSpacing/2 ,offscreenPixels - componentStartHeight +componentWindowBottomSpacing+ 1,0};
-                
-                if(mouseOverComponentPanel){
-                    if(!movingComponentsScrollbar){
-                        if(MouseOverLineGizmos(mousePos, scrollbarStart, scrollbarEnd, scrollbarMouseOverDistance)){
-                            glColor3f(0.5,0.5,0.5);
 
-                            if(GetMouseButton(SDL_BUTTON_LEFT)){
-                                movingComponentsScrollbar = 1;
-                            }
-                        }else{
-                            glColor3f(0.3,0.3,0.4);  
+            Vector3 scrollbarStart = {Screen.windowWidth - componentWindowWidthSpacing/2 ,ComponentsPanelHeight-componentStartHeight -2,0};
+            Vector3 scrollbarEnd = {Screen.windowWidth - componentWindowWidthSpacing/2 ,offscreenPixels - componentStartHeight +componentWindowBottomSpacing+ 1,0};
+            Vector3 scrollbarColor = {0.3,0.3,0.3};
+
+            if(mouseOverComponentPanel){
+                if(!movingComponentsScrollbar){
+                    if(MouseOverLineGizmos(mousePos, scrollbarStart, scrollbarEnd, scrollbarMouseOverDistance)){
+                        scrollbarColor = (Vector3){0.5,0.5,0.5};
+
+                        if(GetMouseButton(SDL_BUTTON_LEFT)){
+                            movingComponentsScrollbar = 1;
                         }
-                    }else if (movingComponentsScrollbar == 1){
-                        glColor3f(0.55,0.55,0.55);
                     }else{
-                        glColor3f(0.3,0.3,0.4); 
+                        scrollbarColor = (Vector3){0.3,0.3,0.4};
                     }
+                }else if (movingComponentsScrollbar == 1){
+                    scrollbarColor = (Vector3){0.55,0.55,0.55};
                 }else{
-                    glColor3f(0.3,0.3,0.3);
+                    scrollbarColor = (Vector3){0.3,0.3,0.4};
                 }
+            }
 
-                glVertex2f(scrollbarStart.x,scrollbarStart.y);
-                glVertex2f(scrollbarEnd.x,scrollbarEnd.y);
-            //glEnd();
+            //Scrollbar bar
+            float scrollbarWidth = clamp((componentWindowWidthSpacing/2 - 2),1,Screen.windowWidth);
+            DrawRectangle((Vector3){scrollbarEnd.x-scrollbarWidth, scrollbarEnd.y},
+                          (Vector3){scrollbarStart.x+scrollbarWidth, scrollbarStart.y},
+                          scrollbarColor.x, scrollbarColor.y, scrollbarColor.z);
 
             if(mouseOverComponentPanel){
                 if(Input.mouseWheelY!=0) movingComponentsScrollbar = 2;
@@ -1409,14 +1388,14 @@ void DrawComponentsPanel(){
         }
 
         //Line separating the add component buttom from the components
-        glLineWidth(2/Screen.gameScale);
-        glColor3f(bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
-        //glBegin(GL_LINES);  
-            glVertex2f(Screen.windowWidth - componentWindowLength,componentWindowBottomSpacing+2);
-            glVertex2f(Screen.windowWidth,componentWindowBottomSpacing+2);
-            glVertex2f(Screen.windowWidth - componentWindowLength,1);
-            glVertex2f(Screen.windowWidth,1);
-        //glEnd();
+        //Above button
+        DrawLine((Vector3){Screen.windowWidth - componentWindowLength,componentWindowBottomSpacing+2},
+                 (Vector3){Screen.windowWidth,componentWindowBottomSpacing+2},
+                 2,bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);  
+        //Below button  
+        DrawLine((Vector3){Screen.windowWidth - componentWindowLength,1},
+                 (Vector3){Screen.windowWidth,1},
+                 2,bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
 
         //Add component button
 
@@ -1511,12 +1490,11 @@ void DrawEntitiesPanel(){
 
     //Scrollbar
     int mouseOverEntityPanel = MouseOverBox(mousePos, (Vector3){-1,-1,0}, (Vector3){entityWindowLength,Screen.windowHeight-entityWindowTopHeightSpacing,0},0);
-    glLineWidth(clamp((entityWindowWidthSpacing/2 - 2) * 2/Screen.gameScale,1,Screen.windowWidth));
     int offscreenPixels = -clamp(entityHeight-entityStartHeight,-INFINITY,0);
-    //glBegin(GL_LINES);  
     
         Vector3 scrollbarStart = {entityWindowWidthSpacing/2 ,Screen.windowHeight-entityStartHeight - entityWindowTopHeightSpacing,0};
         Vector3 scrollbarEnd = {entityWindowWidthSpacing/2 ,offscreenPixels - entityStartHeight + 1,0};
+        Vector3 scrollbarColor = {0.3,0.3,0.3};
 
         //If the scrollbar is only 10 pixels high, make the bar lerp between the top and bottom height, instead of
         //showing exactly the pixel movement of the bar
@@ -1529,26 +1507,26 @@ void DrawEntitiesPanel(){
         if(mouseOverEntityPanel){
             if(!movingEntitiesScrollbar){
                 if(MouseOverLineGizmos(mousePos, scrollbarStart, scrollbarEnd, scrollbarMouseOverDistance)){
-                    glColor3f(0.5,0.5,0.5);
+                    scrollbarColor = (Vector3){0.5,0.5,0.5};
 
                     if(GetMouseButton(SDL_BUTTON_LEFT)){
                         movingEntitiesScrollbar = 1;
                     }
                 }else{
-                    glColor3f(0.3,0.3,0.4);  
+                    scrollbarColor = (Vector3){0.3,0.3,0.4};
                 }
             }else if (movingEntitiesScrollbar == 1){
-                glColor3f(0.55,0.55,0.55);
+                scrollbarColor = (Vector3){0.55,0.55,0.55};
             }else{
-                glColor3f(0.3,0.3,0.4); 
+                scrollbarColor = (Vector3){0.3,0.3,0.4};
             }
-        }else{
-            glColor3f(0.3,0.3,0.3);
         }
 
-        glVertex2f(scrollbarStart.x,scrollbarStart.y);
-        glVertex2f(scrollbarEnd.x,scrollbarEnd.y);
-    //glEnd();
+    //Scrollbar bar
+    float scrollbarWidth = clamp((componentWindowWidthSpacing/2 - 2),1,Screen.windowWidth);
+    DrawRectangle((Vector3){scrollbarEnd.x-scrollbarWidth, scrollbarEnd.y},
+                  (Vector3){scrollbarStart.x+scrollbarWidth, scrollbarStart.y},
+                   scrollbarColor.x, scrollbarColor.y, scrollbarColor.z);
 
     if(mouseOverEntityPanel){
         if(Input.mouseWheelY!=0) movingEntitiesScrollbar = 2;
@@ -1584,13 +1562,11 @@ void DrawEntitiesPanel(){
     }
 
     //New Entity button
-    glLineWidth(2 * 2/Screen.gameScale);
-    glColor3f(bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
-    //glBegin(GL_LINES);  
-        //Line separating new entity button from the entities and the scrollbar
-        glVertex2f(0,Screen.windowHeight-entityWindowTopHeightSpacing);
-        glVertex2f(entityWindowLength,Screen.windowHeight-entityWindowTopHeightSpacing);
-    //glEnd();
+
+    //Line separating new entity button from the entities and the scrollbar
+    DrawLine((Vector3){0,Screen.windowHeight-entityWindowTopHeightSpacing},
+             (Vector3){entityWindowLength,Screen.windowHeight-entityWindowTopHeightSpacing},
+              4,bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
 
     //Entity element
     Vector3 bMin = {0,Screen.windowHeight-entityWindowTopHeightSpacing+2,0};
@@ -1815,12 +1791,9 @@ void DrawFileBrowser(){
             cursorPos += filenameBgMin.x + 5;
 
             //Cursor line
-            glColor3f(0.7,0.7,0.7);
-            glLineWidth(2/Screen.gameScale);
-            //glBegin(GL_LINES);
-                glVertex2f( cursorPos, filenameBgMin.y+2);
-                glVertex2f( cursorPos, filenameBgMax.y-2);
-            //glEnd();
+            DrawLine((Vector3){cursorPos, filenameBgMin.y+2},
+                     (Vector3){cursorPos, filenameBgMin.y-2},
+                      2,0.7,0.7,0.7);
         }
         
         DrawTextColored("file name", lightWhite, filenameBgMin.x, filenameBgMax.y +1, gizmosFontSmall);
@@ -2209,36 +2182,24 @@ Vector3 WorldVectorToScreenVector(Vector3 v){
 int PointButton(Vector3 pos,int iconID, int scale, Vector3 defaultColor, Vector3 mouseOverColor, Vector3 pressedColor){
     int state = 0;
 
-    glPointSize(scale * iconsSize[iconID] * 2/Screen.gameScale);
-    glEnable(GL_TEXTURE_2D);
-    glAlphaFunc (GL_NOTEQUAL, 0.0f);
-    glEnable(GL_ALPHA_TEST);
-    glTexEnvf(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
-    glBindTexture(GL_TEXTURE_2D, iconsTex[iconID]);
-    glEnable(GL_POINT_SPRITE);
+    Vector3 color = defaultColor;
 
-    //glBegin(GL_POINTS);
-        if(MouseOverPointGizmos(mousePos, pos, scale * iconsSize[iconID])){
-            glColor3f(mouseOverColor.x,mouseOverColor.y,mouseOverColor.z);
+    if(MouseOverPointGizmos(mousePos, pos, scale * iconsSize[iconID])){
+        color = mouseOverColor;
 
-            //Pressed
-            if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
-                glColor3f(pressedColor.x,pressedColor.y,pressedColor.z);
-                state = 1;
-            }else{
-                //Mouse over only
-                glColor3f(mouseOverColor.x,mouseOverColor.y,mouseOverColor.z);
-                state = 2;
-            }
+        //Pressed
+        if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
+            color = pressedColor;
+            state = 1;
         }else{
-            glColor3f(defaultColor.x,defaultColor.y,defaultColor.z);
-            state = 0;
+            //Mouse over only
+            state = 2;
         }
+    }else{
+        state = 0;
+    }
 
-        glVertex2f( roundf(pos.x) + 0.375, roundf(pos.y) + 0.375);
-    //glEnd();
-    glDisable(GL_TEXTURE_2D);
-    glDisable(GL_BLEND);
+    DrawPoint((Vector3){roundf(pos.x) + 0.375, roundf(pos.y) + 0.375,0},iconsSize[iconID]*scale, iconsTex[iconID], color.x,color.y,color.z);
 
     return state;
 }
@@ -2247,26 +2208,22 @@ int PointButton(Vector3 pos,int iconID, int scale, Vector3 defaultColor, Vector3
 int PointToggle(int *data,Vector3 pos,int onIconID, int offIconID, int undefinedIconID, int scale, Vector3 onColor, Vector3 offColor, Vector3 undefinedColor, Vector3 mouseOverColor){
     int state = 0;
     int iconSize = max(max(iconsSize[onIconID],iconsSize[offIconID]),iconsSize[undefinedIconID]);
-    glPointSize(scale * iconSize * 2/Screen.gameScale);
-    glEnable(GL_TEXTURE_2D);
-    glAlphaFunc (GL_NOTEQUAL, 0.0f);
-    glEnable(GL_ALPHA_TEST);
-    glTexEnvf(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
-    if(*data == 1){
-        glColor3f(onColor.x,onColor.y,onColor.z);
-        glBindTexture(GL_TEXTURE_2D, iconsTex[onIconID]);
-    }else if(*data == -1){
-        glColor3f(offColor.x,offColor.y,offColor.z);
-        glBindTexture(GL_TEXTURE_2D, iconsTex[undefinedIconID]);
-    }else{
-        glColor3f(offColor.x,offColor.y,offColor.z);
-        glBindTexture(GL_TEXTURE_2D, iconsTex[offIconID]);
-    }
-    glEnable(GL_POINT_SPRITE);
+    GLuint usedIcon;
+    Vector3 color;
 
-    //glBegin(GL_POINTS);
+    if(*data == 1){
+        color = onColor;
+        usedIcon = iconsTex[onIconID];
+    }else if(*data == -1){
+        color = undefinedColor;
+        usedIcon = iconsTex[undefinedIconID];
+    }else{
+        color = offColor;
+        usedIcon = iconsTex[offIconID];
+    }
+
         if(MouseOverPointGizmos(mousePos, pos, scale * iconSize)){
-            glColor3f(mouseOverColor.x,mouseOverColor.y,mouseOverColor.z);
+            color = mouseOverColor;
 
             //Pressed
             if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
@@ -2281,29 +2238,13 @@ int PointToggle(int *data,Vector3 pos,int onIconID, int offIconID, int undefined
             state = 0;
         }
 
-        glVertex2f( roundf(pos.x) + 0.375, roundf(pos.y) + 0.375);
-    //glEnd();
-    glDisable(GL_TEXTURE_2D);
-    glDisable(GL_BLEND);
+    DrawPoint((Vector3){roundf(pos.x) + 0.375, roundf(pos.y) + 0.375,0},iconSize*scale, usedIcon, color.x,color.y,color.z);
 
     return state;
 }
 
 void DrawPointIcon(Vector3 pos,int iconID, int scale, Vector3 color){
-    glPointSize(scale * iconsSize[iconID] * 2/Screen.gameScale);
-    glEnable(GL_TEXTURE_2D);
-    glAlphaFunc (GL_NOTEQUAL, 0.0f);
-    glEnable(GL_ALPHA_TEST);
-    glTexEnvf(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
-    glBindTexture(GL_TEXTURE_2D, iconsTex[iconID]);
-    glEnable(GL_POINT_SPRITE);
-
-    //glBegin(GL_POINTS);
-        glColor3f(color.x,color.y,color.z);
-        glVertex2f( roundf(pos.x) + 0.375, roundf(pos.y) + 0.375);
-    //glEnd();
-    glDisable(GL_TEXTURE_2D);
-    glDisable(GL_BLEND);
+    DrawPoint(pos,iconsSize[iconID]*scale, iconsTex[iconID], color.x,color.y,color.z);
 }
 
 void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,int x, int w, int fieldsSpacing, int* curField, int* curHeight){
@@ -2336,12 +2277,9 @@ void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,in
         cursorPos+=min1.x;
 
         //Cursor line
-        glColor3f(0.7,0.7,0.7);
-        glLineWidth(2/Screen.gameScale);
-        //glBegin(GL_LINES);
-            glVertex2f( cursorPos, min1.y);
-            glVertex2f( cursorPos, max1.y);
-        //glEnd();
+        DrawLine((Vector3){cursorPos, min1.y},
+                 (Vector3){cursorPos, max1.y},
+                 2,0.7,0.7,0.7);
 
         //Render the string
         DrawTextColored(textFieldString, lightWhite, min1.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
@@ -2442,12 +2380,9 @@ void FloatField(char *title, float *data,int ommit,int x, int w, int* curField, 
         cursorPos+=min.x;
 
         //Cursor line
-        glColor3f(0.7,0.7,0.7);
-        glLineWidth(2/Screen.gameScale);
-        //glBegin(GL_LINES);
-            glVertex2f( cursorPos, min.y);
-            glVertex2f( cursorPos, max.y);
-        //glEnd();
+        DrawLine((Vector3){cursorPos, min.y},
+                 (Vector3){cursorPos, max.y},
+                 2,0.7,0.7,0.7);
 
         //Render the string
         DrawTextColored(textFieldString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
@@ -2509,12 +2444,9 @@ void IntField(char *title, int *data,int ommit,int x, int w, int* curField, int*
         cursorPos+=min.x;
 
         //Cursor line
-        glColor3f(0.7,0.7,0.7);
-        glLineWidth(2/Screen.gameScale);
-        //glBegin(GL_LINES);
-            glVertex2f( cursorPos, min.y);
-            glVertex2f( cursorPos, max.y);
-        //glEnd();
+        DrawLine((Vector3){cursorPos, min.y},
+                 (Vector3){cursorPos, max.y},
+                 2,0.7,0.7,0.7);
 
         //Render the string
         DrawTextColored(textFieldString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
@@ -2552,88 +2484,6 @@ void IntField(char *title, int *data,int ommit,int x, int w, int* curField, int*
 
     *curHeight -= 2 + TTF_FontHeight(gizmosFont);
 }
-
-//WIP
-void IntListField(char *title, List *list,int x, int w, int* curField, int* curHeight){
-    *curHeight -= 4;
-    int titleLen = strlen(title);
-    titleLen += 8;
-    char *fieldTitle = calloc(titleLen,sizeof(char));
-    snprintf(fieldTitle,titleLen,"%s [%d]",title,GetLength(*list));
-
-    DrawTextColored(fieldTitle, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
-    free(fieldTitle);
-
-    *curHeight -= 2 + TTF_FontHeight(gizmosFontSmall);
-    
-    Vector3 min = { x,*curHeight-TTF_FontHeight(gizmosFont)-2,0};
-    Vector3 max = { x+w,*curHeight,0};
-
-    ListCellPointer cell;
-    ListForEach(cell,*list){
-        if(editingField == *curField)
-        {
-            //Field background
-            DrawRectangle(min,max,0.3, 0.3, 0.3);
-
-            //Get the cursor position by creating a string containing the characters until the cursor
-            //and getting his size when rendered with the used font
-            /*char buff[13];
-            strncpy(buff,textFieldString,Input.textInputCursorPos);
-            memset(buff+Input.textInputCursorPos,'\0',1);
-            int cursorPos,h;
-            TTF_SizeText(gizmosFont,buff,&cursorPos,&h);
-            cursorPos+=min.x;
-
-            //Cursor line
-            glColor3f(0.7,0.7,0.7);
-            glLineWidth(2/Screen.gameScale);
-            //glBegin(GL_LINES);
-                glVertex2f( cursorPos, min.y);
-                glVertex2f( cursorPos, max.y);
-            //glEnd();
-
-            //Render the string
-            DrawTextColored(textFieldString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
-
-            //Pass the string as float data
-            *data = (int) strtol(textFieldString, NULL,0);*/
-
-        }else{
-            //Not editing, just draw the box and float normally
-            //static char valueString[12] = "  0.0";
-
-            //Field background
-            DrawRectangle(min,max,0.2, 0.2, 0.2);
-            /*
-            //Data text
-            if(!ommit) snprintf(valueString,12,"%d",*data);
-            else snprintf(valueString,4,"---");
-            DrawTextColored(valueString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
-
-            //Fields selection
-            if(editingField<0 && GetMouseButtonDown(SDL_BUTTON_LEFT)){
-                if(MouseOverBox(mousePos,min,max,0)){
-                    textFieldString = (char*)calloc(13,sizeof(char));
-
-                    if(!ommit) snprintf(textFieldString, 12, "%d", *data);
-                    else textFieldString[0] = '\0';
-                    
-                    GetTextInput(textFieldString, 12, strlen(textFieldString));
-                    editingField = *curField;
-                }
-            }*/
-        }
-
-        //Mark as used ID field
-        *curField +=1;
-
-        min.y -= 5 + TTF_FontHeight(gizmosFont);
-        max.y -= 5 + TTF_FontHeight(gizmosFont);
-        *curHeight -= 5 + TTF_FontHeight(gizmosFont);
-    }
-}
-
 
 void LoadUITexture(char *path,int index){
     SDL_Surface *img = IMG_Load(path);

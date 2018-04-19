@@ -72,7 +72,7 @@ typedef struct engineRendering{
     GLuint frameBuffer;
     GLuint screenTexture;
     GLuint depthRenderBuffer;
-    GLuint vao , vbo[3];
+    GLuint vao , vbo3D[3], vbo2D[3];
 
     GLuint Shaders[4];
 
@@ -223,7 +223,7 @@ int GameExited();
 Vector3 PositionToGameScreenCoords(Vector3 position);
 void ClearRender(SDL_Color col);
 void RenderToScreen();
-void RenderTextLegacy(char *text, SDL_Color color, int x, int y, TTF_Font* font);
+void RenderTextDebug(char *text, SDL_Color color, int x, int y, TTF_Font* font);
 int CompileAndLinkShader();
 void ReloadShaders();
 void LoadVoxelPalette(char path[]);

@@ -818,7 +818,7 @@ int InitEngine(){
 
 	//Setting OpenGL version
 	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 3 );
-    SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 1 );
+    SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 2 );
 
 	//Creating OpenGL context
 	Core.glContext = SDL_GL_CreateContext(Core.window);
@@ -890,17 +890,27 @@ int InitEngine(){
     glGenVertexArrays(1, &Rendering.vao);
     glBindVertexArray(Rendering.vao);
 
-    // Color and vertex VBO generation and binding
-    glGenBuffers(3, Rendering.vbo);
+    // VBO generation and binding
+	// VBOs for 3D rendering
+    glGenBuffers(3, Rendering.vbo3D);
 
-    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[0]); //Vertex
+    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[0]); //Vertex
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[1]); //Color
+    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[1]); //Color
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[2]); //Normal
+	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[2]); //Normal
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	//VBOS for 2D rendering
+	glGenBuffers(2, Rendering.vbo2D);
+
+    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[0]); //Vertex
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[1]); //UV
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
 	
     //Compile shaders
     if(!CompileAndLinkShader("Shaders/ScreenVert.vs","Shaders/ScreenFrag.fs",0)) printf(">Failed to compile/link Screen shader! Description above\n\n");
@@ -1077,7 +1087,22 @@ void ClearRender(SDL_Color col){
 
 void RenderToScreen(){
 
-    glEnable(GL_TEXTURE_2D);
+    //Define the projection matrix
+	GLfloat ProjectionMatrix[4][4] = {{0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}};
+    float right = Screen.windowWidth;
+    float left = 0;
+    float top = Screen.windowHeight;
+    float bottom = 0;
+    float near = -0.1;
+    float far = 0.1;
+    
+    ProjectionMatrix[0][0] = 2.0f/(right-left);
+    ProjectionMatrix[1][1] = 2.0f/(top-bottom);
+    ProjectionMatrix[2][2] = -2.0f/(far-near);
+    ProjectionMatrix[3][3] = 1;
+    ProjectionMatrix[3][0] = -(right + left)/(right - left);
+    ProjectionMatrix[3][1] = -(top + bottom)/(top - bottom);
+    ProjectionMatrix[3][2] = -(far + near)/(far - near);
 
     glViewport(0,0,Screen.windowWidth,Screen.windowHeight);
     
@@ -1085,36 +1110,44 @@ void RenderToScreen(){
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glUseProgram(Rendering.Shaders[0]);
-    GLdouble loc = glGetUniformLocation(Rendering.Shaders[0], "pWidth");
-    if (loc != -1) glUniform1f(loc, 1.0/(float)Screen.gameWidth);
-    loc = glGetUniformLocation(Rendering.Shaders[0], "pHeight");
-    if (loc != -1) glUniform1f(loc, 1.0/(float)Screen.gameHeight);
-
-    loc = glGetUniformLocation(Rendering.Shaders[0], "vignettePower");
-    if (loc != -1) glUniform1f(loc, 0.25);
-    loc = glGetUniformLocation(Rendering.Shaders[0], "redShiftPower");
-    if (loc != -1) glUniform1f(loc, 2);    
-    loc = glGetUniformLocation(Rendering.Shaders[0], "redShiftSpread");
-    if (loc != -1) glUniform1f(loc, 0);
-    
-    glActiveTexture(GL_TEXTURE0);
+	glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, Rendering.screenTexture);
+
+    glUseProgram(Rendering.Shaders[0]);
+	glUniform1i(glGetUniformLocation(Rendering.Shaders[0], "fbo_texture"), 0);
+	glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[0], "projection"), 1, GL_FALSE, &ProjectionMatrix[0]);
+
+    glUniform1f(glGetUniformLocation(Rendering.Shaders[0], "pWidth"), 1.0/(float)Screen.gameWidth);
+    glUniform1f(glGetUniformLocation(Rendering.Shaders[0], "pHeight"), 1.0/(float)Screen.gameHeight);
+
+    glUniform1f(glGetUniformLocation(Rendering.Shaders[0], "vignettePower"), 0.25);
+    glUniform1f(glGetUniformLocation(Rendering.Shaders[0], "redShiftPower"), 2);    
+    glUniform1f(glGetUniformLocation(Rendering.Shaders[0], "redShiftSpread"), 0);
     
-    glBegin(GL_QUADS);
-    {
-        glTexCoord2f(0,1); glVertex2f(-Screen.windowWidth/2,  Screen.windowHeight/2);
-        glTexCoord2f(1,1); glVertex2f( Screen.windowWidth/2,  Screen.windowHeight/2);
-        glTexCoord2f(1,0); glVertex2f( Screen.windowWidth/2, -Screen.windowHeight/2);
-        glTexCoord2f(0,0); glVertex2f(-Screen.windowWidth/2, -Screen.windowHeight/2);
-    }
-    glEnd();
+	GLfloat quadVertex[8] = {0, Screen.windowHeight, 0, 0, Screen.windowWidth, Screen.windowHeight, Screen.windowWidth, 0};
+    GLfloat quadUV[8] = {0,1, 0,0, 1,1, 1,0};
+
+	//Passing rectangle to the vertex VBO
+	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[0]);
+	glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat), quadVertex, GL_STREAM_DRAW);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(0);
+
+	//Passing rectangle uvs the uv VBO
+	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[1]);
+	glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat), quadUV, GL_STREAM_DRAW);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(1);
+
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     glDisable( GL_TEXTURE_2D );
     glUseProgram(0);
 }
 
-void RenderTextLegacy(char *text, SDL_Color color, int x, int y, TTF_Font* font) 
+
+//Debug text renderer, use UIRenderer for the game
+void RenderTextDebug(char *text, SDL_Color color, int x, int y, TTF_Font* font) 
 {	
 	if(!font) return;
 	if(!text) return;
@@ -1126,49 +1159,66 @@ void RenderTextLegacy(char *text, SDL_Color color, int x, int y, TTF_Font* font)
 	SDL_FreeSurface(originalFont);
     if(!sFont){printf("Failed to render text!\n"); return;}
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
+    //Define the projection matrix
+	GLfloat ProjectionMatrix[4][4] = {{0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}};
+    float right = Screen.windowWidth;
+    float left = 0;
+    float top = Screen.windowHeight;
+    float bottom = 0;
+    float near = -0.1;
+    float far = 0.1;
+    
+    ProjectionMatrix[0][0] = 2.0f/(right-left);
+    ProjectionMatrix[1][1] = 2.0f/(top-bottom);
+    ProjectionMatrix[2][2] = -2.0f/(far-near);
+    ProjectionMatrix[3][3] = 1;
+    ProjectionMatrix[3][0] = -(right + left)/(right - left);
+    ProjectionMatrix[3][1] = -(top + bottom)/(top - bottom);
+    ProjectionMatrix[3][2] = -(far + near)/(far - near);
 
-    glOrtho(0, Screen.windowWidth,0,Screen.windowHeight,-1,1); 
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     glDisable(GL_DEPTH_TEST);
-    glEnable(GL_TEXTURE_2D);
     glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
+    
     GLuint texture;
     glGenTextures(1, &texture);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
-
-    glColor3f(1.0f, 1.0f, 1.0f);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, sFont->w, sFont->h, 0, GL_BGRA, 
                     GL_UNSIGNED_BYTE, sFont->pixels);
 
-    
-    glBegin(GL_QUADS);
-    {
-        glTexCoord2f(0,1); glVertex2f(x, y);
-        glTexCoord2f(1,1); glVertex2f(x + sFont->w + 0.375, y);
-        glTexCoord2f(1,0); glVertex2f(x + sFont->w + 0.375, y + sFont->h + 0.375);
-        glTexCoord2f(0,0); glVertex2f(x, y + sFont->h + 0.375);
-    }
-    glEnd();
+	GLfloat quadVertex[8] = {x, y + sFont->h + 0.375, x, y, x + sFont->w + 0.375, y + sFont->h + 0.375, x + sFont->w + 0.375, y};
+    GLfloat quadUV[8] = {0,0, 0,1, 1,0, 1,1};
+
+	//Passing rectangle to the vertex VBO
+	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[0]);
+	glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat), quadVertex, GL_STREAM_DRAW);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(0);
+
+	//Passing rectangle uvs the uv VBO
+	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[1]);
+	glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat), quadUV, GL_STREAM_DRAW);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(1);
+
+	glUseProgram(Rendering.Shaders[3]);
+
+	//Passing uniforms to shader
+	glUniform1i(glGetUniformLocation(Rendering.Shaders[3], "texture"), 0);
+	glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[3], "projection"), 1, GL_FALSE, &ProjectionMatrix[0]);
+	glUniform3f(glGetUniformLocation(Rendering.Shaders[3], "color"), 1.0f, 1.0f, 1.0f);
+	
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glUseProgram(0);
+
     glDisable(GL_BLEND);
-    glDisable(GL_TEXTURE_2D);
     glEnable(GL_DEPTH_TEST);
 
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
     
     glDeleteTextures(1, &texture);
     SDL_FreeSurface(sFont);

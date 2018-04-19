@@ -8,6 +8,8 @@ void UIRendererFree();
 
 void DrawTextColored(char *text, SDL_Color color, int x, int y, TTF_Font* font);
 void DrawRectangle(Vector3 min, Vector3 max, float r, float g, float b);
-void MorphRectangle(Vector3 vertices[4], Vector3 min, Vector3 max);
+void DrawRectangleTextured(Vector3 min, Vector3 max, GLuint texture, float r, float g, float b);
+void DrawPoint(Vector3 pos, float size, GLuint texture, float r, float g, float b);
+void DrawLine(Vector3 min, Vector3 max, float thickness, float r, float g, float b);
 
 #endif

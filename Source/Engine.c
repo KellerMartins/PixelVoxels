@@ -769,13 +769,6 @@ int InitEngine(){
 	//Core initializations
 
 	srand( (unsigned)time(NULL) );
-	
-	/*Core.soloud = Soloud_create();
-	if(Soloud_initEx(Core.soloud,SOLOUD_CLIP_ROUNDOFF | SOLOUD_ENABLE_VISUALIZATION, SOLOUD_AUTO, SOLOUD_AUTO, SOLOUD_AUTO, SOLOUD_AUTO)<0){
-		printf("SoLoud could not initialize! \n");
-		EndEngine(1);
-        return 0;
-	}*/
 
 	if(IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG){
 		printf("SDL Image could not initialize! \n");
@@ -928,8 +921,8 @@ int InitEngine(){
 	//Load voxel palette
 	LoadVoxelPalette("Assets/Game/Textures/magicaPalette.png");
 
-	/*Core.lua = luaL_newstate();
-	luaL_openlibs(Core.lua);*/
+	Core.lua = luaL_newstate();
+	luaL_openlibs(Core.lua);
 
 	//Call initialization function of all systems
 	ListCellPointer current = GetFirstCell(ECS.SystemList);
@@ -1024,12 +1017,7 @@ void EndEngine(int errorOcurred){
 
 	FreeInput();
 
-	//Finish core systems
-	/*if(Core.soloud){
-		Soloud_deinit(Core.soloud);
-		Soloud_destroy(Core.soloud);
-	}*/
-			
+	//Finish core systems		
 	if(Core.renderer)
 		SDL_DestroyRenderer(Core.renderer);
 
@@ -1044,8 +1032,8 @@ void EndEngine(int errorOcurred){
 	if(SDL_WasInit(SDL_INIT_EVERYTHING)!=0)
     	SDL_Quit();
 
-	/*if(Core.lua)
-		lua_close(Core.lua);*/
+	if(Core.lua)
+		lua_close(Core.lua);
 
     if(errorOcurred){
 		printf("Engine finished with errors!\n");

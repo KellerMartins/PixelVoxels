@@ -11,6 +11,7 @@
 #include "Systems/VoxelModification.h"
 #include "Systems/VoxelPhysics.h"
 #include "Systems/Editor.h"
+#include "Systems/UIRenderer.h"
 
 extern engineTime Time;
 extern engineCore Core;
@@ -38,7 +39,7 @@ int main(int argc, char *argv[]){
 	if(RegisterNewSystem("VoxelRenderer",0,CreateComponentMaskByID(2,transformComponent, voxelModelComponent),(ComponentMask){0},&VoxelRendererInit,&VoxelRendererUpdate,&VoxelRendererFree) < 0) printf("Failed to register VoxelRender system!\n");
 	if(RegisterNewSystem("VoxelModification",3,CreateComponentMaskByID(2,voxelModelComponent, transformComponent),(ComponentMask){0},&VoxelModificationInit,&VoxelModificationUpdate,&VoxelModificationFree) < 0) printf("Failed to register VoxelModification system!\n");
 	if(RegisterNewSystem("Editor",-1,CreateComponentMaskByID(0),(ComponentMask){0},&EditorInit,&EditorUpdate,&EditorFree) < 0) printf("Failed to register Editor system!\n");
-
+	if(RegisterNewSystem("UIRenderer",-2,CreateComponentMaskByID(0),(ComponentMask){0},&UIRendererInit,&UIRendererUpdate,&UIRendererFree) < 0) printf("Failed to register UIRenderer system!\n");
 	if(!InitEngine()) return 1;
 
 	Rendering.clearScreenColor = (SDL_Color){0,38,75,0};
@@ -101,9 +102,9 @@ int main(int argc, char *argv[]){
 		sprintf(dtInfo,"DT : %5.4lf", Time.deltaTime);
 		SDL_Color fontColor = {255,255,255,255};
 
-		RenderText(fpsInfo, fontColor, 110, TTF_FontHeight(font)*2 + 10, font);
-		RenderText(msInfo, fontColor, 110, TTF_FontHeight(font) + 10, font);
-		RenderText(dtInfo, fontColor, 110, 10, font);
+		RenderTextDebug(fpsInfo, fontColor, 110, TTF_FontHeight(font)*2 + 10, font);
+		RenderTextDebug(msInfo, fontColor, 110, TTF_FontHeight(font) + 10, font);
+		RenderTextDebug(dtInfo, fontColor, 110, 10, font);
 		
 		EngineUpdateEnd();
 		ProcessFPS();

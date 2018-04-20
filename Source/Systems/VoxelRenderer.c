@@ -1,4 +1,4 @@
-#include "voxelRenderer.h"
+#include "VoxelRenderer.h"
 
 static System *ThisSystem;
 
@@ -46,6 +46,14 @@ void VoxelRendererFree(){
 
 void VoxelRendererUpdate(){
 
+    //Configure OpenGL parameters to render point sprites
+
+    glBindFramebuffer(GL_FRAMEBUFFER, Rendering.frameBuffer);
+    glViewport(0,0,Screen.gameWidth,Screen.gameHeight);
+
+    glEnable(GL_DEPTH_TEST);
+    glAlphaFunc (GL_NOTEQUAL, 0.0f);
+
     EntityID entity;
 	for(entity = 0; entity <= ECS.maxUsedIndex; entity++){
 
@@ -63,24 +71,12 @@ void VoxelRendererUpdate(){
         Vector3 position;
         Vector3 rotation;
         GetGlobalTransform(entity, &position, &rotation);
-        //Configure OpenGL parameters to render point sprites
-
-        //Render game objects only in the [0.01,1.0] range, as [0,0.01] is reserved for UI rendering
-        glDepthRange(0.01, 1.0);
-
-        glBindFramebuffer(GL_FRAMEBUFFER, Rendering.frameBuffer);
-        glViewport(0,0,Screen.gameWidth,Screen.gameHeight);
-
-        glEnable(GL_DEPTH_TEST);
-        glAlphaFunc (GL_NOTEQUAL, 0.0f);
 
         if(obj->smallScale){    
             glPointSize(2);
         }else{
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, CubeTex[0]);
-
-            glEnable(GL_TEXTURE_2D);
 
             glPointSize(cubeTexDimension);
             glEnable(GL_POINT_SPRITE);
@@ -111,16 +107,19 @@ void VoxelRendererUpdate(){
                                      {-siny      , cosy*sinx                  , cosx*cosy                 }};
 
 
-        glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[0]);
+        glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[0]);
         glBufferData(GL_ARRAY_BUFFER, obj->numberOfVertices * 3 * sizeof(GLfloat), obj->vertices, GL_STREAM_DRAW);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(0);
 
-        glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[1]);
+        glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[1]);
         glBufferData(GL_ARRAY_BUFFER, obj->numberOfVertices * 3 * sizeof(GLfloat), obj->vColors, GL_STREAM_DRAW);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(1);
 
-        glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[2]);
+        glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[2]);
         glBufferData(GL_ARRAY_BUFFER, obj->numberOfVertices * 3 * sizeof(GLfloat), obj->normal, GL_STREAM_DRAW);
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(2);
 
         int usedProgram = 0;
@@ -139,8 +138,8 @@ void VoxelRendererUpdate(){
         glUniformBlockBinding(Rendering.Shaders[usedProgram], blockIndex, 0);
         glBindBufferBase(GL_UNIFORM_BUFFER, glGetUniformBlockIndex(Rendering.Shaders[usedProgram], "PointLight"), GetPointLightsBuffer());
 
-        glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[usedProgram], "projection"), 1, GL_FALSE, &ProjectionMatrix[0]);
-        glUniformMatrix3fv(glGetUniformLocation(Rendering.Shaders[usedProgram], "rotation"), 1, GL_FALSE, &RotationMatrix[0]);
+        glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[usedProgram], "projection"), 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix[0]);
+        glUniformMatrix3fv(glGetUniformLocation(Rendering.Shaders[usedProgram], "rotation"), 1, GL_FALSE, (const GLfloat*)&RotationMatrix[0]);
         glUniform3f(glGetUniformLocation(Rendering.Shaders[usedProgram], "objPos"), position.x, position.y, position.z);
         glUniform3f(glGetUniformLocation(Rendering.Shaders[usedProgram], "centerPos"), obj->center.x, obj->center.y, obj->center.z);
         glUniform3f(glGetUniformLocation(Rendering.Shaders[usedProgram], "camPos"), Rendering.cameraPosition.x, Rendering.cameraPosition.y, Rendering.cameraPosition.z);
@@ -150,14 +149,16 @@ void VoxelRendererUpdate(){
 
         glUseProgram(0);
 
-        glDisable(GL_DEPTH_TEST);
+        
 
         if(!obj->smallScale){
             glDisable(GL_POINT_SPRITE);
-            glDisable(GL_TEXTURE_2D);
         }
-
-        //Return depth to default valuess
-        glDepthRange(0, 1.0);
     }
+
+    glDisable(GL_DEPTH_TEST);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glDisableVertexAttribArray(0);
+    glDisableVertexAttribArray(1);
+    glDisableVertexAttribArray(2);
 }

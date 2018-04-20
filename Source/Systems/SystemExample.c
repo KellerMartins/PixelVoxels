@@ -5,7 +5,7 @@ static System *ThisSystem;
 extern engineECS ECS;
 
 //Runs on engine start
-void SystemExampleInit(System *systemObject){
+void SystemExampleInit(){
     ThisSystem = (System*)GetElementAt(ECS.SystemList,GetSystemID("SystemExample"));
 }
 

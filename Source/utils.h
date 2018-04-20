@@ -102,6 +102,7 @@ void InsertListEnd(List *list, void* e);
 void InsertListStart(List *list, void* e);
 void InsertListIndex(List *list, void* e, int index);
 
+void RemoveListCell(List *list,ListCellPointer cell);
 void RemoveListEnd(List *list);
 void RemoveListStart(List *list);
 void RemoveListIndex(List *list,int index);

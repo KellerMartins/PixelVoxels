@@ -1,0 +1,12 @@
+{
+	"Transform":	{
+		"position":	[-5.7850866317749023, -8.19351863861084, -14.140583992004395],
+		"rotation":	[0, 0, -45]
+	},
+	"VoxelModel":	{
+		"modelPath":	"Assets/Game/Models/",
+		"modelName":	"minichar.vox",
+		"smallScale":	true,
+		"center":	[5, 2, 10]
+	}
+}

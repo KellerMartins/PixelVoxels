@@ -2,34 +2,62 @@ PD = C:
 #CC specifies which compiler we're using
 CC = gcc
 
-#OBJS specifies which files to compile as part of the project
-OBJS = $(wildcard Source/*.c) $(wildcard Source/Components/*.c) $(wildcard Source/Systems/*.c) $(wildcard Source/Libs/*.c) 
+#SRC specifies which files to compile as part of the project
+SRC = $(wildcard Source/*.c) $(wildcard Source/Components/*.c) $(wildcard Source/Systems/*.c) $(wildcard Source/Libs/*.c) 
+OBJS = $(SRC:%.c=Build/%.o)
 
-#INCLUDE_PATHS specifies the additional include paths we'll need
-INCLUDE_PATHS = -I $(PD)\SDL2\SDL2_MinGW_32Bits\include -I $(PD)\SoLoud\include -I $(PD)\glew\include -I $(PD)\lua\include
-
-#LIBRARY_PATHS specifies the additional library paths we'll need
-LIBRARY_PATHS = -L $(PD)\SDL2\SDL2_MinGW_32Bits\lib -L $(PD)\SoLoud\lib -L $(PD)\glew\lib -L $(PD)\lua\lib
+#FOLDERS specifies the folders structure needed to put the .o files
+FOLDERS = Build Build/Source Build/Source/Components Build/Source/Systems Build/Source/Libs
 
 #COMPILER_FLAGS specifies the additional compilation options we're using
-# -w suppresses all warnings
-# -Wl,-subsystem,windows gets rid of the console window
-# -Wl,-subsystem,windows
-# -fopenmp enables openmp support
 COMPILER_FLAGS = -Wall -Wno-unused-result -Wno-missing-braces -ffast-math -O3
 
-#LINKER_FLAGS specifies the libraries we're linking against -mwindows
-LINKER_FLAGS_W = -lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lglew32.dll -llua53 -lopengl32 $(PD)\SoLoud\lib\soloud_x86.lib Source/resource.res
-LINKER_FLAGS_L = -lSDL2 -lSDL2_image -lSDL2_ttf -lGLEW -lGL -lm 
+#LINKER_FLAGS specifies the libraries we're linking against
+#Both LINKER_FLAGS and MKDIR are defined based on the OS
+ifeq ($(OS),Windows_NT)
+#Include and Library paths needed on Windows
+INCLUDE_PATHS = -I $(PD)\SDL2\SDL2_MinGW_32Bits\include -I $(PD)\SoLoud\include -I $(PD)\glew\include -I $(PD)\lua\include
+LIBRARY_PATHS = -L $(PD)\SDL2\SDL2_MinGW_32Bits\lib -L $(PD)\SoLoud\lib -L $(PD)\glew\lib -L $(PD)\lua\lib
+LINKER_FLAGS = -lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lglew32.dll -llua53 -lopengl32 $(PD)\SoLoud\lib\soloud_x86.lib Source/resource.res
+MKDIR = @mkdir
 
-#OBJ_NAME specifies the name of our exectuable
+else
+LINKER_FLAGS = -lSDL2 -lSDL2_image -lSDL2_ttf -lGLEW -lGL -lm 
+MKDIR = @mkdir -p
+
+endif
+
+#Name of the executable
 OBJ_NAME = Space
 
-#This is the target that compiles our executable
+#Compilation Targets
+all : $(OBJ_NAME) 
+
+
+$(OBJ_NAME): $(FOLDERS)/ $(OBJS) 
+	@echo "+ Compiling program \"$@\""
 ifeq ($(OS),Windows_NT)
-all : $(OBJS)
-	$(CC) $(OBJS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(COMPILER_FLAGS) $(LINKER_FLAGS_W) -o $(OBJ_NAME)
+	@$(CC) $(OBJS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(COMPILER_FLAGS) $(LINKER_FLAGS) -o $(OBJ_NAME)
 else
-all : $(OBJS)
-	$(CC) $(OBJS) $(COMPILER_FLAGS) $(LINKER_FLAGS_L) -o $(OBJ_NAME)
+	@$(CC) $(OBJS) $(COMPILER_FLAGS) $(LINKER_FLAGS) -o $(OBJ_NAME)
 endif
+
+Build/%.o: %.c %.h
+	@echo "- Compiling object \"$@\""
+ifeq ($(OS),Windows_NT)
+	@$(CC) -c $(INCLUDE_PATHS) $(COMPILER_FLAGS) $< -o $@
+else
+	@$(CC) -c $(COMPILER_FLAGS) $< -o $@
+endif
+
+Build/%.o: %.c
+	@echo "- Compiling object \"$@\""
+ifeq ($(OS),Windows_NT)
+	@$(CC) -c $(INCLUDE_PATHS) $(COMPILER_FLAGS) $< -o $@
+else
+	@$(CC) -c $(COMPILER_FLAGS) $< -o $@
+endif
+
+$(FOLDERS)/:
+	@echo "+ Creating build folders \"$@\""
+	$(MKDIR) $@

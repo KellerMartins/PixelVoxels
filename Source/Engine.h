@@ -7,11 +7,7 @@
 #include <time.h>
 #include <string.h>
 
-#include <lua.h>
-#include <lualib.h>
-#include <lauxlib.h>
-
-#include <soloud_c.h>
+//#include <soloud_c.h>
 #include "Libs/cJSON.h"
 
 #include <SDL2/SDL.h>
@@ -27,8 +23,8 @@ typedef struct engineCore{
     SDL_Renderer * renderer;
     SDL_Window* window;	
     SDL_GLContext glContext;
-    Soloud *soloud;
-    lua_State *lua;
+    //Soloud *soloud;
+    //lua_State *lua;
 }engineCore;
 
 typedef struct engineInput{
@@ -76,9 +72,9 @@ typedef struct engineRendering{
     GLuint frameBuffer;
     GLuint screenTexture;
     GLuint depthRenderBuffer;
-    GLuint vao , vbo[3];
+    GLuint vao , vbo3D[3], vbo2D[3];
 
-    GLuint Shaders[3];
+    GLuint Shaders[4];
 
     Pixel voxelColors[256];
     SDL_Color clearScreenColor;
@@ -227,7 +223,7 @@ int GameExited();
 Vector3 PositionToGameScreenCoords(Vector3 position);
 void ClearRender(SDL_Color col);
 void RenderToScreen();
-void RenderText(char *text, SDL_Color color, int x, int y, TTF_Font* font);
+void RenderTextDebug(char *text, SDL_Color color, int x, int y, TTF_Font* font);
 int CompileAndLinkShader();
 void ReloadShaders();
 void LoadVoxelPalette(char path[]);

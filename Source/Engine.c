@@ -770,12 +770,12 @@ int InitEngine(){
 
 	srand( (unsigned)time(NULL) );
 	
-	Core.soloud = Soloud_create();
+	/*Core.soloud = Soloud_create();
 	if(Soloud_initEx(Core.soloud,SOLOUD_CLIP_ROUNDOFF | SOLOUD_ENABLE_VISUALIZATION, SOLOUD_AUTO, SOLOUD_AUTO, SOLOUD_AUTO, SOLOUD_AUTO)<0){
 		printf("SoLoud could not initialize! \n");
 		EndEngine(1);
         return 0;
-	}
+	}*/
 
 	if(IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG){
 		printf("SDL Image could not initialize! \n");
@@ -818,7 +818,7 @@ int InitEngine(){
 
 	//Setting OpenGL version
 	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 3 );
-    SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 1 );
+    SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 2 );
 
 	//Creating OpenGL context
 	Core.glContext = SDL_GL_CreateContext(Core.window);
@@ -846,12 +846,9 @@ int InitEngine(){
 	}
 
 	//Initialize OpenGL features
-	glShadeModel(GL_SMOOTH);
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClearDepth(1.0f);
-    glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LEQUAL);
-    glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
 	Rendering.cameraPosition = (Vector3){0,0,0};
 	Rendering.clearScreenColor = (SDL_Color){0,0,0,0};
@@ -893,33 +890,46 @@ int InitEngine(){
     glGenVertexArrays(1, &Rendering.vao);
     glBindVertexArray(Rendering.vao);
 
-    // Color and vertex VBO generation and binding
-    glGenBuffers(3, Rendering.vbo);
+    // VBO generation and binding
+	// VBOs for 3D rendering
+    glGenBuffers(3, Rendering.vbo3D);
 
-    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[0]);
+    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[0]); //Vertex
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[1]);
+    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[1]); //Color
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
-	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo[2]);
+	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[2]); //Normal
     glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	//VBOS for 2D rendering
+	glGenBuffers(2, Rendering.vbo2D);
+
+    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[0]); //Vertex
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[1]); //UV
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
 	
     //Compile shaders
-    if(!CompileAndLinkShader("Shaders/ScreenVert.vs","Shaders/ScreenFrag.fs",0)) printf(">Failed to compile/link shader! Description above\n\n");
-    else printf(">Compiled/linked shader sucessfully!\n");
+    if(!CompileAndLinkShader("Shaders/ScreenVert.vs","Shaders/ScreenFrag.fs",0)) printf(">Failed to compile/link Screen shader! Description above\n\n");
+    else printf(">Compiled/linked Screen shader sucessfully!\n");
 
-     if(!CompileAndLinkShader("Shaders/VoxelVert.vs","Shaders/VoxelFrag.fs",1)) printf(">Failed to compile/link shader! Description above\n\n");
-    else printf(">Compiled/linked shader sucessfully!\n");
+    if(!CompileAndLinkShader("Shaders/VoxelVert.vs","Shaders/VoxelFrag.fs",1)) printf(">Failed to compile/link VoxelVert shader! Description above\n\n");
+    else printf(">Compiled/linked Voxel shader sucessfully!\n");
 
-	if(!CompileAndLinkShader("Shaders/VoxelSmallVert.vs","Shaders/VoxelSmallFrag.fs",2)) printf(">Failed to compile/link shader! Description above\n\n");
-    else printf(">Compiled/linked shader sucessfully!\n");
+	if(!CompileAndLinkShader("Shaders/VoxelSmallVert.vs","Shaders/VoxelSmallFrag.fs",2)) printf(">Failed to compile/link VoxelSmall shader! Description above\n\n");
+    else printf(">Compiled/linked VoxelSmall shader sucessfully!\n");
+
+	if(!CompileAndLinkShader("Shaders/UIVert.vs","Shaders/UIFrag.fs",3)) printf(">Failed to compile/link UI shader! Description above\n\n");
+    else printf(">Compiled/linked UI shader sucessfully!\n");
 
 	//Load voxel palette
 	LoadVoxelPalette("Assets/Game/Textures/magicaPalette.png");
 
-	Core.lua = luaL_newstate();
-	luaL_openlibs(Core.lua);
+	/*Core.lua = luaL_newstate();
+	luaL_openlibs(Core.lua);*/
 
 	//Call initialization function of all systems
 	ListCellPointer current = GetFirstCell(ECS.SystemList);
@@ -1015,10 +1025,10 @@ void EndEngine(int errorOcurred){
 	FreeInput();
 
 	//Finish core systems
-	if(Core.soloud){
+	/*if(Core.soloud){
 		Soloud_deinit(Core.soloud);
 		Soloud_destroy(Core.soloud);
-	}
+	}*/
 			
 	if(Core.renderer)
 		SDL_DestroyRenderer(Core.renderer);
@@ -1034,8 +1044,8 @@ void EndEngine(int errorOcurred){
 	if(SDL_WasInit(SDL_INIT_EVERYTHING)!=0)
     	SDL_Quit();
 
-	if(Core.lua)
-		lua_close(Core.lua);
+	/*if(Core.lua)
+		lua_close(Core.lua);*/
 
     if(errorOcurred){
 		printf("Engine finished with errors!\n");
@@ -1077,7 +1087,22 @@ void ClearRender(SDL_Color col){
 
 void RenderToScreen(){
 
-    glEnable(GL_TEXTURE_2D);
+    //Define the projection matrix
+	GLfloat ProjectionMatrix[4][4] = {{0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}};
+    float right = Screen.windowWidth;
+    float left = 0;
+    float top = Screen.windowHeight;
+    float bottom = 0;
+    float near = -0.1;
+    float far = 0.1;
+    
+    ProjectionMatrix[0][0] = 2.0f/(right-left);
+    ProjectionMatrix[1][1] = 2.0f/(top-bottom);
+    ProjectionMatrix[2][2] = -2.0f/(far-near);
+    ProjectionMatrix[3][3] = 1;
+    ProjectionMatrix[3][0] = -(right + left)/(right - left);
+    ProjectionMatrix[3][1] = -(top + bottom)/(top - bottom);
+    ProjectionMatrix[3][2] = -(far + near)/(far - near);
 
     glViewport(0,0,Screen.windowWidth,Screen.windowHeight);
     
@@ -1085,37 +1110,46 @@ void RenderToScreen(){
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glUseProgram(Rendering.Shaders[0]);
-    GLdouble loc = glGetUniformLocation(Rendering.Shaders[0], "pWidth");
-    if (loc != -1) glUniform1f(loc, 1.0/(float)Screen.gameWidth);
-    loc = glGetUniformLocation(Rendering.Shaders[0], "pHeight");
-    if (loc != -1) glUniform1f(loc, 1.0/(float)Screen.gameHeight);
-
-    loc = glGetUniformLocation(Rendering.Shaders[0], "vignettePower");
-    if (loc != -1) glUniform1f(loc, 0.25);
-    loc = glGetUniformLocation(Rendering.Shaders[0], "redShiftPower");
-    if (loc != -1) glUniform1f(loc, 2);    
-    loc = glGetUniformLocation(Rendering.Shaders[0], "redShiftSpread");
-    if (loc != -1) glUniform1f(loc, 0);
-    
-    glActiveTexture(GL_TEXTURE0);
+	glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, Rendering.screenTexture);
+
+    glUseProgram(Rendering.Shaders[0]);
+	glUniform1i(glGetUniformLocation(Rendering.Shaders[0], "fbo_texture"), 0);
+	glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[0], "projection"), 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix[0]);
+
+    glUniform1f(glGetUniformLocation(Rendering.Shaders[0], "pWidth"), 1.0/(float)Screen.gameWidth);
+    glUniform1f(glGetUniformLocation(Rendering.Shaders[0], "pHeight"), 1.0/(float)Screen.gameHeight);
+
+    glUniform1f(glGetUniformLocation(Rendering.Shaders[0], "vignettePower"), 0.25);
+    glUniform1f(glGetUniformLocation(Rendering.Shaders[0], "redShiftPower"), 2);    
+    glUniform1f(glGetUniformLocation(Rendering.Shaders[0], "redShiftSpread"), 0);
     
-    glBegin(GL_QUADS);
-    {
-        glTexCoord2f(0,1); glVertex2f(-Screen.windowWidth/2,  Screen.windowHeight/2);
-        glTexCoord2f(1,1); glVertex2f( Screen.windowWidth/2,  Screen.windowHeight/2);
-        glTexCoord2f(1,0); glVertex2f( Screen.windowWidth/2, -Screen.windowHeight/2);
-        glTexCoord2f(0,0); glVertex2f(-Screen.windowWidth/2, -Screen.windowHeight/2);
-    }
-    glEnd();
+	GLfloat quadVertex[8] = {0, Screen.windowHeight, 0, 0, Screen.windowWidth, Screen.windowHeight, Screen.windowWidth, 0};
+    GLfloat quadUV[8] = {0,1, 0,0, 1,1, 1,0};
+
+	//Passing rectangle to the vertex VBO
+	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[0]);
+	glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat), quadVertex, GL_STREAM_DRAW);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(0);
+
+	//Passing rectangle uvs the uv VBO
+	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[1]);
+	glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat), quadUV, GL_STREAM_DRAW);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(1);
+
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     glDisable( GL_TEXTURE_2D );
     glUseProgram(0);
 }
 
-void RenderText(char *text, SDL_Color color, int x, int y, TTF_Font* font) 
+
+//Debug text renderer, use UIRenderer for the game
+void RenderTextDebug(char *text, SDL_Color color, int x, int y, TTF_Font* font) 
 {	
+	if(!font) return;
 	if(!text) return;
 	if(text[0] == '\0') return;
 
@@ -1125,49 +1159,66 @@ void RenderText(char *text, SDL_Color color, int x, int y, TTF_Font* font)
 	SDL_FreeSurface(originalFont);
     if(!sFont){printf("Failed to render text!\n"); return;}
 
-    glMatrixMode(GL_MODELVIEW);
-    glPushMatrix();
-    glLoadIdentity();
+    //Define the projection matrix
+	GLfloat ProjectionMatrix[4][4] = {{0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}};
+    float right = Screen.windowWidth;
+    float left = 0;
+    float top = Screen.windowHeight;
+    float bottom = 0;
+    float near = -0.1;
+    float far = 0.1;
+    
+    ProjectionMatrix[0][0] = 2.0f/(right-left);
+    ProjectionMatrix[1][1] = 2.0f/(top-bottom);
+    ProjectionMatrix[2][2] = -2.0f/(far-near);
+    ProjectionMatrix[3][3] = 1;
+    ProjectionMatrix[3][0] = -(right + left)/(right - left);
+    ProjectionMatrix[3][1] = -(top + bottom)/(top - bottom);
+    ProjectionMatrix[3][2] = -(far + near)/(far - near);
 
-    glOrtho(0, Screen.windowWidth,0,Screen.windowHeight,-1,1); 
-    glMatrixMode(GL_PROJECTION);
-    glPushMatrix();
-    glLoadIdentity();
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     glDisable(GL_DEPTH_TEST);
-    glEnable(GL_TEXTURE_2D);
     glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
+    
     GLuint texture;
     glGenTextures(1, &texture);
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
-
-    glColor3f(1.0f, 1.0f, 1.0f);
 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, sFont->w, sFont->h, 0, GL_BGRA, 
                     GL_UNSIGNED_BYTE, sFont->pixels);
 
-    
-    glBegin(GL_QUADS);
-    {
-        glTexCoord2f(0,1); glVertex2f(x, y);
-        glTexCoord2f(1,1); glVertex2f(x + sFont->w + 0.375, y);
-        glTexCoord2f(1,0); glVertex2f(x + sFont->w + 0.375, y + sFont->h + 0.375);
-        glTexCoord2f(0,0); glVertex2f(x, y + sFont->h + 0.375);
-    }
-    glEnd();
+	GLfloat quadVertex[8] = {x, y + sFont->h + 0.375, x, y, x + sFont->w + 0.375, y + sFont->h + 0.375, x + sFont->w + 0.375, y};
+    GLfloat quadUV[8] = {0,0, 0,1, 1,0, 1,1};
+
+	//Passing rectangle to the vertex VBO
+	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[0]);
+	glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat), quadVertex, GL_STREAM_DRAW);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(0);
+
+	//Passing rectangle uvs the uv VBO
+	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[1]);
+	glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat), quadUV, GL_STREAM_DRAW);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(1);
+
+	glUseProgram(Rendering.Shaders[3]);
+
+	//Passing uniforms to shader
+	glUniform1i(glGetUniformLocation(Rendering.Shaders[3], "texture"), 0);
+	glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[3], "projection"), 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix[0]);
+	glUniform3f(glGetUniformLocation(Rendering.Shaders[3], "color"), 1.0f, 1.0f, 1.0f);
+	
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	glUseProgram(0);
+
     glDisable(GL_BLEND);
-    glDisable(GL_TEXTURE_2D);
     glEnable(GL_DEPTH_TEST);
 
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
-    glMatrixMode(GL_PROJECTION);
-    glPopMatrix();
     
     glDeleteTextures(1, &texture);
     SDL_FreeSurface(sFont);
@@ -1179,7 +1230,7 @@ const GLchar *LoadShaderSource(char *filename) {
     FILE *file = fopen(filename, "r");             // open 
     fseek(file, 0L, SEEK_END);                     // find the end
     size_t size = ftell(file);                     // get the size in bytes
-    GLchar *shaderSource = calloc(1, size);        // allocate enough bytes
+    GLchar *shaderSource = calloc(sizeof(GLchar), size + 1);        // allocate enough bytes
     rewind(file);                                  // go back to file beginning
     fread(shaderSource, size, sizeof(char), file); // read each char into ourblock
     fclose(file);                                  // close the stream
@@ -1307,19 +1358,24 @@ void ReloadShaders(){
     }
 
     if(!CompileAndLinkShader("Shaders/ScreenVert.vs","Shaders/ScreenFrag.fs",0)) 
-        printf(">Failed to compile/link shader! Description above\n\n");
+        printf(">Failed to compile/link Screen shader! Description above\n\n");
     else 
-        printf(">Compiled/linked shader sucessfully!\n\n");
+        printf(">Compiled/linked Screen shader sucessfully!\n\n");
 
     if(!CompileAndLinkShader("Shaders/VoxelVert.vs","Shaders/VoxelFrag.fs",1)) 
-        printf(">Failed to compile/link shader! Description above\n\n");
+        printf(">Failed to compile/link Voxel shader! Description above\n\n");
     else 
-        printf(">Compiled/linked shader sucessfully!\n\n");
+        printf(">Compiled/linked Voxel shader sucessfully!\n\n");
 
 	if(!CompileAndLinkShader("Shaders/VoxelSmallVert.vs","Shaders/VoxelSmallFrag.fs",2)) 
-        printf(">Failed to compile/link shader! Description above\n\n");
+        printf(">Failed to compile/link VoxelSmall shader! Description above\n\n");
     else 
-        printf(">Compiled/linked shader sucessfully!\n\n");
+        printf(">Compiled/linked VoxelSmall shader sucessfully!\n\n");
+
+	if(!CompileAndLinkShader("Shaders/UIVert.vs","Shaders/UIFrag.fs",3)) 
+		printf(">Failed to compile/link UI shader! Description above\n\n");
+    else 
+		printf(">Compiled/linked UI shader sucessfully!\n");
 }
 
 void LoadVoxelPalette(char path[]){

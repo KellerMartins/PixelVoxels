@@ -161,6 +161,19 @@ void InsertListIndex(List *list, void* e, int index){
 	}
 }
 
+void RemoveListCell(List *list,ListCellPointer cell){
+	if(!cell->previous) return RemoveListStart(list);
+	else if(!cell->next) return RemoveListEnd(list);
+
+	cell->next->previous = cell->previous;
+	cell->previous->next = cell->next;
+
+	free(cell->element);
+	free(cell);
+
+	list->length -=1;
+}
+
 void RemoveListEnd(List *list){
 	if(list->last->previous){
 		ListCellPointer aux = list->last->previous;

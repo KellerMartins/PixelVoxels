@@ -138,8 +138,8 @@ void VoxelRendererUpdate(){
         glUniformBlockBinding(Rendering.Shaders[usedProgram], blockIndex, 0);
         glBindBufferBase(GL_UNIFORM_BUFFER, glGetUniformBlockIndex(Rendering.Shaders[usedProgram], "PointLight"), GetPointLightsBuffer());
 
-        glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[usedProgram], "projection"), 1, GL_FALSE, &ProjectionMatrix[0]);
-        glUniformMatrix3fv(glGetUniformLocation(Rendering.Shaders[usedProgram], "rotation"), 1, GL_FALSE, &RotationMatrix[0]);
+        glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[usedProgram], "projection"), 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix[0]);
+        glUniformMatrix3fv(glGetUniformLocation(Rendering.Shaders[usedProgram], "rotation"), 1, GL_FALSE, (const GLfloat*)&RotationMatrix[0]);
         glUniform3f(glGetUniformLocation(Rendering.Shaders[usedProgram], "objPos"), position.x, position.y, position.z);
         glUniform3f(glGetUniformLocation(Rendering.Shaders[usedProgram], "centerPos"), obj->center.x, obj->center.y, obj->center.z);
         glUniform3f(glGetUniformLocation(Rendering.Shaders[usedProgram], "camPos"), Rendering.cameraPosition.x, Rendering.cameraPosition.y, Rendering.cameraPosition.z);

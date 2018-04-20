@@ -1115,7 +1115,7 @@ void RenderToScreen(){
 
     glUseProgram(Rendering.Shaders[0]);
 	glUniform1i(glGetUniformLocation(Rendering.Shaders[0], "fbo_texture"), 0);
-	glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[0], "projection"), 1, GL_FALSE, &ProjectionMatrix[0]);
+	glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[0], "projection"), 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix[0]);
 
     glUniform1f(glGetUniformLocation(Rendering.Shaders[0], "pWidth"), 1.0/(float)Screen.gameWidth);
     glUniform1f(glGetUniformLocation(Rendering.Shaders[0], "pHeight"), 1.0/(float)Screen.gameHeight);
@@ -1210,7 +1210,7 @@ void RenderTextDebug(char *text, SDL_Color color, int x, int y, TTF_Font* font)
 
 	//Passing uniforms to shader
 	glUniform1i(glGetUniformLocation(Rendering.Shaders[3], "texture"), 0);
-	glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[3], "projection"), 1, GL_FALSE, &ProjectionMatrix[0]);
+	glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[3], "projection"), 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix[0]);
 	glUniform3f(glGetUniformLocation(Rendering.Shaders[3], "color"), 1.0f, 1.0f, 1.0f);
 	
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);

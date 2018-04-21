@@ -1850,6 +1850,7 @@ void DrawFileBrowser(){
     if(fileBrowser.opened>0){
         int i=0,startx = fbHeaderMin.x + iconsSize[10] * 3 + 12,starty = fbHeaderMin.y - iconsSize[10]*3 -28;
         int x = startx, y = starty;
+        int foldersUpdated = 0;
         ListCellPointer cell;
         //Folders
         ListForEach(cell,fileBrowser.folders){
@@ -1896,8 +1897,10 @@ void DrawFileBrowser(){
                 InsertListEnd(&fileBrowser.paths,&path);
                 fileBrowser.indexPath++;
 
-                //TEMP FIX: return to avoid crash
-                return;
+                //As the contents of the fileBrowser.folders have been modified, and we are iterating
+                //over it, break the loop
+                foldersUpdated = 1;
+                break;
             }
             x += iconsSize[10] * 6 + 30;
             i++;
@@ -1929,7 +1932,8 @@ void DrawFileBrowser(){
             }
             
             //File icon/button
-            if(PointButton((Vector3){x,y,0},icon,3, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){0.5,0.5,0.5}) == 1){
+            //Ignore misclick caused by a change in the folders structure
+            if(!foldersUpdated && PointButton((Vector3){x,y,0},icon,3, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){0.5,0.5,0.5}) == 1){
                 //Remove the extension from the name in the save mode
                 if(mode == 1){
                     int extLen = strlen(file.extension) + 1; //Extension name length + dot

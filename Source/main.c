@@ -105,7 +105,9 @@ int main(int argc, char *argv[]){
 		}
 		if (GetKeyDown(SDL_SCANCODE_R))
 		{
-			ReloadAllScripts();
+			if(ReloadAllScripts()){
+				printf("Reloaded Lua scripts without errors!\n");
+			}
 		}
 		if (GetKeyDown(SDL_SCANCODE_T))
 		{

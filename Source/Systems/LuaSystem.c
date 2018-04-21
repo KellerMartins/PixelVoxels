@@ -36,18 +36,9 @@ void LuaSystemUpdate(){
 
         int scriptIndex = GetLuaScriptIndex(entity);
 
-        //If the script had problems, skip it
-        if(scriptIndex == -2)
-            continue;
-
         //If the entity hasnt loaded his script yet, load it first  
         if(scriptIndex == -1){
-            scriptIndex = LoadNewScript(GetLuaScriptPath(entity), GetLuaScriptName(entity));
-            if(scriptIndex<0){
-                printf("LuaSystem: Failed to activate script!\n");
-                SetLuaScriptIndex(entity,-2);
-                continue;
-            }
+            scriptIndex = LoadNewScript(GetLuaScriptPath(entity), GetLuaScriptName(entity), entity);
             SetLuaScriptIndex(entity,scriptIndex);
         }
         LuaScript *ls = (LuaScript*)GetElementAt(luaScriptList, scriptIndex);
@@ -62,7 +53,7 @@ void LuaSystemUpdate(){
         status = lua_pcall(L, 1, 0, 0);
         if (status) {
             fprintf(stderr, "LuaSystem: Failed to run script: %s\n", lua_tostring(L, -1));
-            SetLuaScriptIndex(entity,-2);
+            ls->hasError = 1;
         }
     }
 }
@@ -78,19 +69,9 @@ void LuaSystemFree(){
     }
 }
 
-int LoadNewScript(char* scriptPath, char* scriptName){
-    //Check if script isnt already in the list
-    int i = 0;
-    ListCellPointer cell;
-    ListForEach(cell, luaScriptList){
-        LuaScript script = GetElementAsType(cell, LuaScript);
-        if(StringCompareEqual(script.scriptName, scriptName)){
-            if(StringCompareEqual(script.scriptPath, scriptPath))
-                return i;
-        }
-        i++;
-    }
-
+int LoadNewScript(char* scriptPath, char* scriptName, EntityID entity){
+    lua_State *L = Core.lua;
+    
     //Concatenate the path and name to a full path and add an '/' to the path in case it is missing
     char fullPath[512+256];
     strncpy(fullPath,scriptPath,512);
@@ -99,22 +80,86 @@ int LoadNewScript(char* scriptPath, char* scriptName){
     }
     strcat(fullPath,scriptName);
 
-    lua_State *L = Core.lua;
+    //Check if script isnt already in the list
+    int i = 0;
+    ListCellPointer cell;
+    ListForEach(cell, luaScriptList){
+        LuaScript *script = GetElement(*cell);
+        if(StringCompareEqual(script->scriptName, scriptName)){
+            if(StringCompareEqual(script->scriptPath, scriptPath)){
+                //Script is already loaded
+                //If it has errors, just return its index and dont run in the new environment
+                if(script->hasError){
+                    return i;
+                }
+
+                //If the script is error free, just reload and prime run it in the new environment
+                if(luaL_loadfile(L, fullPath)) {
+                    printf("LoadNewScript: Couldn't reload file (%s): %s\n", scriptName, lua_tostring(L, -1));
+                    script->hasError = 1;
+                    return i;
+                }
+
+                //Prime run script to get the functions and to define variables
+                if (lua_pcall(L, 0, 1, 0)) {
+                    printf("LoadNewScript: Failed to re-run script (%s): %s\n", scriptName, lua_tostring(L, -1));
+                    script->hasError = 1;
+                }
+                return i;
+            }
+        }
+        i++;
+    }
 
     //Load the new script chunk into Lua
     if(luaL_loadfile(L, fullPath)) {
-        printf("LoadNewScript: Couldn't load file: %s\n", lua_tostring(L, -1));
-        return -2;
-    }
+        printf("LoadNewScript: Couldn't load file (%s): %s\n", scriptName, lua_tostring(L, -1));
+        
+        //Put the script on the list, but mark as with error
+        LuaScript newScript;
+        newScript.hasError = 1;
+        newScript.loopFunction = NULL;
+        strcpy(newScript.scriptName, scriptName);
+        strcpy(newScript.scriptPath, scriptPath);
+
+        InsertListEnd(&luaScriptList, &newScript);
+
+        return GetLength(luaScriptList)-1;
+    } 
 
     //Prime run script to get the functions and to define variables
     if (lua_pcall(L, 0, 1, 0)) {
-        printf("LoadNewScript: Failed to run script: %s\n", lua_tostring(L, -1));
-        return -2;
+        printf("LoadNewScript: Failed to run script (%s): %s\n", scriptName, lua_tostring(L, -1));
+
+        //Put the script on the list, but mark as with error
+        LuaScript newScript;
+        newScript.hasError = 1;
+        newScript.loopFunction = NULL;
+        strcpy(newScript.scriptName, scriptName);
+        strcpy(newScript.scriptPath, scriptPath);
+
+        InsertListEnd(&luaScriptList, &newScript);
+
+        return GetLength(luaScriptList)-1;
     }
 
-    //If the value returned is not a string with the name of the loop function, ignore this script
-    if(lua_type(L, -1) != LUA_TSTRING) return -1;
+    //If the value returned is not a string with the name of the loop function, mark as with error
+    if(lua_type(L, -1) != LUA_TSTRING){
+        printf("LoadNewScript: Returned value is not a string (%s): %s\n", scriptName, lua_tostring(L, -1));
+
+        //Put the script on the list, but mark as with error
+        LuaScript newScript;
+        newScript.hasError = 1;
+        newScript.loopFunction = NULL;
+        strcpy(newScript.scriptName, scriptName);
+        strcpy(newScript.scriptPath, scriptPath);
+
+        InsertListEnd(&luaScriptList, &newScript);
+
+        return GetLength(luaScriptList)-1;
+    }
+
+    //If no errors, just put on the list
 
     //Get returned value as string
     const char* functionName = lua_tostring(L, -1);
@@ -135,7 +180,8 @@ int LoadNewScript(char* scriptPath, char* scriptName){
     return GetLength(luaScriptList)-1;
 }
 
-void ReloadAllScripts(){
+int ReloadAllScripts(){
+    int noErrors = 1;
     char fullPath[512+256];
 
     ListCellPointer cell;
@@ -155,6 +201,7 @@ void ReloadAllScripts(){
         if(luaL_loadfile(L, fullPath)) {
             printf("ReloadAllScripts: Couldn't load file (%s): %s\n", ls->scriptName, lua_tostring(L, -1));
             ls->hasError = 1;
+            noErrors = 0;
             continue;
         }
 
@@ -162,6 +209,7 @@ void ReloadAllScripts(){
         if (lua_pcall(L, 0, 1, 0)) {
             printf("ReloadAllScripts: Failed to run script (%s): %s\n", ls->scriptName, lua_tostring(L, -1));
             ls->hasError = 1;
+            noErrors = 0;
             continue;
         }
 
@@ -169,6 +217,7 @@ void ReloadAllScripts(){
         if(lua_type(L, -1) != LUA_TSTRING){
             printf("ReloadAllScripts: Returned value is not a string (%s): %s\n", ls->scriptName, lua_tostring(L, -1));
             ls->hasError = 1;
+            noErrors = 0;
             continue;
         }
 
@@ -186,4 +235,6 @@ void ReloadAllScripts(){
 
         ls->hasError = 0;
     }
+
+    return noErrors;
 }

@@ -6,7 +6,7 @@ void LuaSystemInit();
 void LuaSystemUpdate();
 void LuaSystemFree();
 
-int LoadNewScript(char* scriptPath, char* scriptName);
-void ReloadAllScripts();
+int LoadNewScript(char* scriptPath, char* scriptName, EntityID entity);
+int ReloadAllScripts();
 
 #endif

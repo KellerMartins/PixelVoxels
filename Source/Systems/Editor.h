@@ -4,6 +4,7 @@
 #include "../Components/VoxelModel.h"
 #include "../Components/RigidBody.h"
 #include "../Components/PointLight.h"
+#include "../Components/LuaScript.h"
 #include "../Libs/tinydir.h"
 #include "UIRenderer.h"
 #include <ctype.h>

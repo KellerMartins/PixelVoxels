@@ -3,6 +3,7 @@
 static System *ThisSystem;
 
 static SystemID VoxPhysicsSystem;
+static SystemID LuaSystem;
 
 
 extern engineECS ECS;
@@ -124,6 +125,7 @@ void CloseFileBrowser();
 void FBOverrideFileDialogConfirmation();
 void FBOverrideFileDialogCancel();
 void FBLoadModel();
+void FBLoadScript();
 void FBLoadScene();
 void FBSaveScene();
 void FBExportPrefab();
@@ -152,10 +154,11 @@ void EditorInit(System *systemObject){
     entitiesPlaymodeCopy = calloc(ECS.maxEntities,sizeof(Entity));
 
     VoxPhysicsSystem = GetSystemID("VoxelPhysics");
+    LuaSystem = GetSystemID("LuaSystem");
 
     //Disable all the dynamic systems (only the VoxelPhysics for now)
     for(i=0;i<GetLength(ECS.SystemList);i++){
-        if(i == VoxPhysicsSystem){
+        if(i == VoxPhysicsSystem || i == LuaSystem){
             DisableSystem(i);
         }
     }
@@ -1236,6 +1239,41 @@ void DrawComponentsPanel(){
                                     if(changedRange) SetPointLightRange(GetElementAsType(selEntity,int),newRange);
                                 }
                             }
+                        }else if(c == GetComponentID("LuaScript")){
+                            
+                            int backgroundHeight = (GetLength(SelectedEntities)==1? 25:0);
+
+                            //Component background
+                            Vector3 bgMin = {Screen.windowWidth-componentWindowLength, componentHeight-backgroundHeight,0};
+                            Vector3 bgMax = {Screen.windowWidth-componentWindowWidthSpacing, componentHeight,0};
+                            DrawRectangle(bgMin, bgMax, 0.1,0.1,0.15);
+
+                            //Only show the script load button and name if only one entity is selected
+                            if(GetLength(SelectedEntities)==1){
+                                EntityID ent = GetElementAsType(GetFirstCell(SelectedEntities),EntityID);
+                                
+                                if(1 == PointButton((Vector3){Screen.windowWidth-componentWindowLength + 15,componentHeight - 12},10,1, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){0.8,0.8,0.8})){
+                                    if(!fileBrowser.opened){
+                                        char *scriptPath = GetLuaScriptPath(ent);
+                                        if(scriptPath[0] != '\0'){
+                                            OpenFileBrowser(0,scriptPath,FBLoadScript);
+                                        }else{
+                                            OpenFileBrowser(0,NULL,FBLoadScript);
+                                        }
+                                        FileBrowserExtension("lua");
+                                    }
+                                }
+
+                                char *scriptName = GetLuaScriptName(ent);
+                                if(scriptName[0] != '\0'){
+                                    DrawTextColored(scriptName, lightWhite, Screen.windowWidth-componentWindowLength + 28, componentHeight - 8 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+                                }else{
+                                    DrawTextColored("No script", lightWhite, Screen.windowWidth-componentWindowLength + 28, componentHeight - 8 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+                                }
+                                componentHeight-=22;
+                            }
+                            
+                            componentHeight -= 7;
                         }
                     }
                     componentHeight -= componentBetweenSpacing;
@@ -1830,6 +1868,18 @@ void DrawFileBrowser(){
                 y-= iconsSize[10] * 6 + 40;
             }
 
+            //Render folder name
+            if(strlen(file.name)>6){
+                //Cut name if too long
+                char minifiedName[] = "00000...";
+                memcpy(minifiedName,file.name,5*sizeof(char));
+                TTF_SizeText(gizmosFont,minifiedName,&w,&h);
+                DrawTextColored(minifiedName, lightWhite, x-(iconsSize[10] * 3) +((iconsSize[10] * 6) - w)/2, y - (iconsSize[10] * 3) - h, gizmosFont);
+            }else{
+                TTF_SizeText(gizmosFont,file.name,&w,&h);
+                DrawTextColored(file.name, lightWhite, x-(iconsSize[10] * 3) +((iconsSize[10] * 6) - w)/2, y - (iconsSize[10] * 3) - h, gizmosFont);
+            }
+
             //Folder icon/button
             if(PointButton((Vector3){x,y,0},10,3, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){0.5,0.5,0.5}) == 1){
                 char *path = calloc(_TINYDIR_PATH_MAX,sizeof(char));
@@ -1845,18 +1895,9 @@ void DrawFileBrowser(){
 
                 InsertListEnd(&fileBrowser.paths,&path);
                 fileBrowser.indexPath++;
-            }
 
-            //Render folder name
-            if(strlen(file.name)>6){
-                //Cut name if too long
-                char minifiedName[] = "00000...";
-                memcpy(minifiedName,file.name,5*sizeof(char));
-                TTF_SizeText(gizmosFont,minifiedName,&w,&h);
-                DrawTextColored(minifiedName, lightWhite, x-(iconsSize[10] * 3) +((iconsSize[10] * 6) - w)/2, y - (iconsSize[10] * 3) - h, gizmosFont);
-            }else{
-                TTF_SizeText(gizmosFont,file.name,&w,&h);
-                DrawTextColored(file.name, lightWhite, x-(iconsSize[10] * 3) +((iconsSize[10] * 6) - w)/2, y - (iconsSize[10] * 3) - h, gizmosFont);
+                //TEMP FIX: return to avoid crash
+                return;
             }
             x += iconsSize[10] * 6 + 30;
             i++;
@@ -1987,7 +2028,7 @@ void DrawPlayModeWidget(){
             //Disable all dynamic game systems
             int i;
             for(i=0;i<GetLength(ECS.SystemList);i++){
-                if(i == VoxPhysicsSystem){
+                if(i == VoxPhysicsSystem || i == LuaSystem){
                     DisableSystem(i);
                 }
             }
@@ -1999,7 +2040,7 @@ void DrawPlayModeWidget(){
             //Disable all dynamic game systems
             int i;
             for(i=0;i<GetLength(ECS.SystemList);i++){
-                if(i == VoxPhysicsSystem){
+                if(i == VoxPhysicsSystem || i == LuaSystem){
                     DisableSystem(i);
                 }
             }
@@ -2014,7 +2055,7 @@ void DrawPlayModeWidget(){
             //Enable all dynamic game systems
             int i;
             for(i=0;i<GetLength(ECS.SystemList);i++){
-                if(i == VoxPhysicsSystem){
+                if(i == VoxPhysicsSystem || i == LuaSystem){
                     EnableSystem(i);
                 }
             }
@@ -2027,7 +2068,7 @@ void DrawPlayModeWidget(){
             //Disable all dynamic game systems
             int i;
             for(i=0;i<GetLength(ECS.SystemList);i++){
-                if(i == VoxPhysicsSystem){
+                if(i == VoxPhysicsSystem || i == LuaSystem){
                     DisableSystem(i);
                 }
             }
@@ -2043,7 +2084,7 @@ void DrawPlayModeWidget(){
             //Enable all dynamic game systems
             int i;
             for(i=0;i<GetLength(ECS.SystemList);i++){
-                if(i == VoxPhysicsSystem){
+                if(i == VoxPhysicsSystem || i == LuaSystem){
                     EnableSystem(i);
                 }
             }
@@ -2661,11 +2702,14 @@ void OpenFileBrowser(int mode, char *initialPath,void (*onOpen)()){
         FreeList(&fileBrowser.folders);
         FreeList(&fileBrowser.files);
     }
+
     fileBrowser.onConfirmFunction = *onOpen;
     fileBrowser.folders = InitList(sizeof(tinydir_file));
     fileBrowser.files = InitList(sizeof(tinydir_file));
+
     if(initialPath){
-        memcpy(fileBrowser.filePath,initialPath,_TINYDIR_PATH_MAX*sizeof(char));
+        int pathSize = strlen(initialPath);
+        memcpy(fileBrowser.filePath,initialPath,(pathSize+1)*sizeof(char));
     }else{
         char DefaultPath[] = "Assets";
         memcpy(fileBrowser.filePath,DefaultPath,sizeof(DefaultPath));
@@ -2681,8 +2725,12 @@ void OpenFileBrowser(int mode, char *initialPath,void (*onOpen)()){
     //Insert the initial path to the list when opening/returning to default path
     if(!fileBrowser.opened || !initialPath){
         fileBrowser.paths = InitList(sizeof(char*));
-        char *firstPath = malloc(_TINYDIR_PATH_MAX*sizeof(char));
-        memcpy(firstPath,fileBrowser.filePath,_TINYDIR_PATH_MAX*sizeof(char));
+
+        int pathLen = strlen(fileBrowser.filePath);
+
+        char *firstPath = malloc((pathLen+1)*sizeof(char));
+        memcpy(firstPath,fileBrowser.filePath,(pathLen+1)*sizeof(char));
+
         InsertListEnd(&fileBrowser.paths,&firstPath);
         fileBrowser.indexPath = 0;
     }
@@ -2753,6 +2801,11 @@ void FBLoadModel(){
     }else{
         LoadVoxelModel(GetElementAsType(GetFirstCell(SelectedEntities),EntityID),fileBrowser.filePath,fileBrowser.fileName);
     }
+}
+
+void FBLoadScript(){
+    printf("(%s)(%s)\n",fileBrowser.filePath,fileBrowser.fileName);
+    SetLuaScript( GetElementAsType(GetFirstCell(SelectedEntities),EntityID) , fileBrowser.filePath, fileBrowser.fileName);
 }
 
 void FBLoadScene(){

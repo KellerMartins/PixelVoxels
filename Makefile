@@ -10,7 +10,7 @@ OBJS = $(SRC:%.c=Build/%.o)
 FOLDERS = Build Build/Source Build/Source/Components Build/Source/Systems Build/Source/Libs
 
 #COMPILER_FLAGS specifies the additional compilation options we're using
-COMPILER_FLAGS = -Wall -Wno-unused-result -Wno-missing-braces -ffast-math -O3
+COMPILER_FLAGS = -Wall -Wno-unused-result -Wno-missing-braces -ffast-math -O3 -g
 
 #LINKER_FLAGS specifies the libraries we're linking against
 #Both LINKER_FLAGS and MKDIR are defined based on the OS

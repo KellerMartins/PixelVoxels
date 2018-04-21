@@ -1652,6 +1652,26 @@ void StopTextInput(){
 	Input.textInputLength = 0;
 	Input.textInputCursorPos = 0;
 }
+
+// ----------- Lua stack manipulation functions ---------------
+
+//Creates an table with the xyz entries and populate with the vector values
+void Vector3ToTable(lua_State *L, Vector3 vector){
+
+    lua_newtable(L);
+    lua_pushliteral(L, "x");     //x index
+    lua_pushnumber(L, vector.x); //x value
+    lua_rawset(L, -3);           //Store x in table
+
+    lua_pushliteral(L, "y");     //y index
+    lua_pushnumber(L, vector.y); //y value
+    lua_rawset(L, -3);           //Store y in table
+
+    lua_pushliteral(L, "z");     //z index
+    lua_pushnumber(L, vector.z); //z value
+    lua_rawset(L, -3);           //Store z in table
+}
+
 // ----------- Misc. functions ---------------
 
 void SaveTextureToPNG(SDL_Texture *tex, char* out){

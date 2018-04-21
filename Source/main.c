@@ -5,6 +5,7 @@
 #include "Components/Transform.h"
 #include "Components/RigidBody.h"
 #include "Components/PointLight.h"
+#include "Components/LuaScript.h"
 
 #include "Systems/VoxelRenderer.h"
 #include "Systems/PointLighting.h"
@@ -12,6 +13,7 @@
 #include "Systems/VoxelPhysics.h"
 #include "Systems/Editor.h"
 #include "Systems/UIRenderer.h"
+#include "Systems/LuaSystem.h"
 
 extern engineTime Time;
 extern engineCore Core;
@@ -29,21 +31,29 @@ int main(int argc, char *argv[]){
 
 	InitECS(110);
 
+	//Register ECS Components
 	ComponentID transformComponent = RegisterNewComponent("Transform", &TransformConstructor, &TransformDestructor,&TransformCopy, &TransformEncode, &TransformDecode);
 	ComponentID voxelModelComponent = RegisterNewComponent("VoxelModel", &VoxelModelConstructor, &VoxelModelDestructor,&VoxelModelCopy, &VoxelModelEncode, &VoxelModelDecode);
 	ComponentID rigidBodyComponent = RegisterNewComponent("RigidBody", &RigidBodyConstructor, &RigidBodyDestructor,&RigidBodyCopy, &RigidBodyEncode, &RigidBodyDecode);
 	ComponentID pointLightComponent = RegisterNewComponent("PointLight", &PointLightConstructor, &PointLightDestructor,&PointLightCopy, &PointLightEncode, &PointLightDecode);
+	ComponentID luaScriptComponent = RegisterNewComponent("LuaScript", &LuaScriptConstructor, &LuaScriptDestructor,&LuaScriptCopy, &LuaScriptEncode, &LuaScriptDecode);
 
-	if(RegisterNewSystem("VoxelPhysics",2,CreateComponentMaskByID(3,transformComponent, voxelModelComponent,rigidBodyComponent),(ComponentMask){0},&VoxelPhysicsInit,&VoxelPhysicsUpdate,&VoxelPhysicsFree) < 0) printf("Failed to register VoxelPhysics system!\n");
-	if(RegisterNewSystem("PointLighting",1,CreateComponentMaskByID(2,transformComponent, pointLightComponent),(ComponentMask){0},&PointLightingInit,&PointLightingUpdate,&PointLightingFree) < 0) printf("Failed to register PointLighting system!\n");
+	//Register ECS Systems
+	if(RegisterNewSystem("VoxelPhysics",3,CreateComponentMaskByID(3,transformComponent, voxelModelComponent,rigidBodyComponent),(ComponentMask){0},&VoxelPhysicsInit,&VoxelPhysicsUpdate,&VoxelPhysicsFree) < 0) printf("Failed to register VoxelPhysics system!\n");
+	if(RegisterNewSystem("PointLighting",2,CreateComponentMaskByID(2,transformComponent, pointLightComponent),(ComponentMask){0},&PointLightingInit,&PointLightingUpdate,&PointLightingFree) < 0) printf("Failed to register PointLighting system!\n");
 	if(RegisterNewSystem("VoxelRenderer",0,CreateComponentMaskByID(2,transformComponent, voxelModelComponent),(ComponentMask){0},&VoxelRendererInit,&VoxelRendererUpdate,&VoxelRendererFree) < 0) printf("Failed to register VoxelRender system!\n");
-	if(RegisterNewSystem("VoxelModification",3,CreateComponentMaskByID(2,voxelModelComponent, transformComponent),(ComponentMask){0},&VoxelModificationInit,&VoxelModificationUpdate,&VoxelModificationFree) < 0) printf("Failed to register VoxelModification system!\n");
+	if(RegisterNewSystem("VoxelModification",4,CreateComponentMaskByID(2,voxelModelComponent, transformComponent),(ComponentMask){0},&VoxelModificationInit,&VoxelModificationUpdate,&VoxelModificationFree) < 0) printf("Failed to register VoxelModification system!\n");
 	if(RegisterNewSystem("Editor",-1,CreateComponentMaskByID(0),(ComponentMask){0},&EditorInit,&EditorUpdate,&EditorFree) < 0) printf("Failed to register Editor system!\n");
 	if(RegisterNewSystem("UIRenderer",-2,CreateComponentMaskByID(0),(ComponentMask){0},&UIRendererInit,&UIRendererUpdate,&UIRendererFree) < 0) printf("Failed to register UIRenderer system!\n");
+	if(RegisterNewSystem("LuaSystem",1,CreateComponentMaskByID(1,luaScriptComponent),(ComponentMask){0},&LuaSystemInit,&LuaSystemUpdate,&LuaSystemFree) < 0) printf("Failed to register LuaSystem system!\n");
 	if(!InitEngine()) return 1;
 
-	Rendering.clearScreenColor = (SDL_Color){0,38,75,0};
+	//Register C functions in Lua
+	TransformRegisterLuaFunctions();
 
+
+
+	Rendering.clearScreenColor = (SDL_Color){0,38,75,0};
 	InitFPS();
 	
 	//Initialize font
@@ -52,11 +62,17 @@ int main(int argc, char *argv[]){
 		printf("Font: Error loading font!");
 	}
 
+	EntityID newEntity = CreateEntity();
+	AddComponentToEntity(GetComponentID("LuaScript"), newEntity);
+	SetLuaScript(newEntity, "Assets/Game/Scripts/", "script.lua");
+	AddComponentToEntity(GetComponentID("VoxelModel"), newEntity);
+	LoadVoxelModel(newEntity, "Assets/","Spaceship.vox");
+
 	printf("GameLoop Initialized\n");
 	//Game Loop
 	while (!GameExited())
 	{
-
+		
 		EngineUpdate();
 		
 		// if (GetKey(SDL_SCANCODE_UP))
@@ -88,6 +104,10 @@ int main(int argc, char *argv[]){
 			ExitGame();
 		}
 		if (GetKeyDown(SDL_SCANCODE_R))
+		{
+			ReloadAllScripts();
+		}
+		if (GetKeyDown(SDL_SCANCODE_T))
 		{
 			ReloadShaders();
 		}

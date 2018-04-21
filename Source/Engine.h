@@ -245,6 +245,9 @@ int GetMouseButtonUp(int button);
 void GetTextInput(char* outputTextPointer, int maxLength, int currentLength);
 void StopTextInput();
 
+//Lua stack manipulation functions
+void Vector3ToTable(lua_State *L, Vector3 vector);
+
 //Misc.
 void SaveTextureToPNG(SDL_Texture *tex, char* out);
 

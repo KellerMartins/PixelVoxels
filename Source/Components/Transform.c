@@ -17,6 +17,7 @@ static ComponentID ThisComponentID(){
 }
 
 extern engineECS ECS;
+extern engineCore Core;
 
 void TransformConstructor(void** data){
     if(!data) return;
@@ -167,4 +168,71 @@ void GetGlobalTransform(EntityID entity, Vector3 *outPos, Vector3 *outRot){
         if(outPos) *outPos = transform->position;
         if(outRot) *outRot = transform->rotation;
     }
+}
+
+static int l_SetPosition (lua_State *L) {
+    //Get the arguments
+    EntityID id = luaL_checkinteger (L, 1);
+    if(!lua_istable(L, 2)){
+        printf("SetPosition(Lua): Second argument must be a table with 'x', 'y' and 'z' numbers!\n");
+        return 0;
+    }
+    lua_getfield(L,2, "x");
+    lua_getfield(L,2, "y");
+    lua_getfield(L,2, "z");
+
+    Vector3 pos = {luaL_checknumber(L,-3), luaL_checknumber(L,-2), luaL_checknumber(L,-1)};
+
+    SetPosition(id, pos);
+    lua_pop(L, 3);
+    return 0; //Return number of results
+}
+
+static int l_SetRotation (lua_State *L) {
+    //Get the arguments
+    EntityID id = luaL_checkinteger (L, 1);
+    if(!lua_istable(L, 2)){
+        printf("SetRotation(Lua): Second argument must be a table with 'x', 'y' and 'z' numbers!\n");
+        return 0;
+    }
+    lua_getfield(L,2, "x");
+    lua_getfield(L,2, "y");
+    lua_getfield(L,2, "z");
+
+    Vector3 rot = {luaL_checknumber(L,-3), luaL_checknumber(L,-2), luaL_checknumber(L,-1)};
+
+    SetRotation(id, rot);
+    lua_pop(L, 3);
+    return 0; //Return number of results
+}
+
+static int l_GetPosition (lua_State *L) {
+    lua_settop(L, 1);
+    EntityID id = luaL_checkinteger (L, 1); //Get the argument
+    Vector3 pos = GetPosition(id);
+    Vector3ToTable(L, pos); //Create return table and store the values
+    return 1; //Return number of results
+}
+
+static int l_GetRotation (lua_State *L) {
+    lua_settop(L, 1);
+    EntityID id = luaL_checkinteger (L, 1); //Get the argument
+    Vector3 pos = GetRotation(id);
+    Vector3ToTable(L, pos); //Create return table and store the values
+    return 1; //Return number of results
+}
+
+
+void TransformRegisterLuaFunctions(){
+    lua_pushcfunction(Core.lua, l_SetPosition);
+    lua_setglobal(Core.lua, "SetPosition");
+
+    lua_pushcfunction(Core.lua, l_SetRotation);
+    lua_setglobal(Core.lua, "SetRotation");
+
+    lua_pushcfunction(Core.lua, l_GetPosition);
+    lua_setglobal(Core.lua, "GetPosition");
+
+    lua_pushcfunction(Core.lua, l_GetRotation);
+    lua_setglobal(Core.lua, "GetRotation");
 }

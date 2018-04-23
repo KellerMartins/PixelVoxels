@@ -24,7 +24,9 @@ void SetBounciness(EntityID entity, float bounciness);
 int UsesGravity(EntityID entity);
 void SetUseGravity(EntityID entity,unsigned booleanVal);
 
-int IsStaticRigidbody(EntityID entity);
-void SetStaticRigidbody(EntityID entity,unsigned booleanVal);
+int IsStaticRigidBody(EntityID entity);
+void SetStaticRigidBody(EntityID entity,unsigned booleanVal);
+
+void RigidBodyRegisterLuaFunctions();
 
 #endif

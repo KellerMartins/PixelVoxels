@@ -222,6 +222,17 @@ static int l_GetRotation (lua_State *L) {
     return 1; //Return number of results
 }
 
+static int l_GetGlobalTransform (lua_State *L) {
+    lua_settop(L, 1);
+    EntityID id = luaL_checkinteger (L, 1); //Get the argument
+    Vector3 pos, rot;
+    GetGlobalTransform(id, &pos, &rot);
+
+    Vector3ToTable(L, pos); //Create return tables and store the values
+    Vector3ToTable(L, rot);
+    return 2; //Return number of results
+}
+
 
 void TransformRegisterLuaFunctions(){
     lua_pushcfunction(Core.lua, l_SetPosition);
@@ -235,4 +246,7 @@ void TransformRegisterLuaFunctions(){
 
     lua_pushcfunction(Core.lua, l_GetRotation);
     lua_setglobal(Core.lua, "GetRotation");
+
+    lua_pushcfunction(Core.lua, l_GetGlobalTransform);
+    lua_setglobal(Core.lua, "GetGlobalTransform");
 }

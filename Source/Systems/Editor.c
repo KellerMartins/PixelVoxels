@@ -910,10 +910,10 @@ void DrawComponentsPanel(){
                             
                             //Check if the selected entities are static and use gravity
                             ListCellPointer selEntity = GetFirstCell(SelectedEntities);
-                            int isStatic = IsStaticRigidbody(GetElementAsType(selEntity,int));
+                            int isStatic = IsStaticRigidBody(GetElementAsType(selEntity,int));
                             int useGravity = UsesGravity(GetElementAsType(selEntity,int)); 
                             ListForEach(selEntity, SelectedEntities){
-                                if(IsStaticRigidbody(GetElementAsType(selEntity,int)) != isStatic){
+                                if(IsStaticRigidBody(GetElementAsType(selEntity,int)) != isStatic){
                                     isStatic = -1;
                                 }
                                 if(UsesGravity(GetElementAsType(selEntity,int)) != useGravity){
@@ -931,7 +931,7 @@ void DrawComponentsPanel(){
                                 componentHeight-=2;
                                 if(1 == PointToggle(&isStatic,(Vector3){Screen.windowWidth-componentWindowLength + 12,componentHeight - 10},14,15,16,1, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1})){
                                     ListForEach(selEntity, SelectedEntities){
-                                        SetStaticRigidbody(GetElementAsType(selEntity,int),isStatic);
+                                        SetStaticRigidBody(GetElementAsType(selEntity,int),isStatic);
                                     }
                                 }
                                 DrawTextColored("Is Static", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
@@ -1045,7 +1045,7 @@ void DrawComponentsPanel(){
                                 componentHeight-=2;
                                 if(1 == PointToggle(&isStatic,(Vector3){Screen.windowWidth-componentWindowLength + 12,componentHeight - 10},14,15,16,1, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1})){
                                     ListForEach(selEntity, SelectedEntities){
-                                        SetStaticRigidbody(GetElementAsType(selEntity,int),isStatic);
+                                        SetStaticRigidBody(GetElementAsType(selEntity,int),isStatic);
                                     }
                                 }
                                 DrawTextColored("Is Static", lightWhite, Screen.windowWidth-componentWindowLength + 25, componentHeight - 6 - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);

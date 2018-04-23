@@ -44,7 +44,7 @@ void VoxelPhysicsUpdate(){
         if(!IsEmptyComponentMask(ThisSystem->excluded) && EntityContainsMask(entity,ThisSystem->excluded) ) continue;
 
 
-        if(IsStaticRigidbody(entity) || EntityIsChild(entity)) {
+        if(IsStaticRigidBody(entity) || EntityIsChild(entity)) {
             SetVelocity(entity,VECTOR3_ZERO);
             SetAcceleration(entity,VECTOR3_ZERO);
             continue;

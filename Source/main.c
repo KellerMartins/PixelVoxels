@@ -53,6 +53,7 @@ int main(int argc, char *argv[]){
 	RigidBodyRegisterLuaFunctions();
 	PointLightRegisterLuaFunctions();
 	VoxelModelRegisterLuaFunctions();
+	LuaScriptRegisterLuaFunctions();
 
 	Rendering.clearScreenColor = (SDL_Color){0,38,75,0};
 	InitFPS();

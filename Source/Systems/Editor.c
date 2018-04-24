@@ -34,8 +34,8 @@ static int scrollbarMouseWheelSpeed = 25;
 
 Vector3 bgPanelColor = {0.02,0.02,0.05};
 
-SDL_Color brightWhite = {250,250,250};
-SDL_Color lightWhite = {200,200,200};
+Vector3 brightWhite = {250.0f/255.0f, 250.0f/255.0f, 250.0f/255.0f};
+Vector3 lightWhite = {200.0f/255.0f, 200.0f/255.0f, 200.0f/255.0f};
 TTF_Font* gizmosFont;
 TTF_Font* gizmosFontSmall;
 

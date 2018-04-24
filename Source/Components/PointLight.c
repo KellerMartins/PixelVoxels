@@ -153,6 +153,7 @@ static int l_SetPointLightColor (lua_State *L) {
     EntityID id = luaL_checkinteger (L, 1);
     if(!lua_istable(L, 2)){
         printf("SetPointLightColor(Lua): Second argument must be a table with 'r', 'g' and 'b' numbers!\n");
+        luaL_checktype(L, 2, LUA_TTABLE); //Check again to cause script error and stop execution
         return 0;
     }
     lua_getfield(L,2, "r");

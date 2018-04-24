@@ -49,11 +49,16 @@ int main(int argc, char *argv[]){
 	if(!InitEngine()) return 1;
 
 	//Register C functions in Lua
+	//From components
 	TransformRegisterLuaFunctions();
 	RigidBodyRegisterLuaFunctions();
 	PointLightRegisterLuaFunctions();
 	VoxelModelRegisterLuaFunctions();
 	LuaScriptRegisterLuaFunctions();
+	//From systems
+	VoxelPhysicsRegisterLuaFunctions();
+	UIRendererRegisterLuaFunctions();
+
 
 	Rendering.clearScreenColor = (SDL_Color){0,38,75,0};
 	InitFPS();

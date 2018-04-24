@@ -304,6 +304,7 @@ static int l_SetVelocity (lua_State *L) {
     EntityID id = luaL_checkinteger (L, 1);
     if(!lua_istable(L, 2)){
         printf("SetVelocity(Lua): Second argument must be a table with 'x', 'y' and 'z' numbers!\n");
+        luaL_checktype(L, 2, LUA_TTABLE); //Check again to cause script error and stop execution
         return 0;
     }
     lua_getfield(L,2, "x");
@@ -322,6 +323,7 @@ static int l_SetAcceleration (lua_State *L) {
     EntityID id = luaL_checkinteger (L, 1);
     if(!lua_istable(L, 2)){
         printf("SetAcceleration(Lua): Second argument must be a table with 'x', 'y' and 'z' numbers!\n");
+        luaL_checktype(L, 2, LUA_TTABLE); //Check again to cause script error and stop execution
         return 0;
     }
     lua_getfield(L,2, "x");

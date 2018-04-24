@@ -6,6 +6,7 @@ static ComponentID VoxelModelID = -1;
 static ComponentID RigidBodyID = -1;
 static ComponentID TransformID = -1;
 
+extern engineCore Core;
 extern engineTime Time;
 extern engineECS ECS;
 
@@ -225,4 +226,29 @@ int VoxelModelVsVoxelModelCollision(EntityID entityA, EntityID entityB,Vector3 *
         }
     }
     return 0;
+}
+
+//Lua interface functions
+
+static int l_GetGravity (lua_State *L) {
+    lua_settop(L, 0);
+    double gravity = GetGravity();
+    lua_pushnumber(L, gravity); //Put the returned number on the stack
+    return 1; //Return number of results
+}
+
+static int l_SetGravity (lua_State *L) {
+    //Get the arguments
+    double g = luaL_checknumber (L, 1);
+
+    SetGravity(g);
+    return 0; //Return number of results
+}
+
+void VoxelPhysicsRegisterLuaFunctions(){
+    lua_pushcfunction(Core.lua, l_GetGravity);
+    lua_setglobal(Core.lua, "GetGravity");
+
+    lua_pushcfunction(Core.lua, l_SetGravity);
+    lua_setglobal(Core.lua, "SetGravity");
 }

@@ -163,7 +163,7 @@ int LoadNewScript(char* scriptPath, char* scriptName, EntityID entity){
 
     //Get returned value as string
     const char* functionName = lua_tostring(L, -1);
-    int functionNameLength = strlen(functionName);
+    int functionNameLength = strlen(functionName)+1;
 
     //Copy the string to the struct, and add it to the list
     LuaScript newScript;

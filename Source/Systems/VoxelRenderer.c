@@ -54,6 +54,34 @@ void VoxelRendererUpdate(){
     glEnable(GL_DEPTH_TEST);
     glAlphaFunc (GL_NOTEQUAL, 0.0f);
 
+
+    //Define the projection matrix
+    float right = Screen.gameWidth/2;
+    float left = -Screen.gameWidth/2;
+    float top = Screen.gameHeight/2;
+    float bottom = -Screen.gameHeight/2;
+    float near = -500;
+    float far = 500;
+    
+    GLfloat ProjectionMatrix[4][4]={{2.0f/(right-left), 0                 , 0                , -(right + left)/(right - left) },
+                                    {0                , 2.0f/(top-bottom) , 0                , -(top + bottom)/(top - bottom) },
+                                    {0                , 0                 , -2.0f/(far-near) , -(far + near)/(far - near)     },
+                                    {0                , 0                 , 0                ,   1                            }};
+
+    //Setup buffers
+    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[0]);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(0);
+
+    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[1]);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(1);
+
+    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[2]);
+    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(2);
+
+
     EntityID entity;
 	for(entity = 0; entity <= ECS.maxUsedIndex; entity++){
 
@@ -82,19 +110,7 @@ void VoxelRendererUpdate(){
             glEnable(GL_POINT_SPRITE);
         }
 
-        //Define matrices
-        float right = Screen.gameWidth/2;
-        float left = -Screen.gameWidth/2;
-        float top = Screen.gameHeight/2;
-        float bottom = -Screen.gameHeight/2;
-        float near = -500;
-        float far = 500;
-        
-        GLfloat ProjectionMatrix[4][4]={{2.0f/(right-left), 0                 , 0                , -(right + left)/(right - left) },
-                                        {0                , 2.0f/(top-bottom) , 0                , -(top + bottom)/(top - bottom) },
-                                        {0                , 0                 , -2.0f/(far-near) , -(far + near)/(far - near)     },
-                                        {0                , 0                 , 0                ,   1                            }};
-
+        //Define the rotation matrix
         float sinx = sin(rotation.x * PI_OVER_180);
         float cosx = cos(rotation.x * PI_OVER_180);
         float siny = sin(rotation.y * PI_OVER_180);
@@ -109,18 +125,12 @@ void VoxelRendererUpdate(){
 
         glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[0]);
         glBufferData(GL_ARRAY_BUFFER, obj->numberOfVertices * 3 * sizeof(GLfloat), obj->vertices, GL_STREAM_DRAW);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray(0);
 
         glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[1]);
         glBufferData(GL_ARRAY_BUFFER, obj->numberOfVertices * 3 * sizeof(GLfloat), obj->vColors, GL_STREAM_DRAW);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray(1);
 
         glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[2]);
         glBufferData(GL_ARRAY_BUFFER, obj->numberOfVertices * 3 * sizeof(GLfloat), obj->normal, GL_STREAM_DRAW);
-        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
-        glEnableVertexAttribArray(2);
 
         int usedProgram = 0;
         if(obj->smallScale){
@@ -148,8 +158,6 @@ void VoxelRendererUpdate(){
         glDrawArrays(GL_POINTS, 0, obj->numberOfVertices);
 
         glUseProgram(0);
-
-        
 
         if(!obj->smallScale){
             glDisable(GL_POINT_SPRITE);

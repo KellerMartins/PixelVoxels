@@ -53,6 +53,13 @@ void MorphLine(GLfloat vertices[8], int minX, int minY, int maxX,int maxY);
 void UIRendererInit(){
     ThisSystem = (System*)GetElementAt(ECS.SystemList,GetSystemID("UIRenderer"));
     UIElements = InitList(sizeof(UIElement));
+}
+
+//UI Render Loop - runs each GameLoop iteration
+void UIRendererUpdate(){
+
+    glBindFramebuffer(GL_FRAMEBUFFER, Rendering.frameBuffer);
+    glViewport(0,0,Screen.windowWidth,Screen.windowHeight);
 
     //Define the projection matrix
     float right = Screen.windowWidth;
@@ -69,14 +76,25 @@ void UIRendererInit(){
     ProjectionMatrix[3][0] = -(right + left)/(right - left);
     ProjectionMatrix[3][1] = -(top + bottom)/(top - bottom);
     ProjectionMatrix[3][2] = -(far + near)/(far - near);
-}
 
-//UI Render Loop - runs each GameLoop iteration
-void UIRendererUpdate(){
+    //Disable depth test
     glDisable(GL_DEPTH_TEST);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, Rendering.frameBuffer);
-    glViewport(0,0,Screen.windowWidth,Screen.windowHeight);
+    //Enable UI shader
+    glUseProgram(Rendering.Shaders[3]);
+    //Pass the projection matrix to the shader
+    glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[3], "projection"), 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix[0]);
+
+    //Setup the vertex VBO to rendering
+    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[0]);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(0);
+
+    //Setup the UV VBO and pass the UV coordinates to it
+    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[1]);
+    glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat), baseRectangleUV, GL_STREAM_DRAW);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(1);
 
     ListCellPointer cell;
     ListForEach(cell, UIElements){
@@ -103,27 +121,17 @@ void UIRendererUpdate(){
             //Passing rectangle to the vertex VBO
             glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[0]);
             glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat), baseRectangleVertex, GL_STREAM_DRAW);
-            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
-            glEnableVertexAttribArray(0);
 
-            //Passing UVs to the uv VBO
-            glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[1]);
-            glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat), baseRectangleUV, GL_STREAM_DRAW);
-            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
-            glEnableVertexAttribArray(1);
 
             glUseProgram(Rendering.Shaders[3]);
 
             //Passing uniforms to shader
-            glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[3], "projection"), 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix[0]);
             glUniform3f(glGetUniformLocation(Rendering.Shaders[3], "color"), element.color.x, element.color.y, element.color.z);
             
             glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-            glUseProgram(0);
+            
         }else if(element.type == textElement){
-
-            glEnable(GL_BLEND);
             
             int textW, textH;
             GLuint textTexture = TextToTexture(element.text, element.color, element.font, &textW, &textH);
@@ -140,28 +148,16 @@ void UIRendererUpdate(){
             //Passing rectangle to the vertex VBO
             glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[0]);
             glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat), baseRectangleVertex, GL_STREAM_DRAW);
-            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
-            glEnableVertexAttribArray(0);
-
-            //Passing UVs to the uv VBO
-            glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[1]);
-            glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat), baseRectangleUV, GL_STREAM_DRAW);
-            glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
-            glEnableVertexAttribArray(1);
 
             glUseProgram(Rendering.Shaders[3]);
 
             //Passing uniforms to shader
             glUniform1i(glGetUniformLocation(Rendering.Shaders[3], "texture"), 0);
-            glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[3], "projection"), 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix[0]);
             glUniform3f(glGetUniformLocation(Rendering.Shaders[3], "color"), element.color.x, element.color.y, element.color.z);
             
             glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-            glUseProgram(0);
 
             glDeleteTextures(1, &textTexture);
-
-            glDisable(GL_BLEND);
             
             free(element.text);
         }else if(element.type == lineElement){
@@ -179,21 +175,20 @@ void UIRendererUpdate(){
             //Passing line to the vertex VBO
             glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[0]);
             glBufferData(GL_ARRAY_BUFFER, 2 * 2 * sizeof(GLfloat), baseLineVertex, GL_STREAM_DRAW);
-            glEnableVertexAttribArray(0);
-
-            glUseProgram(Rendering.Shaders[3]);
 
             //Passing uniforms to shader
-            glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[3], "projection"), 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix[0]);
             glUniform3f(glGetUniformLocation(Rendering.Shaders[3], "color"), element.color.x, element.color.y, element.color.z);
             
             glDrawArrays(GL_LINES, 0, 2);
-
-            glUseProgram(0);
         }
     }
 
+
+    //Reenable depth test and reset opengl vars
     glEnable(GL_DEPTH_TEST);
+
+    glUseProgram(0);
+
     glDisableVertexAttribArray(0);
     glDisableVertexAttribArray(1);
     glBindBuffer(GL_ARRAY_BUFFER, 0);

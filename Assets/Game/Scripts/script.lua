@@ -32,7 +32,7 @@ function float(entity)
 
     for i=0,100,0.5 do
         t = i+time
-        DrawLine({x = (i)*10+200,y = 500+math.sin(t/2)*50}, {x = (i+0.5)*10+200,y = 500+math.sin((t+0.5)/2)*50}, 5 ,{r = (math.sin(t/2)+1)/2,g = 0.0,b = math.abs(math.sin(time/2))})
+        DrawLine({x = (i)*10+200,y = 500+math.sin(t/2)*50}, {x = (i+0.5)*10+200,y = 500+math.sin((t+0.5)/2)*50}, 5 ,{g = (math.sin(t/2)+1)/2,r = 0.0,b = math.abs(math.sin(time/2))})
     end
 
     newHeight = math.sin(time);

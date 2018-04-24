@@ -76,8 +76,9 @@ cJSON* LuaScriptEncode(void** data, cJSON* currentData){
 void* LuaScriptDecode(cJSON **data){
     LuaScript *ls = malloc(sizeof(LuaScript));
 
-    strcpy(cJSON_GetObjectItem(*data, "scriptName")->valuestring, ls->scriptName);
-    strcpy(cJSON_GetObjectItem(*data, "scriptPath")->valuestring, ls->scriptPath);
+    ls->index = -1;
+    strcpy(ls->scriptName,cJSON_GetObjectItem(*data, "scriptName")->valuestring);
+    strcpy(ls->scriptPath, cJSON_GetObjectItem(*data, "scriptPath")->valuestring);
 
     return ls;
 }

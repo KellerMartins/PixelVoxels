@@ -1,49 +1,16 @@
 {
 	"Transform":	{
-		"position":	[6.99801778793335, 68.699623107910156, 17.615171432495117],
-		"rotation":	[0, -0, 0]
+		"position":	[0, 0, 0],
+		"rotation":	[0, 0, 0]
 	},
 	"VoxelModel":	{
-		"modelPath":	"Assets/Game/Models/",
-		"modelName":	"char.vox",
-		"smallScale":	true,
-		"center":	[0, 10, 0]
+		"modelPath":	"Assets/",
+		"modelName":	"Spaceship.vox",
+		"smallScale":	false,
+		"center":	[16, 12, 6]
 	},
-	"RigidBody":	{
-		"mass":	1,
-		"bounciness":	0.699999988079071,
-		"velocity":	[0.10000000149011612, 0, 0],
-		"acceleration":	[0, 0, 0],
-		"useGravity":	true,
-		"isStatic":	false
-	},
-	"childs":	[{
-			"prefabPath":	"Assets",
-			"prefabName":	"newPrefab1.prefab",
-			"Transform":	{
-				"position":	[14.459394454956055, -10.672171592712402, -9.56568717956543],
-				"rotation":	[0, 0, -90]
-			}
-		}, {
-			"prefabPath":	"Assets",
-			"prefabName":	"newPrefab1.prefab",
-			"Transform":	{
-				"position":	[-34.8926887512207, -21.298358917236328, 1.186846137046814],
-				"rotation":	[0, 0, 0]
-			},
-			"VoxelModel":	{
-				"modelPath":	"Assets/Game/Models/",
-				"modelName":	"bullet.vox",
-				"smallScale":	false,
-				"center":	[0, 0, 0]
-			},
-			"RigidBody":	{
-				"mass":	1,
-				"bounciness":	0.699999988079071,
-				"velocity":	[1.1000000238418579, 0, 0],
-				"acceleration":	[0, 0, 0],
-				"useGravity":	true,
-				"isStatic":	false
-			}
-		}]
+	"LuaScript":	{
+		"scriptName":	"script.lua",
+		"scriptPath":	"Assets/Game/Scripts/"
+	}
 }

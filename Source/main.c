@@ -51,7 +51,7 @@ int main(int argc, char *argv[]){
 	//Register C functions in Lua
 	TransformRegisterLuaFunctions();
 	RigidBodyRegisterLuaFunctions();
-
+	PointLightRegisterLuaFunctions();
 
 	Rendering.clearScreenColor = (SDL_Color){0,38,75,0};
 	InitFPS();
@@ -63,7 +63,6 @@ int main(int argc, char *argv[]){
 	}
 
 	EntityID newEntity = CreateEntity();
-	AddComponentToEntity(GetComponentID("RigidBody"), newEntity);
 	AddComponentToEntity(GetComponentID("LuaScript"), newEntity);
 	SetLuaScript(newEntity, "Assets/Game/Scripts/", "script.lua");
 	AddComponentToEntity(GetComponentID("VoxelModel"), newEntity);

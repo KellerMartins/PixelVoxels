@@ -9,6 +9,7 @@ static ComponentID ThisComponentID(){
     return CompID;
 }
 
+extern engineCore Core;
 extern engineECS ECS;
 
 //Runs on AddComponentToEntity
@@ -142,4 +143,101 @@ void SetPointLightRange(EntityID entity, float range){
     }
     PointLightData *pl = (PointLightData *)ECS.Components[ThisComponentID()][entity].data;
     pl->range = clamp(range,0,INFINITY);
+}
+
+
+//Lua interface functions
+
+static int l_SetPointLightColor (lua_State *L) {
+    //Get the arguments
+    EntityID id = luaL_checkinteger (L, 1);
+    if(!lua_istable(L, 2)){
+        printf("SetPointLightColor(Lua): Second argument must be a table with 'r', 'g' and 'b' numbers!\n");
+        return 0;
+    }
+    lua_getfield(L,2, "r");
+    lua_getfield(L,2, "g");
+    lua_getfield(L,2, "b");
+
+    Vector3 color = {luaL_checknumber(L,-3), luaL_checknumber(L,-2), luaL_checknumber(L,-1)};
+
+    SetPointLightColor(id, color);
+    lua_pop(L, 3);
+    return 0; //Return number of results
+}
+
+static int l_GetPointLightColor (lua_State *L) {
+    lua_settop(L, 1);
+    EntityID id = luaL_checkinteger (L, 1); //Get the argument
+    Vector3 color = GetPointLightColor(id);
+
+    lua_newtable(L);
+    lua_pushliteral(L, "r");    //r index
+    lua_pushnumber(L, color.x); //r value
+    lua_rawset(L, -3);          //Store r in table
+
+    lua_pushliteral(L, "g");    //g index
+    lua_pushnumber(L, color.y); //g value
+    lua_rawset(L, -3);          //Store g in table
+
+    lua_pushliteral(L, "b");    //b index
+    lua_pushnumber(L, color.z); //b value
+    lua_rawset(L, -3);          //Store b in table
+
+    return 1; //Return number of results
+}
+
+static int l_GetPointLightIntensity (lua_State *L) {
+    lua_settop(L, 1);
+    EntityID id = luaL_checkinteger (L, 1); //Get the argument
+    float intensity = GetPointLightIntensity(id);
+    lua_pushnumber(L, intensity); //Put the returned number on the stack
+    return 1; //Return number of results
+}
+
+static int l_SetPointLightIntensity (lua_State *L) {
+    //Get the arguments
+    EntityID id = luaL_checkinteger (L, 1);
+    float intensity = luaL_checknumber (L, 2);
+
+    SetPointLightIntensity(id, intensity);
+    return 0; //Return number of results
+}
+
+static int l_GetPointLightRange (lua_State *L) {
+    lua_settop(L, 1);
+    EntityID id = luaL_checkinteger (L, 1); //Get the argument
+    float range = GetPointLightRange(id);
+    lua_pushnumber(L, range); //Put the returned number on the stack
+    return 1; //Return number of results
+}
+
+static int l_SetPointLightRange (lua_State *L) {
+    //Get the arguments
+    EntityID id = luaL_checkinteger (L, 1);
+    float range = luaL_checknumber (L, 2);
+
+    SetPointLightRange(id, range);
+    return 0; //Return number of results
+}
+
+
+void PointLightRegisterLuaFunctions(){
+    lua_pushcfunction(Core.lua, l_SetPointLightColor);
+    lua_setglobal(Core.lua, "SetPointLightColor");
+
+    lua_pushcfunction(Core.lua, l_GetPointLightColor);
+    lua_setglobal(Core.lua, "GetPointLightColor");
+
+    lua_pushcfunction(Core.lua, l_SetPointLightIntensity);
+    lua_setglobal(Core.lua, "SetPointLightIntensity");
+
+    lua_pushcfunction(Core.lua, l_GetPointLightIntensity);
+    lua_setglobal(Core.lua, "GetPointLightIntensity");
+
+    lua_pushcfunction(Core.lua, l_SetPointLightRange);
+    lua_setglobal(Core.lua, "SetPointLightRange");
+
+    lua_pushcfunction(Core.lua, l_GetPointLightRange);
+    lua_setglobal(Core.lua, "GetPointLightRange");
 }

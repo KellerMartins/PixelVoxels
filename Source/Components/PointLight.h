@@ -21,4 +21,5 @@ void SetPointLightIntensity(EntityID entity, float intensity);
 float GetPointLightRange(EntityID entity);
 void SetPointLightRange(EntityID entity, float range);
 
+void PointLightRegisterLuaFunctions();
 #endif

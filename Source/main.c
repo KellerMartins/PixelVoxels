@@ -1,4 +1,5 @@
 #include "Engine.h"
+#include "EngineLuaFunctions.h"
 #include "utils.h"
 
 #include "Components/VoxelModel.h"
@@ -49,6 +50,8 @@ int main(int argc, char *argv[]){
 	if(!InitEngine()) return 1;
 
 	//Register C functions in Lua
+	//From the engine
+	EngineRegisterLuaFunctions();
 	//From components
 	TransformRegisterLuaFunctions();
 	RigidBodyRegisterLuaFunctions();

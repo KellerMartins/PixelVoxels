@@ -21,15 +21,16 @@ end
 timers = {}
 function float(entity)
 
-    DrawRectangle({x = 200,y = 200}, {x = 400,y = 400}, {r = 0.25,g = 0.25,b = 0.25})
-    DrawTextColored("Nice", {r = 1.0,g = 1.0,b = 1.0}, {x = 300,y = 300})
-
     if timers[entity] == nil then
         timers[entity] = timer()
     end
 
     time = timers[entity]();
 
+
+    DrawRectangle({x = 200,y = 200}, {x = 400,y = 400}, {r = 0.25,g = 0.25,b = 0.25})
+    DrawTextColored("PARTY!", {r = math.abs(math.sin(time)),g = math.abs(math.sin(time*2)),b = math.abs(math.sin(time*3))}, PositionToGameScreenCoords(GetPosition(entity)))
+ 
     for i=0,100,0.5 do
         t = i+time
         DrawLine({x = (i)*10+200,y = 500+math.sin(t/2)*50}, {x = (i+0.5)*10+200,y = 500+math.sin((t+0.5)/2)*50}, 5 ,{g = (math.sin(t/2)+1)/2,r = 0.0,b = math.abs(math.sin(time/2))})

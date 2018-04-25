@@ -1057,9 +1057,14 @@ Vector3 PositionToGameScreenCoords(Vector3 position){
 	Vector3 screenPos;
 	position = (Vector3){roundf(position.x),roundf(position.y),roundf(position.z)};
 
+	//Position to screen projection
 	screenPos.x = (int)(((position.x) - (position.y))*2 + roundf(-Rendering.cameraPosition.x)) + 0.375;
     screenPos.y = (int)(((position.x) + (position.y)) + (position.z + Rendering.cameraPosition.z )*2 + roundf(-Rendering.cameraPosition.y)) + 0.375;
 	screenPos.z = (position.z)/256.0;
+
+	//Transforming to screen coordinates
+	screenPos.x = Screen.windowWidth/2 + (screenPos.x/(float)Screen.gameWidth) * Screen.windowWidth;
+	screenPos.y = Screen.windowHeight/2 + (screenPos.y/(float)Screen.gameHeight) * Screen.windowHeight;
 
 	return screenPos;
 }

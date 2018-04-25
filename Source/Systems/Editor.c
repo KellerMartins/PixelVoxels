@@ -639,10 +639,6 @@ void DrawTransformGizmos(){
             GetGlobalTransform(entity,&position,NULL);
             Vector3 screenPos = PositionToGameScreenCoords(position);
 
-            //Transform to screen coordinates
-            screenPos.x = Screen.windowWidth/2 + (screenPos.x/(float)Screen.gameWidth) * Screen.windowWidth;
-            screenPos.y = Screen.windowHeight/2 + (screenPos.y/(float)Screen.gameHeight) * Screen.windowHeight;
-
             Vector3 originPos = (Vector3){screenPos.x,screenPos.y,0};
 
             if(!IsSelected(entity)){
@@ -666,9 +662,6 @@ void DrawTransformGizmos(){
                 //Entity selected, show transform gizmos and deselection point
                 //Forward (X) gizmos
                 Vector3 lineXEndPos = PositionToGameScreenCoords(Add(position,(Vector3){positionGizmosLength * 2/Screen.gameScale,0,0}));
-
-                lineXEndPos.x = Screen.windowWidth/2 + (lineXEndPos.x/(float)Screen.gameWidth) * Screen.windowWidth;
-                lineXEndPos.y = Screen.windowHeight/2 + (lineXEndPos.y/(float)Screen.gameHeight) * Screen.windowHeight;
                 lineXEndPos.z = 0;
 
                 Vector3 gizmosColor = {1,0.75,0.75};
@@ -692,9 +685,6 @@ void DrawTransformGizmos(){
 
                 //Left (Y) gizmos
                 Vector3 lineYEndPos = PositionToGameScreenCoords(Add(position,(Vector3){0,positionGizmosLength* 2/Screen.gameScale,0}));
-
-                lineYEndPos.x = Screen.windowWidth/2 + (lineYEndPos.x/(float)Screen.gameWidth) * Screen.windowWidth;
-                lineYEndPos.y = Screen.windowHeight/2 + (lineYEndPos.y/(float)Screen.gameHeight) * Screen.windowHeight;
                 lineYEndPos.z = 0;
 
                 gizmosColor = (Vector3){0.75,1,0.75};
@@ -720,9 +710,6 @@ void DrawTransformGizmos(){
 
                 //Up (Z) gizmos
                 Vector3 lineZEndPos = PositionToGameScreenCoords(Add(position,(Vector3){0,0,positionGizmosLength* 2/Screen.gameScale}));
-
-                lineZEndPos.x = Screen.windowWidth/2 + (lineZEndPos.x/(float)Screen.gameWidth) * Screen.windowWidth;
-                lineZEndPos.y = Screen.windowHeight/2 + (lineZEndPos.y/(float)Screen.gameHeight) * Screen.windowHeight;
                 lineZEndPos.z = 0;
 
                 gizmosColor = (Vector3){0.75,0.75,1};

@@ -6,13 +6,17 @@ extern engineECS ECS;
 extern engineCore Core;
 
 typedef struct LuaScript{
-    char hasError;
+    //Status 0 = error, 1 = no problems, 2 = reloaded but not prime ran
+    char status;
     char* loopFunction;
     char scriptPath[512];
 	char scriptName[256];
 }LuaScript;
 
 List luaScriptList;
+
+//Internal functions
+int ReloadScript(LuaScript* ls);
 
 //Runs on engine start
 void LuaSystemInit(){
@@ -43,9 +47,13 @@ void LuaSystemUpdate(){
         }
         LuaScript *ls = (LuaScript*)GetElementAt(luaScriptList, scriptIndex);
 
-        //Skip reloaded scripts with errors
-        if(ls->hasError)
+        //Skip scripts with errors
+        if(ls->status == 0)
             continue;
+
+        //If hasn't prime run, reload and run
+        if(ls->status == 2)
+            ReloadScript(ls);
 
         //Run loop function from Lua script
         lua_getglobal(L, ls->loopFunction );
@@ -53,7 +61,7 @@ void LuaSystemUpdate(){
         status = lua_pcall(L, 1, 0, 0);
         if (status) {
             fprintf(stderr, "LuaSystem: Failed to run script: %s\n", lua_tostring(L, -1));
-            ls->hasError = 1;
+            ls->status = 0;
         }
     }
 }
@@ -88,22 +96,22 @@ int LoadNewScript(char* scriptPath, char* scriptName, EntityID entity){
         if(StringCompareEqual(script->scriptName, scriptName)){
             if(StringCompareEqual(script->scriptPath, scriptPath)){
                 //Script is already loaded
-                //If it has errors, just return its index and dont run in the new environment
-                if(script->hasError){
+                //If it has errors, just return its index
+                if(script->status == 0){
                     return i;
                 }
 
-                //If the script is error free, just reload and prime run it in the new environment
+                //If the script is error free, just reload and prime run it
                 if(luaL_loadfile(L, fullPath)) {
                     printf("LoadNewScript: Couldn't reload file (%s): %s\n", scriptName, lua_tostring(L, -1));
-                    script->hasError = 1;
+                    script->status = 0;
                     return i;
                 }
 
                 //Prime run script to get the functions and to define variables
                 if (lua_pcall(L, 0, 1, 0)) {
                     printf("LoadNewScript: Failed to re-run script (%s): %s\n", scriptName, lua_tostring(L, -1));
-                    script->hasError = 1;
+                    script->status = 0;
                 }
                 return i;
             }
@@ -117,7 +125,7 @@ int LoadNewScript(char* scriptPath, char* scriptName, EntityID entity){
         
         //Put the script on the list, but mark as with error
         LuaScript newScript;
-        newScript.hasError = 1;
+        newScript.status = 0;
         newScript.loopFunction = NULL;
         strcpy(newScript.scriptName, scriptName);
         strcpy(newScript.scriptPath, scriptPath);
@@ -127,49 +135,57 @@ int LoadNewScript(char* scriptPath, char* scriptName, EntityID entity){
         return GetLength(luaScriptList)-1;
     } 
 
+    //Struct of the new script
+    LuaScript newScript;
+
+    //If this system is enabled, 
     //Prime run script to get the functions and to define variables
-    if (lua_pcall(L, 0, 1, 0)) {
-        printf("LoadNewScript: Failed to run script (%s): %s\n", scriptName, lua_tostring(L, -1));
+    if(ThisSystem->enabled){
+        if (lua_pcall(L, 0, 1, 0)) {
+            printf("LoadNewScript: Failed to run script (%s): %s\n", scriptName, lua_tostring(L, -1));
 
-        //Put the script on the list, but mark as with error
-        LuaScript newScript;
-        newScript.hasError = 1;
-        newScript.loopFunction = NULL;
-        strcpy(newScript.scriptName, scriptName);
-        strcpy(newScript.scriptPath, scriptPath);
+            //Put the script on the list, but mark as with error
+            LuaScript newScript;
+            newScript.status = 0;
+            newScript.loopFunction = NULL;
+            strcpy(newScript.scriptName, scriptName);
+            strcpy(newScript.scriptPath, scriptPath);
 
-        InsertListEnd(&luaScriptList, &newScript);
+            InsertListEnd(&luaScriptList, &newScript);
 
-        return GetLength(luaScriptList)-1;
-    }
+            return GetLength(luaScriptList)-1;
+        }
 
-    //If the value returned is not a string with the name of the loop function, mark as with error
-    if(lua_type(L, -1) != LUA_TSTRING){
-        printf("LoadNewScript: Returned value is not a string (%s): %s\n", scriptName, lua_tostring(L, -1));
+        //If the value returned is not a string with the name of the loop function, mark as with error
+        if(lua_type(L, -1) != LUA_TSTRING){
+            printf("LoadNewScript: Returned value is not a string (%s): %s\n", scriptName, lua_tostring(L, -1));
 
-        //Put the script on the list, but mark as with error
-        LuaScript newScript;
-        newScript.hasError = 1;
-        newScript.loopFunction = NULL;
-        strcpy(newScript.scriptName, scriptName);
-        strcpy(newScript.scriptPath, scriptPath);
+            //Put the script on the list, but mark as with error
+            LuaScript newScript;
+            newScript.status = 0;
+            newScript.loopFunction = NULL;
+            strcpy(newScript.scriptName, scriptName);
+            strcpy(newScript.scriptPath, scriptPath);
 
-        InsertListEnd(&luaScriptList, &newScript);
+            InsertListEnd(&luaScriptList, &newScript);
 
-        return GetLength(luaScriptList)-1;
+            return GetLength(luaScriptList)-1;
+        }
+
+
+
+        //Get returned value as string
+        const char* functionName = lua_tostring(L, -1);
+        int functionNameLength = strlen(functionName)+1;
+
+        //Copy the string to the struct
+        newScript.loopFunction = malloc(functionNameLength * sizeof(char));
+        strncpy(newScript.loopFunction, functionName, functionNameLength);
     }
 
     //If no errors, just put on the list
 
-    //Get returned value as string
-    const char* functionName = lua_tostring(L, -1);
-    int functionNameLength = strlen(functionName)+1;
-
-    //Copy the string to the struct, and add it to the list
-    LuaScript newScript;
-    newScript.hasError = 0;
-    newScript.loopFunction = malloc(functionNameLength * sizeof(char));
-    strncpy(newScript.loopFunction, functionName, functionNameLength);
+    newScript.status = ThisSystem->enabled? 1:2;
     strcpy(newScript.scriptName, scriptName);
     strcpy(newScript.scriptPath, scriptPath);
 
@@ -180,45 +196,39 @@ int LoadNewScript(char* scriptPath, char* scriptName, EntityID entity){
     return GetLength(luaScriptList)-1;
 }
 
-int ReloadAllScripts(){
-    int noErrors = 1;
+//Returns 1 if reloaded sucessfully, and 0 if an error ocurred
+int ReloadScript(LuaScript* ls){
     char fullPath[512+256];
+    //Concatenate path and file name to fullPath
+    strncpy(fullPath,ls->scriptPath,512);
+    if(ls->scriptPath[strlen(ls->scriptPath)-1] != '/'){
+        strcat(fullPath,"/");
+    }
+    strcat(fullPath,ls->scriptName);
 
-    ListCellPointer cell;
-    ListForEach(cell, luaScriptList){
-        LuaScript *ls = GetElement(*cell);
-        
-        //Concatenate path and file name to fullPath
-        strncpy(fullPath,ls->scriptPath,512);
-        if(ls->scriptPath[strlen(ls->scriptPath)-1] != '/'){
-            strcat(fullPath,"/");
-        }
-        strcat(fullPath,ls->scriptName);
+    lua_State *L = Core.lua;
 
-        lua_State *L = Core.lua;
+    //Reload the script chunk into Lua
+    if(luaL_loadfile(L, fullPath)) {
+        printf("ReloadScript: Couldn't load file (%s): %s\n", ls->scriptName, lua_tostring(L, -1));
+        ls->status = 0;
+        return 0;
+    }
 
-        //Reload the script chunk into Lua
-        if(luaL_loadfile(L, fullPath)) {
-            printf("ReloadAllScripts: Couldn't load file (%s): %s\n", ls->scriptName, lua_tostring(L, -1));
-            ls->hasError = 1;
-            noErrors = 0;
-            continue;
-        }
-
-        //Prime run script to get the functions and to define variables
+    //If the lua system is enabled,
+    //Prime run script to get the functions and to define variables
+    if(ThisSystem->enabled){
         if (lua_pcall(L, 0, 1, 0)) {
-            printf("ReloadAllScripts: Failed to run script (%s): %s\n", ls->scriptName, lua_tostring(L, -1));
-            ls->hasError = 1;
-            noErrors = 0;
-            continue;
+            printf("ReloadScript: Failed to run script (%s): %s\n", ls->scriptName, lua_tostring(L, -1));
+            ls->status = 0;
+            return 0;
         }
 
         //If the value returned is not a string with the name of the loop function, ignore this script
         if(lua_type(L, -1) != LUA_TSTRING){
-            printf("ReloadAllScripts: Returned value is not a string (%s): %s\n", ls->scriptName, lua_tostring(L, -1));
-            ls->hasError = 1;
-            noErrors = 0;
-            continue;
+            printf("ReloadScript: Returned value is not a string (%s): %s\n", ls->scriptName, lua_tostring(L, -1));
+            ls->status = 0;
+            return 0;
         }
 
         //Get returned value as string
@@ -232,8 +242,21 @@ int ReloadAllScripts(){
         
         //Removed return value from stack
         lua_pop(L, 1);
+    }
 
-        ls->hasError = 0;
+    ls->status = ThisSystem->enabled? 1:2;
+
+    return 1;
+}
+
+int ReloadAllScripts(){
+    int noErrors = 1;
+    
+
+    ListCellPointer cell;
+    ListForEach(cell, luaScriptList){
+        LuaScript *ls = GetElement(*cell);
+        noErrors *= ReloadScript(ls);
     }
 
     return noErrors;

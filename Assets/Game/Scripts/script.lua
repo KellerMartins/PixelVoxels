@@ -46,6 +46,16 @@ function float(entity)
     SetPosition(entity, {x=pos.x, y=pos.y, z=pos.z+newHeight})
     rot = GetRotation(entity)
     SetRotation(entity, {x=rot.x, y=rot.y, z=time*20})
+
+    if GetKeyDown("J") then
+        if bool then
+            EnableSystem(GetSystemID("UIRenderer"))
+        else
+            DisableSystem(GetSystemID("UIRenderer"))
+        end
+        bool = not bool
+    end
+
 end
 
 return "float"

@@ -1,43 +1,65 @@
 #include "EngineLuaFunctions.h"
 
 extern engineCore Core;
-/*
+
 //-- Component functions --
-ComponentID l_GetComponentID(char componentName[25]){
-
-}
-ComponentMask l_CreateComponentMaskByName(int numComp, ...){
-
-}
-ComponentMask l_CreateComponentMaskByID(int numComp, ...){
-
+static int l_GetComponentID(lua_State *L){
+    const char* name = luaL_checkstring (L, 1);
+    lua_pushinteger(L, GetComponentID((char *)name));
+    return 1;
 }
 
 //-- Entity functions --
-EntityID l_CreateEntity(){
-
+static int l_CreateEntity(lua_State *L){
+    lua_pushinteger(L, CreateEntity());
+    return 1;
 }
-void l_DestroyEntity(EntityID entity){
 
+static int l_DestroyEntity(lua_State *L){
+    int id = luaL_checkinteger (L, 1);
+    DestroyEntity(id);
+    return 0;
 }
-int l_IsValidEntity(EntityID entity){
 
+static int l_IsValidEntity(lua_State *L){
+    int id = luaL_checkinteger (L, 1);
+    lua_pushboolean(L, IsValidEntity(id));
+    return 1;
 }
-int l_EntityIsPrefab(EntityID entity){
 
+static int l_EntityIsPrefab(lua_State *L){
+    int id = luaL_checkinteger (L, 1);
+    lua_pushboolean(L, EntityIsPrefab(id));
+    return 1;
 }
-char *GetPrefabPath(EntityID entity){
 
+static int l_GetPrefabPath(lua_State *L){
+    EntityID id = luaL_checkinteger (L, 1);
+    char* path = GetPrefabPath(id);
+    lua_pushstring(L, path);
+    return 1;
 }
-char *l_GetPrefabName(EntityID entity){
 
+static int l_GetPrefabName(lua_State *L){
+    EntityID id = luaL_checkinteger (L, 1);
+    char* name = GetPrefabName(id);
+    lua_pushstring(L, name);
+    return 1;
 }
-void l_AddComponentToEntity(ComponentID component, EntityID entity){
 
+static int l_AddComponentToEntity(lua_State *L){
+    int component = luaL_checkinteger (L, 1);
+    int entity = luaL_checkinteger (L, 2);
+    AddComponentToEntity(component,entity);
+    return 0;
 }
-void l_RemoveComponentFromEntity(ComponentID component, EntityID entity){
-
+static int l_RemoveComponentFromEntity(lua_State *L){
+    int component = luaL_checkinteger (L, 1);
+    int entity = luaL_checkinteger (L, 2);
+    RemoveComponentFromEntity(component,entity);
+    return 0;
 }
+/*
 EntityID l_DuplicateEntity(EntityID entity){
 
 }
@@ -96,32 +118,47 @@ int l_UnsetParent(EntityID child){
 
 }
 
-
+*/
 //-- System functions --
-SystemID l_GetSystemID(char systemName[25]){
-
+static int l_GetSystemID(lua_State *L){
+    const char* id = luaL_checkstring (L, 1);
+    lua_pushinteger(L, GetSystemID((char *)id));
+    return 1;
 }
-void l_EnableSystem(SystemID system){
 
+static int l_EnableSystem(lua_State *L){
+    int id = luaL_checkinteger (L, 1);
+    EnableSystem(id);
+    return 0;
 }
-void l_DisableSystem(SystemID system){
 
+static int l_DisableSystem(lua_State *L){
+    int id = luaL_checkinteger (L, 1);
+    DisableSystem(id);
+    return 0;
 }
-int l_IsSystemEnabled(SystemID system){
 
+static int l_IsSystemEnabled(lua_State *L){
+    int id = luaL_checkinteger (L, 1);
+    lua_pushboolean(L, IsSystemEnabled(id));
+    return 1;
 }
+
 
 //-------- Engine Functions -------------
 
-void l_ExitGame(){
-
+static int l_ExitGame(lua_State *L){
+    ExitGame();
+    return 0;
 }
-int l_GameExited(){
 
+static int l_GameExited(lua_State *L){
+    lua_pushboolean(L, GameExited());
+    return 1;
 }
 
 //-------- Rendering Functions -------------
-*/
+
 static int l_PositionToGameScreenCoords(lua_State *L){
     //Get the position
     if(!lua_istable(L, 1)){
@@ -217,6 +254,42 @@ void l_StopTextInput(){
 
 
 void EngineRegisterLuaFunctions(){
+
+    lua_pushcfunction(Core.lua, l_GetComponentID);
+    lua_setglobal(Core.lua, "GetComponentID");
+
+    lua_pushcfunction(Core.lua, l_CreateEntity);
+    lua_setglobal(Core.lua, "CreateEntity");
+    lua_pushcfunction(Core.lua, l_DestroyEntity);
+    lua_setglobal(Core.lua, "DestroyEntity");    
+    lua_pushcfunction(Core.lua, l_IsValidEntity);
+    lua_setglobal(Core.lua, "IsValidEntity");    
+
+    lua_pushcfunction(Core.lua, l_EntityIsPrefab);
+    lua_setglobal(Core.lua, "EntityIsPrefab");
+    lua_pushcfunction(Core.lua, l_GetPrefabPath);
+    lua_setglobal(Core.lua, "GetPrefabPath");
+    lua_pushcfunction(Core.lua, l_GetPrefabName);
+    lua_setglobal(Core.lua, "GetPrefabName");
+
+    lua_pushcfunction(Core.lua, l_AddComponentToEntity);
+    lua_setglobal(Core.lua, "AddComponentToEntity");
+    lua_pushcfunction(Core.lua, l_RemoveComponentFromEntity);
+    lua_setglobal(Core.lua, "RemoveComponentFromEntity");
+
+    lua_pushcfunction(Core.lua, l_GetSystemID);
+    lua_setglobal(Core.lua, "GetSystemID");
+    lua_pushcfunction(Core.lua, l_EnableSystem);
+    lua_setglobal(Core.lua, "EnableSystem");
+    lua_pushcfunction(Core.lua, l_DisableSystem);
+    lua_setglobal(Core.lua, "DisableSystem");
+    lua_pushcfunction(Core.lua, l_IsSystemEnabled);
+    lua_setglobal(Core.lua, "IsSystemEnabled");
+
+    lua_pushcfunction(Core.lua, l_ExitGame);
+    lua_setglobal(Core.lua, "ExitGame");
+    lua_pushcfunction(Core.lua, l_GameExited);
+    lua_setglobal(Core.lua, "GameExited");
 
     lua_pushcfunction(Core.lua, l_PositionToGameScreenCoords);
     lua_setglobal(Core.lua, "PositionToGameScreenCoords");

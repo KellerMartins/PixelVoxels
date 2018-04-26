@@ -18,6 +18,11 @@ function getTable(foo)
     end
 end
 
+LoadFontTTF("Interface/Fonts","Visitor",64)
+LoadFontTTF("Interface/Fonts","Visitor",128)
+LoadFontTTF("Interface/Fonts/coolthre","CoolThre",16)
+LoadFontTTF("Interface/Fonts/gros/","Gros",16)
+
 timers = {}
 function float(entity)
 
@@ -29,7 +34,7 @@ function float(entity)
 
 
     DrawRectangle({x = 200,y = 200}, {x = 400,y = 400}, {r = 0.25,g = 0.25,b = 0.25})
-    DrawTextColored("PARTY!", {r = math.abs(math.sin(time)),g = math.abs(math.sin(time*2)),b = math.abs(math.sin(time*3))}, PositionToGameScreenCoords(GetPosition(entity)))
+    DrawTextColored("PARTY!", {r = math.abs(math.sin(time)),g = math.abs(math.sin(time*2)),b = math.abs(math.sin(time*3))}, PositionToGameScreenCoords(GetPosition(entity)), "Gros16")
  
     for i=0,100,0.5 do
         t = i+time

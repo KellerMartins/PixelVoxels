@@ -41,8 +41,10 @@ GLfloat baseLineVertex[4];
 //OpenGL data
 GLfloat ProjectionMatrix[4][4] = {{0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}};
 
-//Lua font. Needs revision on font choice for the system and the lua interface. For now use a default font
-TTF_Font *luaDefaultFont = NULL;
+//Lua fonts list
+List luaFonts;
+char **luaFontNames = NULL;
+
 
 //Internal functions declarations
 GLuint TextToTexture(char *text, Vector3 color, TTF_Font* font, int *w, int* h);
@@ -53,6 +55,10 @@ void MorphLine(GLfloat vertices[8], int minX, int minY, int maxX,int maxY);
 void UIRendererInit(){
     ThisSystem = (System*)GetElementAt(ECS.SystemList,GetSystemID("UIRenderer"));
     UIElements = InitList(sizeof(UIElement));
+
+    luaFonts = InitList(sizeof(TTF_Font*));
+    luaFontNames = malloc(sizeof(char*));
+    luaFontNames[0] = NULL;
 }
 
 //UI Render Loop - runs each GameLoop iteration
@@ -199,7 +205,25 @@ void UIRendererUpdate(){
 
 //Finalization - runs at engine finish
 void UIRendererFree(){
-    TTF_CloseFont(luaDefaultFont);
+    //Close fonts
+    ListCellPointer fontCell;
+    ListForEach(fontCell, luaFonts){
+        TTF_CloseFont(GetElementAsType(fontCell,TTF_Font*));
+    }
+    //Free font list
+    FreeList(&luaFonts);
+
+    //Free font name list
+    char *currentFont = luaFontNames[0];
+    int i=0;
+    while(currentFont){
+        i++;
+        free(currentFont);
+        currentFont = luaFontNames[i];
+    }
+    free(luaFontNames);
+
+    //Free UI elements list
     FreeList(&UIElements);
 }
 
@@ -347,6 +371,58 @@ GLuint TextToTexture(char *text, Vector3 color, TTF_Font* font, int *w, int* h){
 
 //Lua interface functions
 
+static int l_LoadFontTTF(lua_State *L){
+
+    const char* fontPath = luaL_checkstring (L, 1);
+    const char* fontName = luaL_checkstring (L, 2);
+    int fontSize = luaL_checkinteger (L, 3);
+
+    char fullPath[512+256];
+    char *fontID = malloc((256+3) * sizeof(char));
+
+    snprintf(fontID,256+3, "%.251s%d",fontName,fontSize);
+
+    //Check if this font with this size is already loaded
+    char *curName = luaFontNames[0];
+    int i=0;
+    while(curName){
+        i++;
+        if(StringCompareEqual(curName, fontID)){
+            //This font with this size is already loaded
+            free(fontID);
+            return 0;
+        }
+        curName = luaFontNames[i];
+    }
+
+    //Concatenate path, name and extension, and complete '/' if needed
+    if(fontPath[strlen(fontPath)-1] == '/')
+        sprintf(fullPath, "%.512s%.251s.ttf",fontPath,fontName);
+    else
+        sprintf(fullPath, "%.512s/%.251s.ttf",fontPath,fontName);
+        
+
+    TTF_Font *newFont = TTF_OpenFont(fullPath,fontSize);
+    if(!newFont){
+        printf("LoadFontTTF(Lua): failed to load font! (%s)\n", fullPath);
+        return 0;
+    }
+
+    char **newFontNames = realloc(luaFontNames,(GetLength(luaFonts)+2) * sizeof(char*)); //+1 for the new string, and another for the NULL
+    if(!newFontNames || !newFont){
+        printf("LoadFontTTF(Lua): failed to realloc the font name vector!\n");
+        return 0;
+    }
+
+    InsertListEnd(&luaFonts, &newFont);
+
+    luaFontNames = newFontNames;
+    luaFontNames[GetLength(luaFonts)] = NULL;
+    luaFontNames[GetLength(luaFonts)-1] = fontID;
+
+    return 0;
+}
+
 //(WIP)
 static int l_DrawTextColored (lua_State *L) {
     //Get the arguments
@@ -377,12 +453,10 @@ static int l_DrawTextColored (lua_State *L) {
     int px = luaL_checknumber(L,-2);
     int py = luaL_checknumber(L,-1);
 
-    //WIP: use default font for now
-    if(!luaDefaultFont){
-        luaDefaultFont = TTF_OpenFont("Interface/Fonts/gros/GROS.TTF",16);
-    }
+    //Font index
+    int fontIndex = luaL_checkoption(L, 4, NULL, (const char *const*) luaFontNames);
 
-    DrawTextColored((char*)text, uiColor, px, py,luaDefaultFont);
+    DrawTextColored((char*)text, uiColor, px, py, GetElementAsType(GetCellAt(luaFonts, fontIndex),TTF_Font*) );
     return 0; //Return number of results
 }
 
@@ -474,4 +548,7 @@ void UIRendererRegisterLuaFunctions(){
 
     lua_pushcfunction(Core.lua, l_DrawLine);
     lua_setglobal(Core.lua, "DrawLine");
+
+    lua_pushcfunction(Core.lua, l_LoadFontTTF);
+    lua_setglobal(Core.lua, "LoadFontTTF");
 }

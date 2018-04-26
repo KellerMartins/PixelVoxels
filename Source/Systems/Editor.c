@@ -163,12 +163,12 @@ void EditorInit(System *systemObject){
         }
     }
     
-    gizmosFont = TTF_OpenFont("Interface/Fonts/gros/GROS.TTF",16);
+    gizmosFont = TTF_OpenFont("Interface/Fonts/gros/Gros.ttf",16);
 	if(!gizmosFont){
 		printf("Font: Error loading font!");
 	}
 
-    gizmosFontSmall= TTF_OpenFont("Interface/Fonts/coolthre/COOLTHRE.TTF",12);
+    gizmosFontSmall= TTF_OpenFont("Interface/Fonts/coolthre/CoolThre.ttf",12);
     if(!gizmosFontSmall){
 		printf("Font: Error loading small font!");
 	}

@@ -16,7 +16,6 @@ static float positionGizmosLength = 20;
 static const int selectMouseOverDistance = 10;
 static const int axisMouseOverDistance = 20;
 static const int scrollbarMouseOverDistance = 8;
-static const float lineGizmosMouseMovement = 4.50;
 
 static int componentWindowLength = 200;
 static int componentWindowWidthSpacing = 14;
@@ -33,14 +32,27 @@ static int entityBetweenSpacing = 2;
 static int scrollbarMouseWheelSpeed = 25;
 
 Vector3 bgPanelColor = {0.02,0.02,0.05};
+Vector3 bgLightColor = {0.2,0.2,0.35};
+Vector3 bgMediumColor = {0.1,0.1,0.15};
+
+Vector3 fieldColor = {0.2, 0.2, 0.2};
+Vector3 fieldEditingColor = {0.3, 0.3, 0.3};
+Vector3 buttonOverColor = {0.3,0.3,0.4};
+
+Vector3 scrollbarInactiveColor = {0.3,0.3,0.3};
+Vector3 scrollbarOverColor = {0.5,0.5,0.5};
+
+Vector3 menuTabColor = {0.05,0.05,0.10};
+Vector3 menuActiveTabColor = {0.15,0.15,0.2};
 
 Vector3 brightWhite = {250.0f/255.0f, 250.0f/255.0f, 250.0f/255.0f};
 Vector3 lightWhite = {200.0f/255.0f, 200.0f/255.0f, 200.0f/255.0f};
 TTF_Font* gizmosFont;
 TTF_Font* gizmosFontSmall;
 
-GLuint iconsTex[19];
-int iconsSize[19];
+#define NUMBER_OF_ICONS 20
+GLuint iconsTex[NUMBER_OF_ICONS];
+int iconsSize[NUMBER_OF_ICONS];
 
 char *textFieldString = NULL;
 
@@ -67,9 +79,9 @@ FileBrowserData fileBrowser = {.fileExtension = "", .fileName = "", .filePath = 
 typedef struct {
     int opened;
     char contentString[256];
-    char option1String[8];
-    char option2String[8];
-    char option3String[8];
+    char option1String[16];
+    char option2String[16];
+    char option3String[16];
     void(*option1Function)();
     void(*option2Function)();
     void(*option3Function)();
@@ -133,13 +145,18 @@ void FBExportPrefab();
 void OpenDialogWindow(char content[], char option1[], char option2[], char option3[], void(*op1Func)(), void(*op2Func)(), void(*op3Func)());
 void CloseDialogWindow();
 
+void NewSceneDontSaveOption();
+void NewSceneSaveOption();
+void NewSceneCancelOption();
+void NewSceneSaveScene();
+
 void EnterPlayMode();
 void ExitPlayMode();
 
 
 
 //Runs on engine start
-void EditorInit(System *systemObject){
+void EditorInit(){
     ThisSystem = (System*)GetElementAt(ECS.SystemList,GetSystemID("Editor"));
 
     SelectedEntities = InitList(sizeof(EntityID));
@@ -174,7 +191,7 @@ void EditorInit(System *systemObject){
 	}
 
     //Load UI icons
-    glGenTextures(19, iconsTex);
+    glGenTextures(NUMBER_OF_ICONS, iconsTex);
     LoadUITexture("Interface/IconsUI/add.png",0);
     LoadUITexture("Interface/IconsUI/remove.png",1);
     LoadUITexture("Interface/IconsUI/bin.png",2);
@@ -194,6 +211,7 @@ void EditorInit(System *systemObject){
     LoadUITexture("Interface/IconsUI/toggleUndefined.png",16);
     LoadUITexture("Interface/IconsUI/voxel.png",17);
     LoadUITexture("Interface/IconsUI/x.png",18);
+    LoadUITexture("Interface/IconsUI/save.png",19);
 }
 
 
@@ -238,13 +256,13 @@ void EditorUpdate(){
         Vector3 bMin = {0,Screen.windowHeight-(entityWindowTopHeightSpacing * 2.0/3.0)+2,0};
         Vector3 bMax = {entityWindowLength,Screen.windowHeight-2,0};
         if(MouseOverBox(mousePos, bMin, bMax,0)){
-            DrawRectangle(bMin,bMax,0.3,0.3,0.4);
+            DrawRectangle(bMin,bMax,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
             if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
                 menuOpened = 1;
                 CloseFileBrowser();
             }
         }else{
-            DrawRectangle(bMin,bMax,0.2,0.2,0.35);
+            DrawRectangle(bMin,bMax,bgLightColor.x, bgLightColor.y, bgLightColor.z);
         }
         DrawTextColored("Menu", brightWhite, 16, Screen.windowHeight-(entityWindowTopHeightSpacing/2)+5, gizmosFont);
 
@@ -297,7 +315,7 @@ void EditorUpdate(){
             //LoadScene("Assets", "newScene.scene");
         }
     }else{
-        if(!fileBrowser.opened){
+        if(!fileBrowser.opened && !dialog.opened){
             DrawMenuWindow();
         }
     }
@@ -354,10 +372,10 @@ void DrawMenuWindow(){
     Vector3 headerMin = {Screen.windowWidth/2 -300,Screen.windowHeight/2 +70};
     Vector3 headerMax = {Screen.windowWidth/2 +300,Screen.windowHeight/2 +100};
     DrawRectangle(bgMin,bgMax,bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
-    DrawRectangle(headerMin,headerMax,0.1,0.1,0.15);
-    DrawRectangle(optionsBgMin,optionsBgMax,0.15,0.15,0.2);
+    DrawRectangle(headerMin,headerMax,bgMediumColor.x, bgMediumColor.y, bgMediumColor.z);
+    DrawRectangle(optionsBgMin,optionsBgMax,menuActiveTabColor.x, menuActiveTabColor.y, menuActiveTabColor.z);
 
-    if(PointButton((Vector3){headerMax.x - iconsSize[8] - 6,headerMin.y+(headerMax.y - headerMin.y)/2,0},18, 1, (Vector3){0.75,0.75,0.75}, (Vector3){1,0.2,0.2}, (Vector3){0.5,0.5,0.5}) == 1){
+    if(PointButton((Vector3){headerMax.x - iconsSize[8] - 6,headerMin.y+(headerMax.y - headerMin.y)/2,0},18, 1, (Vector3){0.75,0.75,0.75}, (Vector3){1,0.2,0.2}, (Vector3){scrollbarOverColor.x, scrollbarOverColor.y, scrollbarOverColor.z}) == 1){
         menuOpened = 0;
         return;
     }
@@ -382,15 +400,15 @@ void DrawMenuWindow(){
         tabMax.x += w + 6;
 
         if(selectedTab == tabIndex){
-            DrawRectangle(tabMin,tabMax,0.15,0.15,0.2);
+            DrawRectangle(tabMin,tabMax,menuActiveTabColor.x, menuActiveTabColor.y, menuActiveTabColor.z);
         }else{
             if(MouseOverBox(mousePos,tabMin,tabMax,0)){
-                DrawRectangle(tabMin,tabMax,0.1,0.1,0.15);
+                DrawRectangle(tabMin,tabMax,bgMediumColor.x, bgMediumColor.y, bgMediumColor.z);
                 if(GetMouseButtonUp(SDL_BUTTON_LEFT)){
                     selectedTab = tabIndex;
                 }
             }else{
-                DrawRectangle(tabMin,tabMax,0.05,0.05,0.10);
+                DrawRectangle(tabMin,tabMax,menuTabColor.x, menuTabColor.y, menuTabColor.z);
             }
         }
 
@@ -422,12 +440,26 @@ void DrawMenuWindow(){
                 bMin = (Vector3){optionsBgMin.x + 10,optionsBgMax.y-55};
                 bMax = (Vector3){optionsBgMin.x + 160,optionsBgMax.y-25};
                 if(MouseOverBox(mousePos, bMin, bMax,0)){
-                    DrawRectangle(bMin,bMax,0.3,0.3,0.4);
+                    DrawRectangle(bMin,bMax,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
                     if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
-                        menuOpened = 1;
+                        //Check if scene is empty
+                        int i, sceneIsEmpty = 1;
+                        for(i=0; i<=ECS.maxUsedIndex; i++){
+                            if(IsValidEntity(i)){
+                                sceneIsEmpty = 0;
+                                break;
+                            }
+                        }
+                        if(sceneIsEmpty){
+                            //Just close the menu, as there is no need to clear the current scene
+                            menuOpened = 0;
+                        }else{
+                            OpenDialogWindow("Do you want to save\nthe scene first?", "Save", "Don't save", "Cancel", &NewSceneSaveOption, &NewSceneDontSaveOption, &NewSceneCancelOption);
+                        }
+
                     }
                 }else{
-                    DrawRectangle(bMin,bMax,0.2,0.2,0.35);
+                    DrawRectangle(bMin,bMax,bgLightColor.x, bgLightColor.y, bgLightColor.z);
                 }
                 TTF_SizeText(gizmosFont,"New Scene",&btw,&bth);
                 DrawTextColored("New Scene", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
@@ -437,7 +469,7 @@ void DrawMenuWindow(){
                 bMin.y -= spacing;
                 bMax.y -= spacing;
                 if(MouseOverBox(mousePos, bMin, bMax,0)){
-                    DrawRectangle(bMin,bMax,0.3,0.3,0.4);
+                    DrawRectangle(bMin,bMax,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
                     if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
                         if(scenePath[0] != '\0'){
                             OpenFileBrowser(0,scenePath,FBLoadScene);
@@ -447,7 +479,7 @@ void DrawMenuWindow(){
                         FileBrowserExtension("scene");
                     }
                 }else{
-                    DrawRectangle(bMin,bMax,0.2,0.2,0.35);
+                    DrawRectangle(bMin,bMax,bgLightColor.x, bgLightColor.y, bgLightColor.z);
                 }
                 TTF_SizeText(gizmosFont,"Open Scene",&btw,&bth);
                 DrawTextColored("Open Scene", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
@@ -457,7 +489,7 @@ void DrawMenuWindow(){
                 bMin.y -= spacing;
                 bMax.y -= spacing;
                 if(MouseOverBox(mousePos, bMin, bMax,0)){
-                    DrawRectangle(bMin,bMax,0.3,0.3,0.4);
+                    DrawRectangle(bMin,bMax,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
                     if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
                         if(scenePath[0] != '\0'){
                             OpenFileBrowser(1,scenePath,FBSaveScene);
@@ -468,7 +500,7 @@ void DrawMenuWindow(){
                         
                     }
                 }else{
-                    DrawRectangle(bMin,bMax,0.2,0.2,0.35);
+                    DrawRectangle(bMin,bMax,bgLightColor.x, bgLightColor.y, bgLightColor.z);
                 }
                 TTF_SizeText(gizmosFont,"Save Scene",&btw,&bth);
                 DrawTextColored("Save Scene", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
@@ -488,12 +520,12 @@ void DrawMenuWindow(){
                 DrawTextColored("settings", lightWhite, bMin.x, optionsBgMax.y-20, gizmosFontSmall);
 
                 if(MouseOverBox(mousePos, bMin, bMax,0)){
-                    DrawRectangle(bMin,bMax,0.3,0.3,0.4);
+                    DrawRectangle(bMin,bMax,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
                     if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
                         menuOpened = 1;
                     }
                 }else{
-                    DrawRectangle(bMin,bMax,0.2,0.2,0.35);
+                    DrawRectangle(bMin,bMax,bgLightColor.x, bgLightColor.y, bgLightColor.z);
                 }
                 TTF_SizeText(gizmosFont,"Save Scene",&btw,&bth);
                 DrawTextColored("Save Scene", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
@@ -507,13 +539,13 @@ void DrawMenuWindow(){
                 bMax = (Vector3){optionsBgMin.x + 270,optionsBgMax.y-25};
                 if(!IsListEmpty(SelectedEntities)){
                     if(MouseOverBox(mousePos, bMin, bMax,0)){
-                        DrawRectangle(bMin,bMax,0.3,0.3,0.4);
+                        DrawRectangle(bMin,bMax,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
                         if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
                             OpenFileBrowser(1,NULL,FBExportPrefab);
                             FileBrowserExtension("prefab");
                         }
                     }else{
-                        DrawRectangle(bMin,bMax,0.2,0.2,0.35);
+                        DrawRectangle(bMin,bMax,bgLightColor.x, bgLightColor.y, bgLightColor.z);
                     }
                 }else{
                     DrawRectangle(bMin,bMax,0.2,0.2,0.2);
@@ -525,12 +557,12 @@ void DrawMenuWindow(){
                 bMin.y -= spacing;
                 bMax.y -= spacing;
                 if(MouseOverBox(mousePos, bMin, bMax,0)){
-                    DrawRectangle(bMin,bMax,0.3,0.3,0.4);
+                    DrawRectangle(bMin,bMax,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
                     if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
                         menuOpened = 1;
                     }
                 }else{
-                    DrawRectangle(bMin,bMax,0.2,0.2,0.35);
+                    DrawRectangle(bMin,bMax,bgLightColor.x, bgLightColor.y, bgLightColor.z);
                 }
                 TTF_SizeText(gizmosFont,"Import prefab",&btw,&bth);
                 DrawTextColored("Import prefab", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
@@ -539,12 +571,12 @@ void DrawMenuWindow(){
                 bMin.y -= spacing;
                 bMax.y -= spacing;
                 if(MouseOverBox(mousePos, bMin, bMax,0)){
-                    DrawRectangle(bMin,bMax,0.3,0.3,0.4);
+                    DrawRectangle(bMin,bMax,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
                     if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
                         menuOpened = 1;
                     }
                 }else{
-                    DrawRectangle(bMin,bMax,0.2,0.2,0.35);
+                    DrawRectangle(bMin,bMax,bgLightColor.x, bgLightColor.y, bgLightColor.z);
                 }
                 TTF_SizeText(gizmosFont,"Import scene entities",&btw,&bth);
                 DrawTextColored("Import scene entities", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
@@ -565,7 +597,7 @@ void DrawMenuWindow(){
 
                 //Select all button
                 if(MouseOverBox(mousePos, bMin, bMax,0)){
-                    DrawRectangle(bMin,bMax,0.3,0.3,0.4);
+                    DrawRectangle(bMin,bMax,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
                     if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
                         //Select all entities
                         FreeList(&SelectedEntities);
@@ -576,7 +608,7 @@ void DrawMenuWindow(){
                         }
                     }
                 }else{
-                    DrawRectangle(bMin,bMax,0.2,0.2,0.35);
+                    DrawRectangle(bMin,bMax,bgLightColor.x, bgLightColor.y, bgLightColor.z);
                 }
                 TTF_SizeText(gizmosFont,"Select all",&btw,&bth);
                 DrawTextColored("Select all", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
@@ -586,13 +618,13 @@ void DrawMenuWindow(){
                 bMin.y -= spacing;
                 bMax.y -= spacing;
                 if(MouseOverBox(mousePos, bMin, bMax,0)){
-                    DrawRectangle(bMin,bMax,0.3,0.3,0.4);
+                    DrawRectangle(bMin,bMax,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
                     if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
                         //Deselect entities
                         FreeList(&SelectedEntities);
                     }
                 }else{
-                    DrawRectangle(bMin,bMax,0.2,0.2,0.35);
+                    DrawRectangle(bMin,bMax,bgLightColor.x, bgLightColor.y, bgLightColor.z);
                 }
                 TTF_SizeText(gizmosFont,"Deselect all",&btw,&bth);
                 DrawTextColored("Deselect all", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
@@ -602,7 +634,7 @@ void DrawMenuWindow(){
                 bMin.y -= spacing;
                 bMax.y -= spacing;
                 if(MouseOverBox(mousePos, bMin, bMax,0)){
-                    DrawRectangle(bMin,bMax,0.3,0.3,0.4);
+                    DrawRectangle(bMin,bMax,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
                     if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
                         //Remove selected entities
                         ListCellPointer sEntity;
@@ -612,7 +644,7 @@ void DrawMenuWindow(){
                         FreeList(&SelectedEntities);
                     }
                 }else{
-                    DrawRectangle(bMin,bMax,0.2,0.2,0.35);
+                    DrawRectangle(bMin,bMax,bgLightColor.x, bgLightColor.y, bgLightColor.z);
                 }
                 TTF_SizeText(gizmosFont,"Remove selected",&btw,&bth);
                 DrawTextColored("Remove selected", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
@@ -643,7 +675,7 @@ void DrawTransformGizmos(){
 
             if(!IsSelected(entity)){
                 //Entity not selected, show selection point
-                Vector3 selPointColor = {0.5,0.5,0.5};
+                Vector3 selPointColor = {scrollbarOverColor.x, scrollbarOverColor.y, scrollbarOverColor.z};
                 if(MouseOverPointGizmos(mousePos, originPos, selectMouseOverDistance)){
                     selPointColor = (Vector3){1,1,1};
                     
@@ -823,7 +855,7 @@ void DrawComponentsPanel(){
                             //Component background
                             Vector3 bgMin = {Screen.windowWidth-componentWindowLength, componentHeight-95,0};
                             Vector3 bgMax = {Screen.windowWidth-componentWindowWidthSpacing, componentHeight,0};
-                            DrawRectangle(bgMin, bgMax, 0.1,0.1,0.15);
+                            DrawRectangle(bgMin, bgMax, bgMediumColor.x, bgMediumColor.y, bgMediumColor.z);
 
                             int ommitPosX = 0, ommitPosY = 0, ommitPosZ = 0;
                             int ommitRotX = 0, ommitRotY = 0, ommitRotZ = 0;
@@ -913,7 +945,7 @@ void DrawComponentsPanel(){
                                 //Component background
                                 Vector3 bgMin = {Screen.windowWidth-componentWindowLength, componentHeight-225,0};
                                 Vector3 bgMax = {Screen.windowWidth-componentWindowWidthSpacing, componentHeight,0};
-                                DrawRectangle(bgMin, bgMax, 0.1,0.1,0.15);
+                                DrawRectangle(bgMin, bgMax, bgMediumColor.x, bgMediumColor.y, bgMediumColor.z);
 
                                 componentHeight-=2;
                                 if(1 == PointToggle(&isStatic,(Vector3){Screen.windowWidth-componentWindowLength + 12,componentHeight - 10},14,15,16,1, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1})){
@@ -1027,7 +1059,7 @@ void DrawComponentsPanel(){
                             }else{
                                 Vector3 bgMin = {Screen.windowWidth-componentWindowLength, componentHeight-22,0};
                                 Vector3 bgMax = {Screen.windowWidth-componentWindowWidthSpacing, componentHeight,0};
-                                DrawRectangle(bgMin, bgMax, 0.1,0.1,0.15);
+                                DrawRectangle(bgMin, bgMax, bgMediumColor.x, bgMediumColor.y, bgMediumColor.z);
 
                                 componentHeight-=2;
                                 if(1 == PointToggle(&isStatic,(Vector3){Screen.windowWidth-componentWindowLength + 12,componentHeight - 10},14,15,16,1, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1})){
@@ -1059,7 +1091,7 @@ void DrawComponentsPanel(){
                             //Component background
                             Vector3 bgMin = {Screen.windowWidth-componentWindowLength, componentHeight-backgroundHeight,0};
                             Vector3 bgMax = {Screen.windowWidth-componentWindowWidthSpacing, componentHeight,0};
-                            DrawRectangle(bgMin, bgMax, 0.1,0.1,0.15);
+                            DrawRectangle(bgMin, bgMax, bgMediumColor.x, bgMediumColor.y, bgMediumColor.z);
                             
                             if(1 == PointToggle(&isEnabled,(Vector3){Screen.windowWidth-componentWindowLength + 12,componentHeight - 10},14,15,16,1, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1})){
                                 ListForEach(selEntity, SelectedEntities){
@@ -1153,7 +1185,7 @@ void DrawComponentsPanel(){
                             //Component background
                             Vector3 bgMin = {Screen.windowWidth-componentWindowLength, componentHeight-170,0};
                             Vector3 bgMax = {Screen.windowWidth-componentWindowWidthSpacing, componentHeight,0};
-                            DrawRectangle(bgMin, bgMax, 0.1,0.1,0.15);
+                            DrawRectangle(bgMin, bgMax, bgMediumColor.x, bgMediumColor.y, bgMediumColor.z);
 
                             int ommitColorX = 0, ommitColorY = 0, ommitColorZ = 0;
                             int ommitIntensity = 0, ommitRange = 0;
@@ -1233,7 +1265,7 @@ void DrawComponentsPanel(){
                             //Component background
                             Vector3 bgMin = {Screen.windowWidth-componentWindowLength, componentHeight-backgroundHeight,0};
                             Vector3 bgMax = {Screen.windowWidth-componentWindowWidthSpacing, componentHeight,0};
-                            DrawRectangle(bgMin, bgMax, 0.1,0.1,0.15);
+                            DrawRectangle(bgMin, bgMax, bgMediumColor.x, bgMediumColor.y, bgMediumColor.z);
 
                             //Only show the script load button and name if only one entity is selected
                             if(GetLength(SelectedEntities)==1){
@@ -1274,23 +1306,23 @@ void DrawComponentsPanel(){
 
             Vector3 scrollbarStart = {Screen.windowWidth - componentWindowWidthSpacing/2 ,ComponentsPanelHeight-componentStartHeight -2,0};
             Vector3 scrollbarEnd = {Screen.windowWidth - componentWindowWidthSpacing/2 ,offscreenPixels - componentStartHeight +componentWindowBottomSpacing+ 1,0};
-            Vector3 scrollbarColor = {0.3,0.3,0.3};
+            Vector3 scrollbarColor = {scrollbarInactiveColor.x, scrollbarInactiveColor.y, scrollbarInactiveColor.z};
 
             if(mouseOverComponentPanel){
                 if(!movingComponentsScrollbar){
                     if(MouseOverLineGizmos(mousePos, scrollbarStart, scrollbarEnd, scrollbarMouseOverDistance)){
-                        scrollbarColor = (Vector3){0.5,0.5,0.5};
+                        scrollbarColor = (Vector3){scrollbarOverColor.x, scrollbarOverColor.y, scrollbarOverColor.z};
 
                         if(GetMouseButton(SDL_BUTTON_LEFT)){
                             movingComponentsScrollbar = 1;
                         }
                     }else{
-                        scrollbarColor = (Vector3){0.3,0.3,0.4};
+                        scrollbarColor = (Vector3){buttonOverColor.x, buttonOverColor.y, buttonOverColor.z};
                     }
                 }else if (movingComponentsScrollbar == 1){
                     scrollbarColor = (Vector3){0.55,0.55,0.55};
                 }else{
-                    scrollbarColor = (Vector3){0.3,0.3,0.4};
+                    scrollbarColor = (Vector3){buttonOverColor.x, buttonOverColor.y, buttonOverColor.z};
                 }
             }
 
@@ -1343,7 +1375,7 @@ void DrawComponentsPanel(){
                 Vector3 cbMax = {Screen.windowWidth-2,buttonHeight};
                 if(!MaskContainsComponent(mask,i)){
                     if(MouseOverBox(mousePos,cbMin,cbMax,0)){
-                        DrawRectangle(cbMin, cbMax,0.3,0.3,0.45);
+                        DrawRectangle(cbMin, cbMax,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
                         if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
                             ListCellPointer cellSel;
                             ListForEach(cellSel,SelectedEntities){
@@ -1354,7 +1386,7 @@ void DrawComponentsPanel(){
                             }
                         }
                     }else{
-                        DrawRectangle(cbMin, cbMax,0.2,0.2,0.35);
+                        DrawRectangle(cbMin, cbMax,bgLightColor.x, bgLightColor.y, bgLightColor.z);
                     }
                 }else{
                     DrawRectangle(cbMin, cbMax,0.1,0.1,0.1);
@@ -1426,9 +1458,9 @@ void DrawComponentsPanel(){
 
         Vector3 cbMin = {Screen.windowWidth - componentWindowLength,2,0};
         Vector3 cbMax = {Screen.windowWidth-2,componentWindowBottomSpacing,0};
-        Vector3 cbColor = {0.2,0.2,0.35};
+        Vector3 cbColor = {bgLightColor.x, bgLightColor.y, bgLightColor.z};
         if(MouseOverBox(mousePos, cbMin, cbMax,0)){
-            cbColor = (Vector3){0.3,0.3,0.4};
+            cbColor = (Vector3){buttonOverColor.x, buttonOverColor.y, buttonOverColor.z};
 
             if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
                 addComponentWindowOpened = !addComponentWindowOpened;
@@ -1445,16 +1477,34 @@ void DrawComponentsPanel(){
             DrawTextColored("Back", brightWhite, cbMin.x + ((cbMax.x-cbMin.x)-w)/2, cbMin.y + ((cbMax.y-cbMin.y)-h)/2, gizmosFont);
         }
 
-        //Draw the prefab name
-
+        
+        //Prefab info and options
         if(singlePrefabSelected){
             Vector3 prefabBgMin = {Screen.windowWidth-componentWindowLength, ComponentsPanelHeight};
             Vector3 prefabBgMax = {Screen.windowWidth, Screen.windowHeight};
+            //Draw the dark background
             DrawRectangle(prefabBgMin,prefabBgMax,bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
 
             prefabBgMin.y += 2;
-            DrawRectangle(prefabBgMin,prefabBgMax,0.2,0.2,0.35);
-            DrawTextColored(GetPrefabName(GetElementAsType(GetFirstCell(SelectedEntities),EntityID)), brightWhite, Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, prefabBgMin.y + (prefabBgMax.y - prefabBgMin.y - TTF_FontHeight(gizmosFontSmall))/2, gizmosFontSmall);
+            //Draw the light background above the other
+            DrawRectangle(prefabBgMin,prefabBgMax,bgLightColor.x, bgLightColor.y, bgLightColor.z);
+
+            //Draw the prefab name
+            TTF_SizeText(gizmosFontSmall, GetPrefabName(GetElementAsType(GetFirstCell(SelectedEntities),EntityID)), &w, &h);
+            DrawTextColored(GetPrefabName(GetElementAsType(GetFirstCell(SelectedEntities),EntityID)), brightWhite,prefabBgMin.x + (prefabBgMax.x - prefabBgMin.x - w)/2, prefabBgMin.y + (prefabBgMax.y - prefabBgMin.y - TTF_FontHeight(gizmosFontSmall))*9/10, gizmosFontSmall);
+
+
+            Vector3 buttonPos = {Screen.windowWidth-componentWindowLength + componentNameLeftSpacing + 2 +iconsSize[7],
+                                prefabBgMin.y + (prefabBgMax.y - prefabBgMin.y)*1.25/4};
+
+            //Reload prefab button
+            if(PointButton(buttonPos,7, 1, (Vector3){0.9,0.9,0.9}, (Vector3){0.2,1,0.2}, (Vector3){0.5,1,0.5}) == 1){
+
+            }
+            buttonPos.x += iconsSize[7] + 10 + iconsSize[19];
+            if(PointButton(buttonPos,19, 1, (Vector3){0.9,0.9,0.9}, (Vector3){0.2,1,0.2}, (Vector3){0.5,1,0.5}) == 1){
+
+            }
         }
     }
 }
@@ -1465,7 +1515,7 @@ int DrawComponentHeader(ComponentID component, int* curHeight){
     //Top panel
     Vector3 panelMin = {Screen.windowWidth - componentWindowLength,*curHeight-TTF_FontHeight(gizmosFont)-2,0};
     Vector3 panelMax = {Screen.windowWidth - componentWindowWidthSpacing,*curHeight,0};
-    Vector3 panelColor = {0.2,0.2,0.35};
+    Vector3 panelColor = {bgLightColor.x, bgLightColor.y, bgLightColor.z};
     DrawRectangle(panelMin, panelMax, panelColor.x, panelColor.y, panelColor.z);
 
     //Remove component button
@@ -1519,7 +1569,7 @@ void DrawEntitiesPanel(){
     
         Vector3 scrollbarStart = {entityWindowWidthSpacing/2 ,Screen.windowHeight-entityStartHeight - entityWindowTopHeightSpacing,0};
         Vector3 scrollbarEnd = {entityWindowWidthSpacing/2 ,offscreenPixels - entityStartHeight + 1,0};
-        Vector3 scrollbarColor = {0.3,0.3,0.3};
+        Vector3 scrollbarColor = {scrollbarInactiveColor.x, scrollbarInactiveColor.y, scrollbarInactiveColor.z};
 
         //If the scrollbar is only 10 pixels high, make the bar lerp between the top and bottom height, instead of
         //showing exactly the pixel movement of the bar
@@ -1532,18 +1582,18 @@ void DrawEntitiesPanel(){
         if(mouseOverEntityPanel){
             if(!movingEntitiesScrollbar){
                 if(MouseOverLineGizmos(mousePos, scrollbarStart, scrollbarEnd, scrollbarMouseOverDistance)){
-                    scrollbarColor = (Vector3){0.5,0.5,0.5};
+                    scrollbarColor = (Vector3){scrollbarOverColor.x, scrollbarOverColor.y, scrollbarOverColor.z};
 
                     if(GetMouseButton(SDL_BUTTON_LEFT)){
                         movingEntitiesScrollbar = 1;
                     }
                 }else{
-                    scrollbarColor = (Vector3){0.3,0.3,0.4};
+                    scrollbarColor = (Vector3){buttonOverColor.x, buttonOverColor.y, buttonOverColor.z};
                 }
             }else if (movingEntitiesScrollbar == 1){
                 scrollbarColor = (Vector3){0.55,0.55,0.55};
             }else{
-                scrollbarColor = (Vector3){0.3,0.3,0.4};
+                scrollbarColor = (Vector3){buttonOverColor.x, buttonOverColor.y, buttonOverColor.z};
             }
         }
 
@@ -1596,9 +1646,9 @@ void DrawEntitiesPanel(){
     //Entity element
     Vector3 bMin = {0,Screen.windowHeight-entityWindowTopHeightSpacing+2,0};
     Vector3 bMax = {entityWindowLength,Screen.windowHeight-(entityWindowTopHeightSpacing * 2.0/3.0),0};
-    Vector3 bColor = {0.2,0.2,0.35};
+    Vector3 bColor = {bgLightColor.x, bgLightColor.y, bgLightColor.z};
     if(MouseOverBox(mousePos, bMin, bMax,0)){
-        bColor = (Vector3){0.3,0.3,0.4};
+        bColor = (Vector3){buttonOverColor.x, buttonOverColor.y, buttonOverColor.z};
         if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
             CreateEntity();
         }
@@ -1620,7 +1670,7 @@ void DrawEntityElement(EntityID entity, int *entityHeight, int depth){
         //If mouse is over the item and is inside the entityWindow (Condition to avoid overlapping with the add entity button)
         if(MouseOverBox(mousePos, elMin, elMax,0) && mousePos.y<Screen.windowHeight-entityWindowTopHeightSpacing){
             if(isSelected){
-                DrawRectangle(elMin,elMax,0.3,0.3,0.3);
+                DrawRectangle(elMin,elMax,scrollbarInactiveColor.x, scrollbarInactiveColor.y, scrollbarInactiveColor.z);
 
                 if(GetMouseButtonDown(SDL_BUTTON_LEFT) && !fileBrowser.opened){
                     RemoveFromSelected(entity);
@@ -1631,7 +1681,7 @@ void DrawEntityElement(EntityID entity, int *entityHeight, int depth){
                     InsertListEnd(&SelectedEntities,&newEntity);
                 }
             }else{
-                DrawRectangle(elMin,elMax,0.3,0.3,0.4);
+                DrawRectangle(elMin,elMax,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
 
                 if(GetMouseButtonDown(SDL_BUTTON_LEFT) && !fileBrowser.opened){
                     if(GetKey(SDL_SCANCODE_LSHIFT)){
@@ -1644,9 +1694,9 @@ void DrawEntityElement(EntityID entity, int *entityHeight, int depth){
             }
         }else{
             if(isSelected){
-                DrawRectangle(elMin,elMax,0.35,0.35,0.5);
+                DrawRectangle(elMin,elMax,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
             }else{
-                DrawRectangle(elMin,elMax,clamp(0.2 - depth*0.05,0.05,0.2),clamp(0.2 - depth*0.05,0.05,0.2),clamp(0.35 - depth*0.05,0.05,0.35));
+                DrawRectangle(elMin,elMax,bgLightColor.x*clamp(1 - depth*0.15,0.5,1),bgLightColor.y*clamp(1 - depth*0.15,0.5,1),bgLightColor.z*clamp(1 - depth*0.15,0.5,1));
             }
         }
         static char entityName[12];
@@ -1681,13 +1731,13 @@ void DrawFileBrowser(){
     Vector3 fbHeaderMax = {Screen.windowWidth/2 +299,Screen.windowHeight/2 +199};
 
     DrawRectangle(fbMin,fbMax,bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
-    DrawRectangle(fbFootMin,fbFootMax,0.1,0.1,0.15);
-    DrawRectangle(fbHeaderMin,fbHeaderMax,0.1,0.1,0.15);
+    DrawRectangle(fbFootMin,fbFootMax,bgMediumColor.x, bgMediumColor.y, bgMediumColor.z);
+    DrawRectangle(fbHeaderMin,fbHeaderMax,bgMediumColor.x, bgMediumColor.y, bgMediumColor.z);
 
     //Header
     Vector3 filepathBgMin = {Screen.windowWidth/2-180,Screen.windowHeight/2 +172};
     Vector3 filepathBgMax = {Screen.windowWidth/2 +297,Screen.windowHeight/2 +195};
-    DrawRectangle(filepathBgMin,filepathBgMax,0.2, 0.2, 0.2);
+    DrawRectangle(filepathBgMin,filepathBgMax,fieldColor.x, fieldColor.y, fieldColor.z);
 
     //0 = open mode, 1 = save mode
     int mode = fileBrowser.opened-1;
@@ -1695,7 +1745,7 @@ void DrawFileBrowser(){
     //Header buttons
     //Previous button
     if(fileBrowser.indexPath>0){
-        if(PointButton((Vector3){fbHeaderMin.x+ iconsSize[9] * 2 ,fbHeaderMin.y+(fbHeaderMax.y - fbHeaderMin.y)/2,0},9, 1, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){0.5,0.5,0.5}) == 1){
+        if(PointButton((Vector3){fbHeaderMin.x+ iconsSize[9] * 2 ,fbHeaderMin.y+(fbHeaderMax.y - fbHeaderMin.y)/2,0},9, 1, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){scrollbarOverColor.x, scrollbarOverColor.y, scrollbarOverColor.z}) == 1){
             fileBrowser.indexPath--;
             OpenFileBrowser(mode,*((char**)GetElementAt(fileBrowser.paths,fileBrowser.indexPath)),fileBrowser.onConfirmFunction);
         }
@@ -1704,7 +1754,7 @@ void DrawFileBrowser(){
     }
     //Next button
     if(fileBrowser.indexPath<GetLength(fileBrowser.paths)-1){
-        if(PointButton((Vector3){fbHeaderMin.x+ iconsSize[8] * 6 ,fbHeaderMin.y+(fbHeaderMax.y - fbHeaderMin.y)/2,0},8, 1, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){0.5,0.5,0.5}) == 1){
+        if(PointButton((Vector3){fbHeaderMin.x+ iconsSize[8] * 6 ,fbHeaderMin.y+(fbHeaderMax.y - fbHeaderMin.y)/2,0},8, 1, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){scrollbarOverColor.x, scrollbarOverColor.y, scrollbarOverColor.z}) == 1){
             fileBrowser.indexPath++;
             OpenFileBrowser(mode,*((char**)GetElementAt(fileBrowser.paths,fileBrowser.indexPath)),fileBrowser.onConfirmFunction);
         }
@@ -1712,7 +1762,7 @@ void DrawFileBrowser(){
         PointButton((Vector3){fbHeaderMin.x+ iconsSize[8] * 6 ,fbHeaderMin.y+(fbHeaderMax.y - fbHeaderMin.y)/2,0},8, 1, (Vector3){0.25,0.25,0.25}, (Vector3){0.25,0.25,0.25}, (Vector3){0.25,0.25,0.25});
     }
     //Home
-    if(PointButton((Vector3){fbHeaderMin.x+ iconsSize[6] * 10,fbHeaderMin.y+(fbHeaderMax.y - fbHeaderMin.y)/2,0},6, 1, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){0.5,0.5,0.5})==1){
+    if(PointButton((Vector3){fbHeaderMin.x+ iconsSize[6] * 10,fbHeaderMin.y+(fbHeaderMax.y - fbHeaderMin.y)/2,0},6, 1, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){scrollbarOverColor.x, scrollbarOverColor.y, scrollbarOverColor.z})==1){
         OpenFileBrowser(mode,NULL,fileBrowser.onConfirmFunction);
     }
     //File path
@@ -1732,12 +1782,12 @@ void DrawFileBrowser(){
     Vector3 cancelButtonMin = {Screen.windowWidth/2 +207,Screen.windowHeight/2 -197};
     Vector3 cancelButtonMax = {Screen.windowWidth/2 +297,Screen.windowHeight/2 -152};
     if(MouseOverBox(mousePos,cancelButtonMin,cancelButtonMax,0)){
-        DrawRectangle(cancelButtonMin,cancelButtonMax,0.3,0.3,0.45);
+        DrawRectangle(cancelButtonMin,cancelButtonMax,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
         if(GetMouseButtonUp(SDL_BUTTON_LEFT)){
             CloseFileBrowser();
         }
     }else{
-        DrawRectangle(cancelButtonMin,cancelButtonMax,0.2,0.2,0.35);
+        DrawRectangle(cancelButtonMin,cancelButtonMax,bgLightColor.x, bgLightColor.y, bgLightColor.z);
     }
     TTF_SizeText(gizmosFont,"Cancel",&w,&h);
     DrawTextColored("Cancel", lightWhite, cancelButtonMin.x + ((cancelButtonMax.x-cancelButtonMin.x)-w)/2, cancelButtonMin.y+ ((cancelButtonMax.y-cancelButtonMin.y)-h)/2, gizmosFont);
@@ -1751,7 +1801,7 @@ void DrawFileBrowser(){
         DrawRectangle(openButtonMin,openButtonMax,0.1,0.1,0.1);
     }else{
         if(MouseOverBox(mousePos,openButtonMin,openButtonMax,0)){
-            DrawRectangle(openButtonMin,openButtonMax,0.3,0.3,0.45);
+            DrawRectangle(openButtonMin,openButtonMax,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
             if(GetMouseButtonUp(SDL_BUTTON_LEFT)){
                 if(mode == 0){
                     fileBrowser.onConfirmFunction();
@@ -1782,7 +1832,7 @@ void DrawFileBrowser(){
                 }
             }
         }else{
-            DrawRectangle(openButtonMin,openButtonMax,0.2,0.2,0.35);
+            DrawRectangle(openButtonMin,openButtonMax,bgLightColor.x, bgLightColor.y, bgLightColor.z);
         }
     }
     TTF_SizeText(gizmosFont,mode?"Save":"Open",&w,&h);
@@ -1793,7 +1843,7 @@ void DrawFileBrowser(){
         Vector3 filenameBgMin = {Screen.windowWidth/2 -295,Screen.windowHeight/2 -195};
         Vector3 filenameBgMax = {openButtonMin.x -10,Screen.windowHeight/2 -164};
         if(MouseOverBox(mousePos,filenameBgMin,filenameBgMax,0)){
-            DrawRectangle(filenameBgMin,filenameBgMax,0.3, 0.3, 0.3);
+            DrawRectangle(filenameBgMin,filenameBgMax,fieldEditingColor.x, fieldEditingColor.y, fieldEditingColor.z);
             if(GetMouseButtonUp(SDL_BUTTON_LEFT) && !SDL_IsTextInputActive()){
                 //Files saved have a limit of 27 characters
                 int curLen = strlen(fileBrowser.fileName);
@@ -1802,7 +1852,7 @@ void DrawFileBrowser(){
                 memset(fileBrowser.fileName+curLen,'\0',_TINYDIR_FILENAME_MAX-curLen);
             }
         }else{
-            DrawRectangle(filenameBgMin,filenameBgMax,0.2, 0.2, 0.2);
+            DrawRectangle(filenameBgMin,filenameBgMax,fieldColor.x, fieldColor.y, fieldColor.z);
         }
 
         if(SDL_IsTextInputActive()){
@@ -1827,7 +1877,7 @@ void DrawFileBrowser(){
     }else{
         Vector3 filenameBgMin = {Screen.windowWidth/2 -295,Screen.windowHeight/2 -195};
         Vector3 filenameBgMax = {openButtonMin.x -10,Screen.windowHeight/2 -164};
-        DrawRectangle(filenameBgMin,filenameBgMax,0.2, 0.2, 0.2);
+        DrawRectangle(filenameBgMin,filenameBgMax,fieldColor.x, fieldColor.y, fieldColor.z);
         DrawTextColored("file name", lightWhite, filenameBgMin.x, filenameBgMax.y +1, gizmosFontSmall);
         TTF_SizeText(gizmosFont,fileBrowser.fileName,&w,&h);
         DrawTextColored(fileBrowser.fileName, lightWhite, filenameBgMin.x + 5, filenameBgMin.y+ ((filenameBgMax.y-filenameBgMin.y)-h)/2 +1, gizmosFont);
@@ -1869,7 +1919,7 @@ void DrawFileBrowser(){
             }
 
             //Folder icon/button
-            if(PointButton((Vector3){x,y,0},10,3, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){0.5,0.5,0.5}) == 1){
+            if(PointButton((Vector3){x,y,0},10,3, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){scrollbarOverColor.x, scrollbarOverColor.y, scrollbarOverColor.z}) == 1){
                 char *path = calloc(_TINYDIR_PATH_MAX,sizeof(char));
                 strncpy(path,file.path,_TINYDIR_PATH_MAX);
                 printf("(%s)\n", path);
@@ -1920,7 +1970,7 @@ void DrawFileBrowser(){
             
             //File icon/button
             //Ignore misclick caused by a change in the folders structure
-            if(!foldersUpdated && PointButton((Vector3){x,y,0},icon,3, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){0.5,0.5,0.5}) == 1){
+            if(!foldersUpdated && PointButton((Vector3){x,y,0},icon,3, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){scrollbarOverColor.x, scrollbarOverColor.y, scrollbarOverColor.z}) == 1){
                 //Remove the extension from the name in the save mode
                 if(mode == 1){
                     int extLen = strlen(file.extension) + 1; //Extension name length + dot
@@ -2010,7 +2060,7 @@ void DrawPlayModeWidget(){
 
     if(playMode == 1){
         //Play mode
-        DrawRectangle(playBGMin,playBGMax,0.5,0.5,0.5);
+        DrawRectangle(playBGMin,playBGMax,scrollbarOverColor.x, scrollbarOverColor.y, scrollbarOverColor.z);
 
         //Pause button
         if(1 == PointButton((Vector3){Screen.windowWidth/2 - iconSize * 2 -2,  Screen.windowHeight-iconSize * 2 -1 },4, 2, (Vector3){0.1,0.1,0.1}, (Vector3){1,1,1}, (Vector3){1,1,1})){
@@ -2038,7 +2088,7 @@ void DrawPlayModeWidget(){
         }
     }else if(playMode == 2){
         //Paused
-        DrawRectangle(playBGMin,playBGMax,0.5,0.5,0.5);
+        DrawRectangle(playBGMin,playBGMax,scrollbarOverColor.x, scrollbarOverColor.y, scrollbarOverColor.z);
 
         //Play button
         if(1 == PointButton((Vector3){Screen.windowWidth/2 - iconSize * 2 -2,  Screen.windowHeight-iconSize * 2 -1 },3, 2, (Vector3){0.1,0.1,0.1}, (Vector3){1,1,1}, (Vector3){1,1,1})){
@@ -2066,7 +2116,7 @@ void DrawPlayModeWidget(){
         }
     }else{
         //In editor
-        DrawRectangle(playBGMin,playBGMax,0.1,0.1,0.15);
+        DrawRectangle(playBGMin,playBGMax,bgMediumColor.x, bgMediumColor.y, bgMediumColor.z);
 
         //Play button
         if(1 == PointButton((Vector3){Screen.windowWidth/2 - iconSize * 2 -2,  Screen.windowHeight-iconSize * 2 -1 },3, 2, (Vector3){0.7,0.7,0.7}, (Vector3){1,1,1}, (Vector3){1,1,1})){
@@ -2096,7 +2146,7 @@ void DrawDialogWindow(){
     Vector3 footMax = {Screen.windowWidth/2 +200,Screen.windowHeight/2 -30};
 
     DrawRectangle(bgMin,bgMax,bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
-    DrawRectangle(footMin,footMax,0.1,0.1,0.15);
+    DrawRectangle(footMin,footMax,bgMediumColor.x, bgMediumColor.y, bgMediumColor.z);
 
     Vector3 contentMin = {bgMin.x,footMax.y};
     Vector3 contentMax = {bgMax.x,bgMax.y};
@@ -2132,57 +2182,75 @@ void DrawDialogWindow(){
     }
 
     //Option 1 Button
+    if(dialog.option2Function){
+        TTF_SizeText(gizmosFont,dialog.option1String,&w,&h);
+    }else{
+        w = 0;
+        h = 0;
+    }
 
     Vector3 option1Max = {footMax.x-3,footMax.y-3};
-    Vector3 option1Min = {option1Max.x-100,footMin.y+3};
+    Vector3 option1Min = {option1Max.x-(10 + w),footMin.y+3};
     
     if(dialog.option1Function){
         if(MouseOverBox(mousePos,option1Min,option1Max,0)){
-            DrawRectangle(option1Min,option1Max,0.3,0.3,0.45);
+            DrawRectangle(option1Min,option1Max,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
             if(GetMouseButtonUp(SDL_BUTTON_LEFT)){
                 dialog.option1Function();
                 CloseDialogWindow();
             }
         }else{
-            DrawRectangle(option1Min,option1Max,0.2,0.2,0.35);
+            DrawRectangle(option1Min,option1Max,bgLightColor.x, bgLightColor.y, bgLightColor.z);
         }
-        TTF_SizeText(gizmosFont,dialog.option1String,&w,&h);
+        
         DrawTextColored(dialog.option1String, lightWhite, option1Min.x + ((option1Max.x-option1Min.x)-w)/2, option1Min.y+ ((option1Max.y-option1Min.y)-h)/2, gizmosFont);
     }
 
     //Option 2 Button
-    Vector3 option2Min = {option1Min.x - 110,option1Min.y};
-    Vector3 option2Max = {option1Max.x - 110,option1Max.y};
+    if(dialog.option2Function){
+        TTF_SizeText(gizmosFont,dialog.option2String,&w,&h);
+    }else{
+        w = 0;
+        h = 0;
+    }
+
+    Vector3 option2Min = {option1Min.x - (20 + w),option1Min.y};
+    Vector3 option2Max = {option1Min.x - 10,option1Max.y};
 
     if(dialog.option2Function){
         if(MouseOverBox(mousePos,option2Min,option2Max,0)){
-            DrawRectangle(option2Min,option2Max,0.3,0.3,0.45);
+            DrawRectangle(option2Min,option2Max,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
             if(GetMouseButtonUp(SDL_BUTTON_LEFT)){
                 dialog.option2Function();
                 CloseDialogWindow();
             }
         }else{
-            DrawRectangle(option2Min,option2Max,0.2,0.2,0.35);
+            DrawRectangle(option2Min,option2Max,bgLightColor.x, bgLightColor.y, bgLightColor.z);
         }
-        TTF_SizeText(gizmosFont,dialog.option2String,&w,&h);
+        
         DrawTextColored(dialog.option2String, lightWhite, option2Min.x + ((option2Max.x-option2Min.x)-w)/2, option2Min.y+ ((option2Max.y-option2Min.y)-h)/2, gizmosFont);
     }
 
     //Option 3 Button
-    Vector3 option3Min = {option2Min.x - 110,option2Min.y};
-    Vector3 option3Max = {option2Max.x - 110,option2Max.y};
+    if(dialog.option3Function){
+        TTF_SizeText(gizmosFont,dialog.option3String,&w,&h);
+    }else{
+        w = 0;
+        h = 0;
+    }
+    Vector3 option3Min = {option2Min.x - (20 + w),option2Min.y};
+    Vector3 option3Max = {option2Min.x - 10,option2Max.y};
 
     if(dialog.option3Function){
         if(MouseOverBox(mousePos,option3Min,option3Max,0)){
-            DrawRectangle(option3Min,option3Max,0.3,0.3,0.45);
+            DrawRectangle(option3Min,option3Max,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
             if(GetMouseButtonUp(SDL_BUTTON_LEFT)){
                 dialog.option3Function();
                 CloseDialogWindow();
             }
         }else{
-            DrawRectangle(option3Min,option3Max,0.2,0.2,0.35);
+            DrawRectangle(option3Min,option3Max,bgLightColor.x, bgLightColor.y, bgLightColor.z);
         }
-        TTF_SizeText(gizmosFont,dialog.option3String,&w,&h);
         DrawTextColored(dialog.option3String, lightWhite, option3Min.x + ((option3Max.x-option3Min.x)-w)/2, option3Min.y+ ((option3Max.y-option3Min.y)-h)/2, gizmosFont);
     }
 }
@@ -2297,7 +2365,7 @@ void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,in
     if(editingField == *curField || editingField == (*curField)+1 || editingField == (*curField)+2)
     {
         //String edit field background
-        DrawRectangle(min1,max3,0.3, 0.3, 0.3);
+        DrawRectangle(min1,max3,fieldEditingColor.x, fieldEditingColor.y, fieldEditingColor.z);
 
         //Get the cursor position by creating a string containing the characters until the cursor
         //and getting his size when rendered with the used font
@@ -2364,19 +2432,19 @@ void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,in
         if(editingField != *curField && editingField != (*curField)+1 && editingField != (*curField)+2){
 
             //X field
-            DrawRectangle(min1,max1,0.2, 0.2, 0.2);
+            DrawRectangle(min1,max1,fieldColor.x, fieldColor.y, fieldColor.z);
             if(!ommitX) snprintf(valueString,5,"%3.1f",data->x);
             else snprintf(valueString,5,"---");
             DrawTextColored(valueString, lightWhite, min1.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
             //Y field
-            DrawRectangle(min2,max2,0.2, 0.2, 0.2);
+            DrawRectangle(min2,max2,fieldColor.x, fieldColor.y, fieldColor.z);
             if(!ommitY) snprintf(valueString,5,"%3.1f",data->y);
             else snprintf(valueString,5,"---");
             DrawTextColored(valueString, lightWhite, min2.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
 
             //Z field
-            DrawRectangle(min3,max3,0.2, 0.2, 0.2);
+            DrawRectangle(min3,max3,fieldColor.x, fieldColor.y, fieldColor.z);
             if(!ommitZ) snprintf(valueString,5,"%3.1f",data->z);
             else snprintf(valueString,5,"---");
             DrawTextColored(valueString, lightWhite, min3.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
@@ -2400,7 +2468,7 @@ void FloatField(char *title, float *data,int ommit,int x, int w, int* curField, 
     if(editingField == *curField)
     {
         //Field background
-        DrawRectangle(min,max,0.3, 0.3, 0.3);
+        DrawRectangle(min,max,fieldEditingColor.x, fieldEditingColor.y, fieldEditingColor.z);
 
         //Get the cursor position by creating a string containing the characters until the cursor
         //and getting his size when rendered with the used font
@@ -2427,7 +2495,7 @@ void FloatField(char *title, float *data,int ommit,int x, int w, int* curField, 
         static char valueString[12] = "  0.0";
 
         //Field background
-        DrawRectangle(min,max,0.2, 0.2, 0.2);
+        DrawRectangle(min,max,fieldColor.x, fieldColor.y, fieldColor.z);
         //Data text
         if(!ommit) snprintf(valueString,12,"%6.6f",*data);
         else snprintf(valueString,4,"---");
@@ -2464,7 +2532,7 @@ void IntField(char *title, int *data,int ommit,int x, int w, int* curField, int*
     if(editingField == *curField)
     {
         //Field background
-        DrawRectangle(min,max,0.3, 0.3, 0.3);
+        DrawRectangle(min,max,fieldEditingColor.x, fieldEditingColor.y, fieldEditingColor.z);
 
         //Get the cursor position by creating a string containing the characters until the cursor
         //and getting his size when rendered with the used font
@@ -2491,7 +2559,7 @@ void IntField(char *title, int *data,int ommit,int x, int w, int* curField, int*
         static char valueString[12] = "  0.0";
 
         //Field background
-        DrawRectangle(min,max,0.2, 0.2, 0.2);
+        DrawRectangle(min,max,fieldColor.x, fieldColor.y, fieldColor.z);
         //Data text
         if(!ommit) snprintf(valueString,12,"%d",*data);
         else snprintf(valueString,4,"---");
@@ -2660,13 +2728,20 @@ void ExitPlayMode(){
 void OpenDialogWindow(char content[], char option1[], char option2[], char option3[], void(*op1Func)(), void(*op2Func)(), void(*op3Func)()){
     dialog.opened = 1;
     //Pass the data to the dialog struct
-    strncpy(dialog.contentString,content,sizeof(dialog.contentString)/sizeof(char));
+    if(content){
+        strncpy(dialog.contentString,content,sizeof(dialog.contentString)/sizeof(char));
+    }else{
+        dialog.contentString[0] = '\0';
+    }
     //All options have the same size
     int sizeOptions = sizeof(dialog.option1String)/sizeof(char)-1;
 
-    strncpy(dialog.option1String,option1,sizeOptions);
-    strncpy(dialog.option2String,option2,sizeOptions);
-    strncpy(dialog.option3String,option3,sizeOptions);
+    if(option1)
+        strncpy(dialog.option1String,option1,sizeOptions);
+    if(option2)
+        strncpy(dialog.option2String,option2,sizeOptions);
+    if(option3)
+        strncpy(dialog.option3String,option3,sizeOptions);
 
     //Ensure the string is zero terminated
     dialog.option1String[sizeOptions] = '\0';
@@ -2786,7 +2861,6 @@ void FBOverrideFileDialogCancel(){
 }
 
 void FBLoadModel(){
-    printf("(%s)(%s)\n",fileBrowser.filePath,fileBrowser.fileName);
     if(IsMultiVoxelModelFile(fileBrowser.filePath,fileBrowser.fileName)){
         LoadMultiVoxelModel(GetElementAsType(GetFirstCell(SelectedEntities),EntityID),fileBrowser.filePath,fileBrowser.fileName);
     }else{
@@ -2795,14 +2869,12 @@ void FBLoadModel(){
 }
 
 void FBLoadScript(){
-    printf("(%s)(%s)\n",fileBrowser.filePath,fileBrowser.fileName);
     SetLuaScript( GetElementAsType(GetFirstCell(SelectedEntities),EntityID) , fileBrowser.filePath, fileBrowser.fileName);
 }
 
 void FBLoadScene(){
     strcpy(scenePath,fileBrowser.filePath);
     strcpy(sceneName,fileBrowser.fileName);
-    printf("(%s)(%s)\n",scenePath,sceneName);
     LoadScene(fileBrowser.filePath,fileBrowser.fileName);
     menuOpened = 0;
 }
@@ -2810,7 +2882,6 @@ void FBLoadScene(){
 void FBSaveScene(){
     strcpy(scenePath,fileBrowser.filePath);
     strcpy(sceneName,fileBrowser.fileName);
-    printf("(%s)(%s)\n",scenePath,sceneName);
     ExportScene(fileBrowser.filePath,fileBrowser.fileName);
     menuOpened = 0;
 }
@@ -2818,4 +2889,42 @@ void FBSaveScene(){
 void FBExportPrefab(){
     ExportEntityPrefab(GetElementAsType(GetFirstCell(SelectedEntities),EntityID), fileBrowser.filePath, fileBrowser.fileName);
     menuOpened = 0;
+}
+
+void NewSceneDontSaveOption(){
+    //Destroy all entities from the scene
+    int i;
+    for(i=0; i<=ECS.maxUsedIndex; i++){
+        if(IsValidEntity(i)){
+            DestroyEntity(i);
+        }
+    }
+    //Close menu
+    menuOpened = 0;
+
+    //Reset the current scene path and name
+    scenePath[0] = '\0';
+    sceneName[0] = '\0';
+}
+
+void NewSceneSaveOption(){
+    if(scenePath[0] != '\0'){
+        OpenFileBrowser(1,scenePath,NewSceneSaveScene);
+    }else{
+        OpenFileBrowser(1,NULL,NewSceneSaveScene);
+    }
+    FileBrowserExtension("scene");
+}
+
+void NewSceneCancelOption(){
+    CloseDialogWindow();
+}
+
+void NewSceneSaveScene(){
+    strcpy(scenePath,fileBrowser.filePath);
+    strcpy(sceneName,fileBrowser.fileName);
+    ExportScene(fileBrowser.filePath,fileBrowser.fileName);
+
+    //Execute the same steps from the don't save option
+    NewSceneDontSaveOption();
 }

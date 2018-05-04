@@ -139,7 +139,7 @@ void UIRendererUpdate(){
             
         }else if(element.type == textElement){
             
-            int textW, textH;
+            int textW = 0, textH = 0;
             GLuint textTexture = TextToTexture(element.text, element.color, element.font, &textW, &textH);
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, textTexture);
@@ -399,7 +399,7 @@ static int l_LoadFontTTF(lua_State *L){
     if(fontPath[strlen(fontPath)-1] == '/')
         sprintf(fullPath, "%.512s%.251s.ttf",fontPath,fontName);
     else
-        sprintf(fullPath, "%.512s/%.251s.ttf",fontPath,fontName);
+        sprintf(fullPath, "%.511s/%.251s.ttf",fontPath,fontName);
         
 
     TTF_Font *newFont = TTF_OpenFont(fullPath,fontSize);

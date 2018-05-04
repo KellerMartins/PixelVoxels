@@ -1,4 +1,6 @@
 .vscode
+.scannerwork
+bw-output
 out
 gmon.out
 version.rc

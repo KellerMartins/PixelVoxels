@@ -75,7 +75,7 @@ void* VoxelModelCopy(void* data){
 
 cJSON* VoxelModelEncode(void** data, cJSON* currentData){
     if(!data) return NULL;
-    printf("Voxel\n");
+
     VoxelModel *v = *data; 
 
     int hasChanged = 0;
@@ -93,12 +93,12 @@ cJSON* VoxelModelEncode(void** data, cJSON* currentData){
         if(curScale && v->smallScale != cJSON_IsTrue(curScale)){
             hasChanged = 1;
         }
-        printf("V\n");
+
         cJSON *curObjName = cJSON_GetObjectItem(currentData, "objectName");
         if(curObjName && v->objectName[0] == '\0'){
             hasChanged = 1;
         }
-        printf("O\n");
+
         if(!StringCompareEqual(v->modelPath, cJSON_GetObjectItem(currentData, "modelPath")->valuestring) || 
            !StringCompareEqual(v->modelName, cJSON_GetObjectItem(currentData, "modelName")->valuestring))
         {
@@ -106,7 +106,6 @@ cJSON* VoxelModelEncode(void** data, cJSON* currentData){
         }
     }
 
-    printf("X\n");
     //Encode this component if its not from a prefab (who has currentData) or if it has changed
     if(!currentData || hasChanged){
         cJSON *obj = cJSON_CreateObject();

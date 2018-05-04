@@ -39,7 +39,6 @@ void* TransformCopy(void* data){
 
 cJSON* TransformEncode(void** data, cJSON* currentData){
     if(!data) return NULL;
-    printf("Transform\n");
     Transform *tr = *data; 
 
     int hasChanged = 0;

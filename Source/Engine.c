@@ -167,7 +167,7 @@ EntityID CreateEntity(){
 		RemoveListStart(&ECS.AvaliableEntitiesIndexes);
 		return index;
 	}
-	printf("CreateEntity: No entity avaliable to spawn! (Max %d)\n",ECS.maxEntities);
+	printf("CreateEntity: No entity avaliable to spawn! (Max %ud)\n",ECS.maxEntities);
 	return -1;
 }
 
@@ -1350,25 +1350,30 @@ void ReloadShaders(){
         glDeleteProgram(Rendering.Shaders[i]);
     }
 
-    if(!CompileAndLinkShader("Shaders/ScreenVert.vs","Shaders/ScreenFrag.fs",0)) 
+    if(!CompileAndLinkShader("Shaders/ScreenVert.vs","Shaders/ScreenFrag.fs",0)){
         printf(">Failed to compile/link Screen shader! Description above\n\n");
-    else 
+	}else{ 
         printf(">Compiled/linked Screen shader sucessfully!\n\n");
+	}
 
-    if(!CompileAndLinkShader("Shaders/VoxelVert.vs","Shaders/VoxelFrag.fs",1)) 
+    if(!CompileAndLinkShader("Shaders/VoxelVert.vs","Shaders/VoxelFrag.fs",1)){ 
         printf(">Failed to compile/link Voxel shader! Description above\n\n");
-    else 
+	}else{
         printf(">Compiled/linked Voxel shader sucessfully!\n\n");
+	}
 
-	if(!CompileAndLinkShader("Shaders/VoxelSmallVert.vs","Shaders/VoxelSmallFrag.fs",2)) 
-        printf(">Failed to compile/link VoxelSmall shader! Description above\n\n");
-    else 
+	if(!CompileAndLinkShader("Shaders/VoxelSmallVert.vs","Shaders/VoxelSmallFrag.fs",2)){
+		printf(">Failed to compile/link VoxelSmall shader! Description above\n\n");
+	}   
+    else{
         printf(">Compiled/linked VoxelSmall shader sucessfully!\n\n");
+	}
 
-	if(!CompileAndLinkShader("Shaders/UIVert.vs","Shaders/UIFrag.fs",3)) 
+	if(!CompileAndLinkShader("Shaders/UIVert.vs","Shaders/UIFrag.fs",3)){
 		printf(">Failed to compile/link UI shader! Description above\n\n");
-    else 
+    }else{
 		printf(">Compiled/linked UI shader sucessfully!\n");
+	}
 }
 
 void LoadVoxelPalette(char path[]){
@@ -1378,11 +1383,11 @@ void LoadVoxelPalette(char path[]){
     int i;
     Uint8 r,g,b,a;
 
-    for(i=0;i<256;i++){
+    for(i=0;i<255;i++){
         Uint32 *sPix = (Uint32 *)(palSurf->pixels + i* palSurf->format->BytesPerPixel);
 
         SDL_GetRGBA(*sPix,palSurf->format,&r,&g,&b,&a);
-        Pixel color = {clamp(b,0,255),clamp(g,0,255),clamp(r,0,255),a};
+        Pixel color = {b,g,r,a};
         Rendering.voxelColors[i+1] = color;
     }
     SDL_FreeSurface(palSurf);

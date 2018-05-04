@@ -23,6 +23,8 @@ LoadFontTTF("Interface/Fonts","Visitor",128)
 LoadFontTTF("Interface/Fonts/coolthre","CoolThre",16)
 LoadFontTTF("Interface/Fonts/gros/","Gros",16)
 
+camPos = {x=0, y=0, z = 0}
+
 timers = {}
 function float(entity)
 
@@ -47,14 +49,23 @@ function float(entity)
     rot = GetRotation(entity)
     SetRotation(entity, {x=rot.x, y=rot.y, z=time*20})
 
-    if GetKeyDown("J") then
-        if bool then
-            EnableSystem(GetSystemID("UIRenderer"))
+    if GetKey("UP") then
+        camPos.y = 100;
+    elseif GetKey("DOWN") then
+        camPos.y = -100;
         else
-            DisableSystem(GetSystemID("UIRenderer"))
+        camPos.y = 0;
         end
-        bool = not bool
+
+    if GetKey("LEFT") then
+        camPos.x = -100;
+    elseif GetKey("RIGHT") then
+        camPos.x = 100;
+    else 
+        camPos.x = 0;
     end
+
+    MoveCamera(camPos)
 
 end
 

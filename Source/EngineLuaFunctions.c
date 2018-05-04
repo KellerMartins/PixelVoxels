@@ -1,5 +1,6 @@
 #include "EngineLuaFunctions.h"
 
+extern engineECS ECS;
 extern engineCore Core;
 
 //-- Component functions --
@@ -59,66 +60,162 @@ static int l_RemoveComponentFromEntity(lua_State *L){
     RemoveComponentFromEntity(component,entity);
     return 0;
 }
-/*
-EntityID l_DuplicateEntity(EntityID entity){
 
+static int l_DuplicateEntity(lua_State *L){
+    int id = luaL_checkinteger (L, 1);
+    lua_pushinteger(L, DuplicateEntity(id));
+    return 1;
 }
-int l_ExportEntityPrefab(EntityID entity, char path[], char name[]){
 
+static int l_ExportEntityPrefab(lua_State *L){
+    int id = luaL_checkinteger (L, 1);
+    const char* path = luaL_checkstring (L, 2);
+    const char* name = luaL_checkstring (L, 3);
+    lua_pushinteger(L, ExportEntityPrefab(id, (char*)path, (char*)name));
+    return 1;
 }
-EntityID l_ImportEntityPrefab(char path[], char name[]){
 
+static int l_ImportEntityPrefab(lua_State *L){
+    const char* path = luaL_checkstring (L, 1);
+    const char* name = luaL_checkstring (L, 2);
+    lua_pushinteger(L, ImportEntityPrefab((char*)path, (char*)name));
+    return 1;
 }
-int l_ExportScene(char path[], char name[]){
-
+static int l_ExportScene(lua_State *L){
+    const char* path = luaL_checkstring (L, 1);
+    const char* name = luaL_checkstring (L, 2);
+    lua_pushinteger(L, ExportScene((char*)path, (char*)name));
+    return 1;
 }
-int l_LoadScene(char path[], char name[]){
 
+static int l_LoadScene(lua_State *L){
+    const char* path = luaL_checkstring (L, 1);
+    const char* name = luaL_checkstring (L, 2);
+    lua_pushinteger(L, LoadScene((char*)path, (char*)name));
+    return 1;
 }
-int l_LoadSceneAdditive(char path[], char name[]){
 
+static int l_LoadSceneAdditive(lua_State *L){
+    const char* path = luaL_checkstring (L, 1);
+    const char* name = luaL_checkstring (L, 2);
+    lua_pushinteger(L, LoadSceneAdditive((char*)path, (char*)name));
+    return 1;
 }
-ComponentMask l_GetEntityComponents(EntityID entity){
 
+static int l_GetEntityComponents(lua_State *L){
+    int id = luaL_checkinteger (L, 1);
+
+    if(!IsValidEntity(id)){
+		printf("GetEntityComponents(Lua): Entity is not spawned or out of range!(%d)\n",id);
+		return 0;
+	}
+
+    //Create a new table to insert the components of this entity
+    lua_newtable(L);
+
+    int compIndex = 0;
+    int tableIndex = 1;
+	ListCellPointer compCell;
+	ListForEach(compCell,ECS.ComponentTypes){
+		if(EntityContainsComponent(id,compIndex)){
+
+            //Put the component in the components table
+			lua_pushinteger(L, tableIndex++);
+            lua_pushstring(L, GetElementAsType(compCell, ComponentType).name);
+            lua_rawset(L, -3);
+		}
+		compIndex++;
+	}
+
+    return 1;
 }
-int l_IsEmptyComponentMask(ComponentMask mask){
 
-}
-int l_EntityContainsMask(EntityID entity, ComponentMask mask){
+static int l_EntityContainsComponents(lua_State *L){
+    int id = luaL_checkinteger (L, 1);
+    if(!lua_istable(L, 2)){
+        printf("EntityContainsComponents(Lua): Second argument must be a array table with components names or indexes!\n");
+        luaL_checktype(L, 2, LUA_TTABLE); //Check again to cause script error and stop execution
+        return 0;
+    }
+    size_t componentsCount = lua_rawlen(L,2);
 
-}
-int l_EntityContainsComponent(EntityID entity, ComponentID component){
+    size_t i;
+    for(i=1; i<=componentsCount; i++){
 
-}
-int l_MaskContainsComponent(ComponentMask mask, ComponentID component){
+        lua_rawgeti(L,2,i);
 
-}
-ComponentMask l_IntersectComponentMasks(ComponentMask mask1, ComponentMask mask2){
+        //If passed as string, get its index first, else, get the id directly
+        if(lua_type(L,-1) == LUA_TSTRING){
+            const char* comp = luaL_checkstring(L, -1);
+            int compID = GetComponentID((char*)comp);
 
+            //If the component name doesn't exits, return a False bool
+            if(compID <0){
+                lua_pushboolean(L,0);
+                return 1;
+            }
+
+            //If this entity doesn't contain this component, return a False bool
+            if(!EntityContainsComponent(id, compID)){
+                lua_pushboolean(L,0);
+                return 1;
+            }
+        }else if(lua_isinteger(L, -1)){
+            int comp = luaL_checkinteger(L, -1);
+            //If this entity doesn't contain this component, return a False bool
+            if(!EntityContainsComponent(id, comp)){
+                lua_pushboolean(L,0);
+                return 1;
+            }
+        }else{
+            //If another type of object was passed, return False
+            lua_pushboolean(L,0);
+            return 1;
+        }
+
+    }
+
+    lua_pushboolean(L,1);
+    return 1;
 }
 
 
 //-- Parenting functions --
-int l_EntityIsParent(EntityID entity){
-
+static int l_EntityIsParent(lua_State *L){
+    int id = luaL_checkinteger (L, 1);
+    lua_pushboolean(L, EntityIsParent(id));
+    return 1;
 }
-int l_EntityIsChild(EntityID entity){
 
+static int l_EntityIsChild(lua_State *L){
+    int id = luaL_checkinteger (L, 1);
+    lua_pushboolean(L, EntityIsChild(id));
+    return 1;
 }
-void l_SetEntityParent(EntityID child, EntityID parent){
 
+static int l_SetEntityParent(lua_State *L){
+    int childId = luaL_checkinteger (L, 1);
+    int parentId = luaL_checkinteger (L, 2);
+    SetEntityParent(childId, parentId);
+    return 0;
 }
-EntityID l_GetEntityParent(EntityID entity){
-
+static int l_GetEntityParent(lua_State *L){
+    int id = luaL_checkinteger (L, 1);
+    lua_pushinteger(L, GetEntityParent(id));
+    return 1;
 }
+/*
 List* l_GetChildsList(EntityID parent){
 
 }
-int l_UnsetParent(EntityID child){
-
+*/
+static int l_UnsetParent(lua_State *L){
+    int child = luaL_checkinteger (L, 1);
+    lua_pushboolean(L, UnsetParent(child));
+    return 1;
 }
 
-*/
+
 //-- System functions --
 static int l_GetSystemID(lua_State *L){
     const char* id = luaL_checkstring (L, 1);
@@ -182,14 +279,25 @@ static int l_PositionToGameScreenCoords(lua_State *L){
     lua_pushnumber(L, pos.y); //y value
     lua_rawset(L, -3);        //Store y in table
 
-    return 1; //Return number of results
+    return 1;
 }
 
-/*
-void l_MoveCamera(float x, float y, float z){
 
+static int l_MoveCamera(lua_State *L){
+    if(!lua_istable(L, 1)){
+        printf("MoveCamera(Lua): First argument must be a table with 'x', 'y' and 'z' numbers!\n");
+        luaL_checktype(L, 1, LUA_TTABLE); //Check again to cause script error and stop execution
+        return 0;
+    }
+    lua_getfield(L,1, "x");
+    lua_getfield(L,1, "y");
+    lua_getfield(L,1, "z");
+
+    MoveCamera(luaL_checknumber(L,-3), luaL_checknumber(L,-2), luaL_checknumber(L,-1));
+    lua_pop(L, 3);
+    return 0;
 }
-*/
+
 // ----------- Input functions ---------------
 
 static const char *keyNames[] = {
@@ -243,15 +351,6 @@ static int l_GetMouseButtonUp(lua_State *L){
     return 1; //Return number of results
 }
 
-/*
-void l_GetTextInput(char* outputTextPointer, int maxLength, int currentLength){
-
-}
-
-void l_StopTextInput(){
-	
-}*/
-
 
 void EngineRegisterLuaFunctions(){
 
@@ -276,6 +375,35 @@ void EngineRegisterLuaFunctions(){
     lua_setglobal(Core.lua, "AddComponentToEntity");
     lua_pushcfunction(Core.lua, l_RemoveComponentFromEntity);
     lua_setglobal(Core.lua, "RemoveComponentFromEntity");
+    lua_pushcfunction(Core.lua, l_DuplicateEntity);
+    lua_setglobal(Core.lua, "DuplicateEntity");
+
+    lua_pushcfunction(Core.lua, l_ExportEntityPrefab);
+    lua_setglobal(Core.lua, "ExportEntityPrefab");
+    lua_pushcfunction(Core.lua, l_ImportEntityPrefab);
+    lua_setglobal(Core.lua, "ImportEntityPrefab");
+    lua_pushcfunction(Core.lua, l_ExportScene);
+    lua_setglobal(Core.lua, "ExportScene");
+    lua_pushcfunction(Core.lua, l_LoadScene);
+    lua_setglobal(Core.lua, "LoadScene");
+    lua_pushcfunction(Core.lua, l_LoadSceneAdditive);
+    lua_setglobal(Core.lua, "LoadSceneAdditive");
+
+    lua_pushcfunction(Core.lua, l_GetEntityComponents);
+    lua_setglobal(Core.lua, "GetEntityComponents");
+    lua_pushcfunction(Core.lua, l_EntityContainsComponents);
+    lua_setglobal(Core.lua, "EntityContainsComponents");
+
+    lua_pushcfunction(Core.lua, l_EntityIsParent);
+    lua_setglobal(Core.lua, "EntityIsParent");
+    lua_pushcfunction(Core.lua, l_EntityIsChild);
+    lua_setglobal(Core.lua, "EntityIsChild");
+    lua_pushcfunction(Core.lua, l_SetEntityParent);
+    lua_setglobal(Core.lua, "SetEntityParent");
+    lua_pushcfunction(Core.lua, l_GetEntityParent);
+    lua_setglobal(Core.lua, "GetEntityParent");
+    lua_pushcfunction(Core.lua, l_UnsetParent);
+    lua_setglobal(Core.lua, "UnsetParent");
 
     lua_pushcfunction(Core.lua, l_GetSystemID);
     lua_setglobal(Core.lua, "GetSystemID");
@@ -293,6 +421,8 @@ void EngineRegisterLuaFunctions(){
 
     lua_pushcfunction(Core.lua, l_PositionToGameScreenCoords);
     lua_setglobal(Core.lua, "PositionToGameScreenCoords");
+    lua_pushcfunction(Core.lua, l_MoveCamera);
+    lua_setglobal(Core.lua, "MoveCamera");
 
     lua_pushcfunction(Core.lua, l_GetKey);
     lua_setglobal(Core.lua, "GetKey");

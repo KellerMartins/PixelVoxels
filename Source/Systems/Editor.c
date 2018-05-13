@@ -2730,6 +2730,9 @@ void ExitPlayMode(){
         }
         
     }
+
+    //Clear selected entities list
+    FreeList(&SelectedEntities);
 }
 
 //-------------------------- Dialog window functions --------------------------
@@ -2907,6 +2910,8 @@ void NewSceneDontSaveOption(){
             DestroyEntity(i);
         }
     }
+    FreeList(&SelectedEntities);
+
     //Close menu
     menuOpened = 0;
 

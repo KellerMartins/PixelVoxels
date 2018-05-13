@@ -136,9 +136,12 @@ void FileBrowserExtension(char *ext);
 void CloseFileBrowser();
 void FBOverrideFileDialogConfirmation();
 void FBOverrideFileDialogCancel();
+
 void FBLoadModel();
 void FBLoadScript();
 void FBLoadScene();
+void FBImportPrefab();
+void FBImportSceneEntities();
 void FBSaveScene();
 void FBExportPrefab();
 
@@ -534,7 +537,7 @@ void DrawMenuWindow(){
             case 1:
                 DrawTextColored("file", lightWhite, optionsBgMin.x + 10, optionsBgMax.y-20, gizmosFontSmall);
 
-                //New Scene button
+                //Export selected button
                 bMin = (Vector3){optionsBgMin.x + 10,optionsBgMax.y-55};
                 bMax = (Vector3){optionsBgMin.x + 270,optionsBgMax.y-25};
                 if(!IsListEmpty(SelectedEntities)){
@@ -553,13 +556,15 @@ void DrawMenuWindow(){
                 TTF_SizeText(gizmosFont,"Export selected",&btw,&bth);
                 DrawTextColored("Export selected", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
 
+                //Import prefab button
                 spacing = bMax.y-bMin.y + 4;
                 bMin.y -= spacing;
                 bMax.y -= spacing;
                 if(MouseOverBox(mousePos, bMin, bMax,0)){
                     DrawRectangle(bMin,bMax,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
                     if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
-                        menuOpened = 1;
+                        OpenFileBrowser(0,NULL,FBImportPrefab);
+                        FileBrowserExtension("prefab");
                     }
                 }else{
                     DrawRectangle(bMin,bMax,bgLightColor.x, bgLightColor.y, bgLightColor.z);
@@ -567,13 +572,19 @@ void DrawMenuWindow(){
                 TTF_SizeText(gizmosFont,"Import prefab",&btw,&bth);
                 DrawTextColored("Import prefab", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
 
+                //Import scene entities button
                 spacing = bMax.y-bMin.y + 4;
                 bMin.y -= spacing;
                 bMax.y -= spacing;
                 if(MouseOverBox(mousePos, bMin, bMax,0)){
                     DrawRectangle(bMin,bMax,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
                     if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
-                        menuOpened = 1;
+                        if(scenePath[0] != '\0'){
+                            OpenFileBrowser(0,scenePath,FBImportSceneEntities);
+                        }else{
+                            OpenFileBrowser(0,NULL,FBImportSceneEntities);
+                        }
+                        FileBrowserExtension("scene");
                     }
                 }else{
                     DrawRectangle(bMin,bMax,bgLightColor.x, bgLightColor.y, bgLightColor.z);
@@ -2890,6 +2901,11 @@ void FBLoadScene(){
     menuOpened = 0;
 }
 
+void FBImportSceneEntities(){
+    LoadSceneAdditive(fileBrowser.filePath,fileBrowser.fileName);
+    menuOpened = 0;
+}
+
 void FBSaveScene(){
     strcpy(scenePath,fileBrowser.filePath);
     strcpy(sceneName,fileBrowser.fileName);
@@ -2899,6 +2915,11 @@ void FBSaveScene(){
 
 void FBExportPrefab(){
     ExportEntityPrefab(GetElementAsType(GetFirstCell(SelectedEntities),EntityID), fileBrowser.filePath, fileBrowser.fileName);
+    menuOpened = 0;
+}
+
+void FBImportPrefab(){
+    ImportEntityPrefab(fileBrowser.filePath, fileBrowser.fileName);
     menuOpened = 0;
 }
 

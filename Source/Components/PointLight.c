@@ -81,10 +81,6 @@ void* PointLightDecode(cJSON **data){
     pl->color.y = cJSON_GetArrayItem(colorArr,1)->valuedouble;
     pl->color.z = cJSON_GetArrayItem(colorArr,2)->valuedouble;
 
-    pl->color.x = clamp(pl->color.x,0,1);
-    pl->color.y = clamp(pl->color.y,0,1);
-    pl->color.z = clamp(pl->color.z,0,1);
-
     pl->intensity = cJSON_GetObjectItem(*data,"intensity")->valuedouble;
     pl->range = cJSON_GetObjectItem(*data,"range")->valuedouble;
 

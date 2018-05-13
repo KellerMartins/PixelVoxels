@@ -1,12 +1,25 @@
 {
 	"Transform":	{
-		"position":	[-5.7850866317749023, -8.19351863861084, -14.140583992004395],
+		"position":	[0, 0, 0],
 		"rotation":	[0, 0, -45]
 	},
 	"VoxelModel":	{
 		"modelPath":	"Assets/Game/Models/",
 		"modelName":	"minichar.vox",
 		"smallScale":	true,
-		"center":	[5, 2, 10]
+		"center":	[5, 2, 0]
+	},
+	"RigidBody":	{
+		"mass":	1,
+		"bounciness":	0.20000000298023224,
+		"velocity":	[0, 0, 0],
+		"acceleration":	[0, 0, 0],
+		"useGravity":	true,
+		"isStatic":	false
+	},
+	"PointLight":	{
+		"color":	[-1, -1, -1],
+		"intensity":	0.5,
+		"range":	6
 	}
 }

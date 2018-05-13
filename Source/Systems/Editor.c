@@ -1480,6 +1480,8 @@ void DrawComponentsPanel(){
         
         //Prefab info and options
         if(singlePrefabSelected){
+            EntityID entity = GetElementAsType(GetFirstCell(SelectedEntities),EntityID);
+
             Vector3 prefabBgMin = {Screen.windowWidth-componentWindowLength, ComponentsPanelHeight};
             Vector3 prefabBgMax = {Screen.windowWidth, Screen.windowHeight};
             //Draw the dark background
@@ -1490,8 +1492,8 @@ void DrawComponentsPanel(){
             DrawRectangle(prefabBgMin,prefabBgMax,bgLightColor.x, bgLightColor.y, bgLightColor.z);
 
             //Draw the prefab name
-            TTF_SizeText(gizmosFontSmall, GetPrefabName(GetElementAsType(GetFirstCell(SelectedEntities),EntityID)), &w, &h);
-            DrawTextColored(GetPrefabName(GetElementAsType(GetFirstCell(SelectedEntities),EntityID)), brightWhite,prefabBgMin.x + (prefabBgMax.x - prefabBgMin.x - w)/2, prefabBgMin.y + (prefabBgMax.y - prefabBgMin.y - TTF_FontHeight(gizmosFontSmall))*9/10, gizmosFontSmall);
+            TTF_SizeText(gizmosFontSmall, GetPrefabName(entity), &w, &h);
+            DrawTextColored(GetPrefabName(entity), brightWhite,prefabBgMin.x + (prefabBgMax.x - prefabBgMin.x - w)/2, prefabBgMin.y + (prefabBgMax.y - prefabBgMin.y - TTF_FontHeight(gizmosFontSmall))*9/10, gizmosFontSmall);
 
 
             Vector3 buttonPos = {Screen.windowWidth-componentWindowLength + componentNameLeftSpacing + 2 +iconsSize[7],
@@ -1499,11 +1501,17 @@ void DrawComponentsPanel(){
 
             //Reload prefab button
             if(PointButton(buttonPos,7, 1, (Vector3){0.9,0.9,0.9}, (Vector3){0.2,1,0.2}, (Vector3){0.5,1,0.5}) == 1){
-
+                EntityID reloadedPrefab = ImportEntityPrefab(GetPrefabPath(entity),GetPrefabName(entity));
+                DestroyEntity(entity);
+                
+                FreeList(&SelectedEntities);
+                InsertListStart(&SelectedEntities, &reloadedPrefab);
+                entity = reloadedPrefab;
             }
+            //Save prefab button
             buttonPos.x += iconsSize[7] + 10 + iconsSize[19];
             if(PointButton(buttonPos,19, 1, (Vector3){0.9,0.9,0.9}, (Vector3){0.2,1,0.2}, (Vector3){0.5,1,0.5}) == 1){
-
+                ExportEntityPrefab(entity,GetPrefabPath(entity),GetPrefabName(entity));
             }
         }
     }

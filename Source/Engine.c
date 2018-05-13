@@ -460,11 +460,16 @@ int ExportEntityPrefab(EntityID entity, char path[], char name[]){
 
 	char fullPath[512+256];
     strncpy(fullPath,path,512);
+	//Add a '/' if the path doesnt end with one
     if(path[strlen(path)-1] != '/'){
         strcat(fullPath,"/");
     }
     strcat(fullPath,name);
-	strcat(fullPath,".prefab");
+	//Add the ".prefab" extension to the name if it doesn't contain it already
+	if(!StringCompareEqual(&name[strlen(name)-7], ".prefab")){
+		strcat(fullPath,".prefab");
+	}
+
     printf("Saving prefab: (%s)\n",fullPath);
     FILE* file = fopen(fullPath,"w");
 
@@ -477,7 +482,9 @@ int ExportEntityPrefab(EntityID entity, char path[], char name[]){
 		ECS.Entities[entity].isPrefab = 1;
 		strncpy(ECS.Entities[entity].prefabPath,path,512);
 		strncpy(ECS.Entities[entity].prefabName,name,256);
-		strcat(ECS.Entities[entity].prefabName,".prefab");
+		if(!StringCompareEqual(&name[strlen(name)-7], ".prefab")){
+			strcat(ECS.Entities[entity].prefabName,".prefab");
+		}
 
 		return 1;
 	}else{

@@ -1,13 +1,13 @@
 {
 	"Transform":	{
-		"position":	[0, 0, 0],
-		"rotation":	[0, 0, 0]
+		"position":	[-24.444025039672852, -39.496978759765625, 60.721431732177734],
+		"rotation":	[0, 0, -45]
 	},
 	"VoxelModel":	{
-		"modelPath":	"Assets/",
-		"modelName":	"Spaceship.vox",
-		"smallScale":	false,
-		"center":	[16, 12, 6]
+		"modelPath":	"Assets/Game/Models/Tests",
+		"modelName":	"glock.vox",
+		"smallScale":	true,
+		"center":	[55, 7, 20]
 	},
 	"LuaScript":	{
 		"scriptName":	"script.lua",

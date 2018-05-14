@@ -199,6 +199,9 @@ void DestroyEntity(EntityID entity){
 	FreeList(&ECS.Entities[entity].childs);
 	ECS.Entities[entity].isChild = 0;
 	ECS.Entities[entity].isParent = 0;
+	ECS.Entities[entity].isPrefab = 0;
+	ECS.Entities[entity].prefabPath[0] = '\0';
+	ECS.Entities[entity].prefabName[0] = '\0';
 
 	InsertListStart(&ECS.AvaliableEntitiesIndexes, (void*)&entity);
 }
@@ -301,6 +304,12 @@ EntityID DuplicateEntity(EntityID entity){
 
 	if(EntityIsChild(entity)){
 		SetEntityParent(newEntity, GetEntityParent(entity));
+	}
+
+	if(EntityIsPrefab(entity)){
+		ECS.Entities[newEntity].isPrefab = 1;
+		strncpy(ECS.Entities[newEntity].prefabPath, ECS.Entities[entity].prefabPath, 4096);
+		strncpy(ECS.Entities[newEntity].prefabName, ECS.Entities[entity].prefabName, 256);
 	}
 
 	return newEntity;

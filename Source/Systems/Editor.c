@@ -269,6 +269,19 @@ void EditorUpdate(){
         }
         DrawTextColored("Menu", brightWhite, 16, Screen.windowHeight-(entityWindowTopHeightSpacing/2)+5, gizmosFont);
 
+        int w, h;
+        static char camPosX[] = "0000000000:X";
+        static char camPosY[] = "0000000000:Y";
+        snprintf(camPosX, 13, "%10d:X", (int)Rendering.cameraPosition.x);
+        snprintf(camPosY, 13, "%10d:Y", (int)Rendering.cameraPosition.y);
+        TTF_SizeText(gizmosFont, camPosX, &w, &h);
+        DrawTextColored(camPosX, brightWhite, Screen.windowWidth - (IsListEmpty(SelectedEntities)? 0:componentWindowLength) - w - 8, TTF_FontHeight(gizmosFont)*2, gizmosFont);
+        TTF_SizeText(gizmosFont, camPosY, &w, &h);
+        DrawTextColored(camPosY, brightWhite, Screen.windowWidth - (IsListEmpty(SelectedEntities)? 0:componentWindowLength) - w - 8, TTF_FontHeight(gizmosFont), gizmosFont);
+
+
+        //Shortcuts
+
         //Delete shortcut
         if(GetKeyDown(SDL_SCANCODE_DELETE) && editingField<0  && !fileBrowser.opened){
             ListCellPointer sEntity;
@@ -296,6 +309,15 @@ void EditorUpdate(){
             }
         }
 
+        //Center camera on selected object
+        if(GetKey(SDL_SCANCODE_F) && !IsListEmpty(SelectedEntities)){
+            EntityID lastSelected = GetElementAsType(GetLastCell(SelectedEntities),EntityID);
+            if(EntityContainsComponent(lastSelected, GetComponentID("Transform"))){
+                Vector3 screenPos = PositionToCameraCoords(GetPosition(lastSelected));
+                TranslateCamera(screenPos.x, screenPos.y, 0);
+            }
+        }
+
         //Hide gizmos shortcut
         if(GetKeyDown(SDL_SCANCODE_H)){
             hideGizmos = !hideGizmos;
@@ -310,7 +332,7 @@ void EditorUpdate(){
             //ExportScene("Assets", "newScene");
         }
 
-        if(GetKeyDown(SDL_SCANCODE_F)){
+        if(GetKeyDown(SDL_SCANCODE_G)){
             EntityID newEntity = ImportEntityPrefab("Assets", "newPrefab.prefab");
             FreeList(&SelectedEntities);
             InsertListEnd(&SelectedEntities,&newEntity);

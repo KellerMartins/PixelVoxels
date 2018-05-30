@@ -1085,6 +1085,18 @@ Vector3 PositionToGameScreenCoords(Vector3 position){
 	return screenPos;
 }
 
+Vector3 PositionToCameraCoords(Vector3 position){
+	Vector3 screenPos;
+	position = (Vector3){roundf(position.x),roundf(position.y),roundf(position.z)};
+
+	//Position to screen projection
+	screenPos.x = (int)(((position.x) - (position.y))*2 + 0.375);
+    screenPos.y = (int)(((position.x) + (position.y)) + (position.z)*2) + 0.375;
+	screenPos.z = (position.z)/256.0;
+
+	return screenPos;
+}
+
 void ClearRender(SDL_Color col){
     glBindFramebuffer(GL_FRAMEBUFFER, Rendering.frameBuffer);
 
@@ -1416,6 +1428,13 @@ void MoveCamera(float x, float y, float z){
     Rendering.cameraPosition.z +=z*Time.deltaTime;
     //printf("CamPos: |%2.1f|%2.1f|%2.1f|\n",cameraPosition.x,cameraPosition.y,cameraPosition.z);
 }
+
+void TranslateCamera(float x, float y, float z){
+    Rendering.cameraPosition.x = x;
+    Rendering.cameraPosition.y = y;
+    Rendering.cameraPosition.z = z;
+}
+
 
 // ----------- Input functions ---------------
 

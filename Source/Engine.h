@@ -223,6 +223,7 @@ int GameExited();
 
 //Rendering functions
 Vector3 PositionToGameScreenCoords(Vector3 position);
+Vector3 PositionToCameraCoords(Vector3 position);
 void ClearRender(SDL_Color col);
 void RenderToScreen();
 void RenderTextDebug(char *text, SDL_Color color, int x, int y, TTF_Font* font);
@@ -230,6 +231,7 @@ int CompileAndLinkShader();
 void ReloadShaders();
 void LoadVoxelPalette(char path[]);
 void MoveCamera(float x, float y, float z);
+void TranslateCamera(float x, float y, float z);
 
 //Input functions
 int InitializeInput();

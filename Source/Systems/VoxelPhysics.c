@@ -135,9 +135,6 @@ int VoxelModelVsVoxelModelCollision(EntityID entityA, EntityID entityB,Vector3 *
     Vector3 movementB = {velB.x + accB.x*moveDelta,velB.y + accB.y*moveDelta,velB.z + accB.z*moveDelta};
     movementB = ScalarMult(movementB,moveDelta);
 
-    if(norm(movementA)>1){
-        printf("Step needed!(%f)\n",norm(movementA));
-    }
 
     //Simplificated rotation matrix terms
     //ObjA rotation matrix

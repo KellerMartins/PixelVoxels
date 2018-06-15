@@ -149,109 +149,47 @@ void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,in
     DrawTextColored(title, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
     *curHeight -= 2 + TTF_FontHeight(gizmosFontSmall);
 
-    int fieldW = w/3;
+    double fieldW = w/3.0 - fieldsSpacing/1.5;
 
-    //1 is X field, 2 is Y field and 3 is Z field
-    Vector3 min1 = { x,*curHeight-TTF_FontHeight(gizmosFont)-2,0};
-    Vector3 max1 = { x+fieldW - fieldsSpacing,*curHeight,0};
-    Vector3 min2 = { x+fieldW + fieldsSpacing,*curHeight-TTF_FontHeight(gizmosFont)-2,0};
-    Vector3 max2 = { x+fieldW*2 - fieldsSpacing,*curHeight,0};
-    Vector3 min3 = { x+fieldW*2 + fieldsSpacing,*curHeight-TTF_FontHeight(gizmosFont)-2,0};
-    Vector3 max3 = { x+fieldW*3 - fieldsSpacing,*curHeight,0};
 
-    if(editingField == *curField || editingField == (*curField)+1 || editingField == (*curField)+2)
-    {
-        //String edit field background
-        DrawRectangle(min1,max3,fieldEditingColor.x, fieldEditingColor.y, fieldEditingColor.z);
+    Vector3 size = { fieldW, TTF_FontHeight(gizmosFont)+2,0};
+    Vector3 posX = { x,*curHeight-TTF_FontHeight(gizmosFont)-2,0};
+    Vector3 posY = { posX.x + size.x + fieldsSpacing,*curHeight-TTF_FontHeight(gizmosFont)-2,0};
+    Vector3 posZ = { posY.x + size.x + fieldsSpacing,*curHeight-TTF_FontHeight(gizmosFont)-2,0};
 
-        //Get the cursor position by creating a string containing the characters until the cursor
-        //and getting his size when rendered with the used font
-        char buff[13];
-        strncpy(buff,textFieldString,Input.textInputCursorPos);
-        memset(buff+Input.textInputCursorPos,'\0',1);
-        int cursorPos,h;
-        TTF_SizeText(gizmosFont,buff,&cursorPos,&h);
-        cursorPos+=min1.x;
+    Vector3 activePos = { x,*curHeight-TTF_FontHeight(gizmosFont)-2,0};
+    Vector3 activeSize = { w,TTF_FontHeight(gizmosFont)+2,0};
 
-        //Cursor line
-        DrawLine((Vector3){cursorPos, min1.y},
-                 (Vector3){cursorPos, max1.y},
-                 2,0.7,0.7,0.7);
+    int fieldDelta = editingField - *curField;
+    int lastActiveField = editingField;
+    switch(fieldDelta){
+        //X is being edited
+        case (0): FloatBoxActive(&(data->x),ommitX, activePos, activeSize, 5,6);
+        break;
 
-        //Render the string
-        DrawTextColored(textFieldString, lightWhite, min1.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+        //Y is being edited
+        case (1): FloatBoxActive(&(data->y),ommitY, activePos, activeSize, 5,6);
+        break;
 
-        //Pass the string as float data
-        if(editingField == *curField){
-            data->x = strtof(textFieldString, NULL);
-        }else if(editingField == (*curField)+1){
-            data->y = strtof(textFieldString, NULL);
-        }else{
-            data->z = strtof(textFieldString, NULL);
-        }
+        //Z is being edited
+        case (2): FloatBoxActive(&(data->z),ommitZ, activePos, activeSize, 5,6);
+        break;
 
-    }else{
-        //Not editing any of the three fields, just draw the three boxes and floats normally
-        static char valueString[5] = "  0.0";
+        //None of the three are being edited
+        default:
+            FloatBoxInactive(*curField + 0,&(data->x),ommitX, posX, size, 2,2 , 5,6);
+            FloatBoxInactive(*curField + 1,&(data->y),ommitY, posY, size, 2,2 , 5,6);
+            FloatBoxInactive(*curField + 2,&(data->z),ommitZ, posZ, size, 2,2 , 5,6);
 
-        //Fields selection
-        if(editingField<0 && GetMouseButtonDown(SDL_BUTTON_LEFT)){
-            if(MouseOverBox(mousePos,min1,max1,0)){
-                textFieldString = (char*)calloc(13,sizeof(char));
-
-                if(!ommitX) snprintf(textFieldString, 12, "%6.6f", data->x);
-                else snprintf(textFieldString, 4, "0.0");
-                
-                GetTextInput(textFieldString, 12, strlen(textFieldString));
-                editingField = *curField;
+            //Draw an empty box in case any of the fields has been selected, to make an smoother transition to the next frame with the text
+            if(lastActiveField != editingField){
+                DrawRectangle(activePos, Add(activeSize,activePos), fieldEditingColor.x, fieldEditingColor.y, fieldEditingColor.z);
             }
-
-            if(MouseOverBox(mousePos,min2,max2,0)){
-                textFieldString = (char*)calloc(13,sizeof(char));
-                if(!ommitY) snprintf(textFieldString, 12, "%6.6f", data->y);
-                else snprintf(textFieldString, 4, "0.0");
-
-                GetTextInput(textFieldString, 12, strlen(textFieldString));
-                editingField = (*curField)+1;
-            }
-
-            if(MouseOverBox(mousePos,min3,max3,0)){
-                textFieldString = (char*)calloc(13,sizeof(char));
-                if(!ommitX) snprintf(textFieldString, 12, "%6.6f", data->z);
-                else snprintf(textFieldString, 4, "0.0");
-
-                GetTextInput(textFieldString, 12, strlen(textFieldString));
-                editingField = (*curField)+2;
-            }
-        }
-
-        //Check if no field was selected before rendering the individual fields
-        if(editingField != *curField && editingField != (*curField)+1 && editingField != (*curField)+2){
-
-            //X field
-            DrawRectangle(min1,max1,fieldColor.x, fieldColor.y, fieldColor.z);
-            if(!ommitX) snprintf(valueString,5,"%3.1f",data->x);
-            else snprintf(valueString,5,"---");
-            DrawTextColored(valueString, lightWhite, min1.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
-
-            //Y field
-            DrawRectangle(min2,max2,fieldColor.x, fieldColor.y, fieldColor.z);
-            if(!ommitY) snprintf(valueString,5,"%3.1f",data->y);
-            else snprintf(valueString,5,"---");
-            DrawTextColored(valueString, lightWhite, min2.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
-
-            //Z field
-            DrawRectangle(min3,max3,fieldColor.x, fieldColor.y, fieldColor.z);
-            if(!ommitZ) snprintf(valueString,5,"%3.1f",data->z);
-            else snprintf(valueString,5,"---");
-            DrawTextColored(valueString, lightWhite, min3.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
-        }
+        break;
     }
 
-    //Mark as used ID fields
-    *curField +=3;
-
     *curHeight -= 2 + TTF_FontHeight(gizmosFont);
+    *curField +=3;
 }
 
 void FloatField(char *title, float *data,int ommit,int x, int w, int* curField, int* curHeight){
@@ -259,63 +197,106 @@ void FloatField(char *title, float *data,int ommit,int x, int w, int* curField, 
     DrawTextColored(title, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
     *curHeight -= 2 + TTF_FontHeight(gizmosFontSmall);
 
-    Vector3 min = { x,*curHeight-TTF_FontHeight(gizmosFont)-2,0};
-    Vector3 max = { x+w,*curHeight,0};
+    Vector3 pos = { x,*curHeight-TTF_FontHeight(gizmosFont)-2,0};
+    Vector3 size = { w,TTF_FontHeight(gizmosFont)+2,0};
 
-    if(editingField == *curField)
-    {
-        //Field background
-        DrawRectangle(min,max,fieldEditingColor.x, fieldEditingColor.y, fieldEditingColor.z);
-
-        //Get the cursor position by creating a string containing the characters until the cursor
-        //and getting his size when rendered with the used font
-        char buff[13];
-        strncpy(buff,textFieldString,Input.textInputCursorPos);
-        memset(buff+Input.textInputCursorPos,'\0',1);
-        int cursorPos,h;
-        TTF_SizeText(gizmosFont,buff,&cursorPos,&h);
-        cursorPos+=min.x;
-
-        //Cursor line
-        DrawLine((Vector3){cursorPos, min.y},
-                 (Vector3){cursorPos, max.y},
-                 2,0.7,0.7,0.7);
-
-        //Render the string
-        DrawTextColored(textFieldString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
-
-        //Pass the string as float data
-        *data = strtof(textFieldString, NULL);
-
+    if(*curField == editingField){
+        FloatBoxActive(data, ommit, pos, size, 6,6);
     }else{
-        //Not editing, just draw the box and float normally
-        static char valueString[12] = "  0.0";
+        FloatBoxInactive(*curField, data, ommit, pos, size, 6,6, 6,6);
+    }
+    *curHeight -= 2 + TTF_FontHeight(gizmosFont);
+    *curField +=1;
+}
 
-        //Field background
-        DrawRectangle(min,max,fieldColor.x, fieldColor.y, fieldColor.z);
-        //Data text
-        if(!ommit) snprintf(valueString,12,"%6.6f",*data);
-        else snprintf(valueString,4,"---");
-        DrawTextColored(valueString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+void FloatBoxActive(float *data,int ommit, Vector3 pos, Vector3 size,int intDigits,int decDigits){
 
-        //Fields selection
-        if(editingField<0 && GetMouseButtonDown(SDL_BUTTON_LEFT)){
-            if(MouseOverBox(mousePos,min,max,0)){
-                textFieldString = (char*)calloc(13,sizeof(char));
+    //Limits the number of decimal and integer digits to fit into the maximum field size
+    intDigits = intDigits > FIELD_MAX_CHARS? FIELD_MAX_CHARS: intDigits;
 
-                if(!ommit) snprintf(textFieldString, 12, "%6.6f", *data);
-                else snprintf(textFieldString, 4, "0.0");
-                
-                GetTextInput(textFieldString, 12, strlen(textFieldString));
-                editingField = *curField;
-            }
+    //Calculates the number of decimal digits if the requested amount overflows the string. The 1 represents the decimal dot character
+    decDigits = intDigits + decDigits + 1 > FIELD_MAX_CHARS? FIELD_MAX_CHARS-(intDigits+1) : decDigits;
+
+    //Remove a decimal digit if the number has a sign, to make the positive and negative numbers have about the same length
+    decDigits -= (*data < 0) && decDigits>0 ? 1 : 0;
+
+    //Define the rect
+    Vector3 min = pos;
+    Vector3 max = { pos.x + size.x, pos.y + size.y};
+
+
+    //Field background
+    DrawRectangle(min,max,fieldEditingColor.x, fieldEditingColor.y, fieldEditingColor.z);
+
+    //Get the cursor position by creating a string containing the characters until the cursor
+    //and getting his size when rendered with the used font
+    char buff[FIELD_MAX_CHARS];
+    strncpy(buff,textFieldString,Input.textInputCursorPos);
+    memset(buff+Input.textInputCursorPos,'\0',1);
+    int cursorPos,h;
+    TTF_SizeText(gizmosFont,buff,&cursorPos,&h);
+    cursorPos+=min.x+1;
+
+    //Cursor line
+    DrawLine((Vector3){cursorPos, min.y},
+                (Vector3){cursorPos, max.y},
+                2,0.7,0.7,0.7);
+
+    //Render the string
+    DrawTextColored(textFieldString, lightWhite, min.x + 1, min.y + (size.y - TTF_FontHeight(gizmosFont))/2 +1, gizmosFont);
+
+    //Pass the string as float data
+    *data = strtof(textFieldString, NULL);
+}
+
+void FloatBoxInactive(int fieldID, float *data,int ommit, Vector3 pos, Vector3 size,int intDigits,int decDigits, int activeIntDigits,int activeDecDigits){
+
+    //Limits the number of decimal and integer digits to fit into the maximum field size
+    intDigits = intDigits > FIELD_MAX_CHARS? FIELD_MAX_CHARS: intDigits;
+
+    //Calculates the number of decimal digits if the requested amount overflows the string. The 1 represents the decimal dot character
+    decDigits = intDigits + decDigits + 1 > FIELD_MAX_CHARS? FIELD_MAX_CHARS-(intDigits+1) : decDigits;
+    //Remove a decimal digit if the number has a sign, to make the positive and negative numbers have about the same length
+    decDigits -= (*data < 0) && decDigits>0 ? 1 : 0;
+    
+
+    //Define the rect
+    Vector3 min = pos;
+    Vector3 max = { pos.x + size.x, pos.y + size.y};
+
+    //Not editing, just draw the box and float normally
+    static char valueString[FIELD_MAX_CHARS+1] = "0.0";
+
+    //Field background
+    DrawRectangle(min,max,fieldColor.x, fieldColor.y, fieldColor.z);
+
+    //Data text
+    if(!ommit){
+        const size_t fieldLength = intDigits + decDigits + 1 // 1 for the \n
+                                    + (*data < pow(10,intDigits)) //+1 for the dot, if the int. part fits in the requested int. size
+                                    + (*data < 0); //+1 for the minus, if negative
+
+        snprintf(valueString,fieldLength,"%*.*f",intDigits, decDigits,*data);
+    }
+    else{
+        snprintf(valueString,4,"---");
+    }
+    DrawTextColored(valueString, lightWhite, min.x + 1, min.y + (size.y - TTF_FontHeight(gizmosFont))/2 +1, gizmosFont);
+
+
+    //Field selection
+    if(editingField<0 && GetMouseButtonDown(SDL_BUTTON_LEFT)){
+        if(MouseOverBox(mousePos,min,max,0)){
+            textFieldString = (char*)calloc(FIELD_MAX_CHARS+1,sizeof(char));
+
+            if(!ommit) snprintf(textFieldString, FIELD_MAX_CHARS, "%*.*f", activeIntDigits, activeDecDigits, *data);
+            else snprintf(textFieldString, 4, "0.0");
+            
+            GetTextInput(textFieldString, FIELD_MAX_CHARS, strlen(textFieldString));
+            editingField = fieldID;
         }
     }
 
-    //Mark as used ID field
-    *curField +=1;
-
-    *curHeight -= 2 + TTF_FontHeight(gizmosFont);
 }
 
 void IntField(char *title, int *data,int ommit,int x, int w, int* curField, int* curHeight){
@@ -380,6 +361,18 @@ void IntField(char *title, int *data,int ommit,int x, int w, int* curField, int*
     *curField +=1;
 
     *curHeight -= 2 + TTF_FontHeight(gizmosFont);
+}
+
+void RGBField(char *title, Vector3 *data,int ommitR,int ommitG,int ommitB,int x, int w, int* curField, int* curHeight){
+    *curHeight -= 2;
+
+    Vector3Field(title, data, ommitR, ommitG, ommitB, x, w, 4, curField, curHeight);
+
+    *curHeight -= 2;
+    DrawRectangle((Vector3){x,*curHeight-TTF_FontHeight(gizmosFont)-2}, 
+                  (Vector3){x+w,*curHeight},
+                  data->x,data->y,data->z);
+    *curHeight -= 6 + TTF_FontHeight(gizmosFontSmall)*2;
 }
 
 //-------------------------- Helper functions --------------------------

@@ -72,11 +72,7 @@ int main(int argc, char *argv[]){
 		printf("Font: Error loading font!");
 	}
 
-	EntityID newEntity = CreateEntity();
-	AddComponentToEntity(GetComponentID("LuaScript"), newEntity);
-	SetLuaScript(newEntity, "Assets/Game/Scripts/", "script.lua");
-	AddComponentToEntity(GetComponentID("VoxelModel"), newEntity);
-	LoadVoxelModel(newEntity, "Assets/","Spaceship.vox");
+	LoadScene("Assets", "Sea.scene");
 
 	printf("GameLoop Initialized\n");
 	//Game Loop

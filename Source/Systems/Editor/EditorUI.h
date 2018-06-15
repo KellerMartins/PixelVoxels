@@ -4,10 +4,16 @@
 #include "../../Engine.h"
 #include "../UIRenderer.h"
 
+#define FIELD_MAX_CHARS 13
 
 void DrawRectangle(Vector3 min, Vector3 max, float r, float g, float b);
 void DrawPointIcon(Vector3 pos,int iconID, int scale, Vector3 color);
+
+void FloatBoxActive(float *data,int ommit, Vector3 pos, Vector3 size,int intDigits,int decDigits);
+void FloatBoxInactive(int fieldID, float *data,int ommit, Vector3 pos, Vector3 size,int intDigits,int decDigits, int activeIntDigits,int activeDecDigits);
+
 void StringField(char *title, char *data, int maxChars, int ommit,int x, int w, int* curField, int* curHeight);
+void RGBField(char *title, Vector3 *data,int ommitR,int ommitG,int ommitB,int x, int w, int* curField, int* curHeight);
 void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,int x, int w, int fieldsSpacing, int* curField, int* curHeight);
 void FloatField(char *title, float *data,int ommit,int x, int w, int* curField, int* curHeight);
 void IntField(char *title, int *data,int ommit,int x, int w, int* curField, int* curHeight);

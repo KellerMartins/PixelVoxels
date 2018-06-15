@@ -421,7 +421,7 @@ void DrawComponentsPanel(){
                         }else if(c == GetComponentID("PointLight")){
 
                             //Component background
-                            Vector3 bgMin = {Screen.windowWidth-componentWindowLength, componentHeight-170,0};
+                            Vector3 bgMin = {Screen.windowWidth-componentWindowLength, componentHeight-180,0};
                             Vector3 bgMax = {Screen.windowWidth-componentWindowWidthSpacing, componentHeight,0};
                             DrawRectangle(bgMin, bgMax, bgMediumColor.x, bgMediumColor.y, bgMediumColor.z);
 
@@ -464,11 +464,7 @@ void DrawComponentsPanel(){
                             float newIntensity = lastIntensity;
                             float newRange = lastRange;
 
-                            componentHeight -= 6;
-                            DrawRectangle((Vector3){Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentHeight-20}, (Vector3){Screen.windowWidth-componentWindowWidthSpacing-componentNameLeftSpacing, componentHeight},newColor.x,newColor.y,newColor.z);
-                            componentHeight -= 22;
-
-                            Vector3Field("Light color",&newColor,ommitColorX,ommitColorY,ommitColorZ,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1,4, &currentComponentField, &componentHeight);
+                            RGBField("Light color", &newColor,ommitColorX,ommitColorY,ommitColorZ, Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
                             FloatField("Intensity",&newIntensity,ommitIntensity,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
                             FloatField("Range",&newRange,ommitRange,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
 

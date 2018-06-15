@@ -45,7 +45,7 @@ void NewSceneCancelOption();
 void NewSceneSaveScene();
 
 
-int menuOpened = 1;
+int menuOpened = 0;
 
 int selectedTab = 0;
 void DrawMenuWindow(){

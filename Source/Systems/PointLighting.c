@@ -11,9 +11,9 @@ typedef struct PLight{
     float align1;
     Vector3 color;
     float align2;
+    float hueShift;
     float intensity;
     float range;
-    float align3;
     float align4;
 }PLight;
 
@@ -55,6 +55,7 @@ void PointLightingUpdate(){
 
         GetGlobalTransform(entity, &lights[currentLight].position,NULL);
         lights[currentLight].color = ((PointLightData*) ECS.Components[PointLightComp][entity].data)->color;
+        lights[currentLight].hueShift = ((PointLightData*) ECS.Components[PointLightComp][entity].data)->hueShift;
         lights[currentLight].intensity = ((PointLightData*) ECS.Components[PointLightComp][entity].data)->intensity;
         lights[currentLight].range = ((PointLightData*) ECS.Components[PointLightComp][entity].data)->range;
 
@@ -63,7 +64,7 @@ void PointLightingUpdate(){
 
     if(currentLight<MAX_POINT_LIGHTS){
         for(;currentLight<MAX_POINT_LIGHTS; currentLight++){
-            lights[currentLight].intensity = 0;
+            lights[currentLight].range = 0;
         }
     }
 

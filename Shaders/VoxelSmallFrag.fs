@@ -34,7 +34,7 @@ void main(void) {
 
     vec3 pointLighting = vec3(0);
     for(int i=0;i<MAX_POINT_LIGHTS;i++){
-        if(lights[i].intensity<=0) continue;
+        if(lights[i].range<=0) continue;
         
         vec3 pointLightDir = normalize(lights[i].position.xyz - ex_Position);
         float pointLightDist = lights[i].range / pow( distance(ex_Position,lights[i].position.xyz) ,2);

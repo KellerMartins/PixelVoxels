@@ -250,6 +250,10 @@ void StopTextInput();
 //Lua stack manipulation functions
 void Vector3ToTable(lua_State *L, Vector3 vector);
 
+//cJSON wrappers
+double JSON_GetObjectDouble(cJSON *object,char *string);
+Vector3 JSON_GetObjectVector3(cJSON *object,char *string);
+
 //Misc.
 void SaveTextureToPNG(SDL_Texture *tex, char* out);
 

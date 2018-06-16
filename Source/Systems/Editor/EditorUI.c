@@ -10,6 +10,7 @@ extern engineInput Input;
 extern Vector3 fieldColor;
 extern Vector3 fieldEditingColor;
 extern Vector3 lightWhite;
+extern Vector3 brightWhite;
 
 //Data from Editor.c
 extern Vector3 mousePos;
@@ -81,7 +82,7 @@ int PointButton(Vector3 pos,int iconID, int scale, Vector3 defaultColor, Vector3
 
     Vector3 color = defaultColor;
 
-    if(MouseOverPointGizmos(mousePos, pos, scale * iconsSize[iconID])){
+    if(MouseOverPoint(mousePos, pos, scale * iconsSize[iconID])){
         color = mouseOverColor;
 
         //Pressed
@@ -119,7 +120,7 @@ int PointToggle(int *data,Vector3 pos,int onIconID, int offIconID, int undefined
         usedIcon = iconsTex[offIconID];
     }
 
-        if(MouseOverPointGizmos(mousePos, pos, scale * iconSize)){
+        if(MouseOverPoint(mousePos, pos, scale * iconSize)){
             color = mouseOverColor;
 
             //Pressed
@@ -190,6 +191,56 @@ void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,in
 
     *curHeight -= 2 + TTF_FontHeight(gizmosFont);
     *curField +=3;
+}
+
+void RGBField(char *title, Vector3 *data,int ommitR,int ommitG,int ommitB,int x, int w, int* curField, int* curHeight){
+    
+    *curHeight -= 4;
+    DrawTextColored(title, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+    *curHeight -= 2 + TTF_FontHeight(gizmosFontSmall);
+
+
+    *curHeight -= 4;
+    DrawRectangle((Vector3){x,*curHeight-TTF_FontHeight(gizmosFont)-2}, 
+                  (Vector3){x+w,*curHeight},
+                  data->x,data->y,data->z);
+    *curHeight -= 16 + TTF_FontHeight(gizmosFontSmall)*2;
+
+
+    DrawTextColored("r", lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall)/2, gizmosFontSmall);
+    double sliderVal = Slider(data->x, x+12, *curHeight, w-17, 14, 1, lightWhite, brightWhite, brightWhite);
+    if(sliderVal > 0){
+        data->x = sliderVal;
+    }
+    *curHeight -= 20;
+
+    DrawTextColored("G", lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall)/2, gizmosFontSmall);
+    sliderVal = Slider(data->y, x+12, *curHeight, w-17, 14, 1, lightWhite, brightWhite, brightWhite);
+    if(sliderVal > 0){
+        data->y = sliderVal;
+    }
+    *curHeight -= 20;
+
+    DrawTextColored("b", lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall)/2, gizmosFontSmall);
+    sliderVal = Slider(data->z, x+12, *curHeight, w-17, 14, 1, lightWhite, brightWhite, brightWhite);
+    if(sliderVal > 0){
+        data->z = sliderVal;
+    }
+    *curHeight -= 12;
+}
+
+void SliderField(char *title, float *data, Vector3 range, int ommit, int x, int w, int* curField, int* curHeight){
+    
+    *curHeight -= 4;
+    DrawTextColored(title, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
+    *curHeight -= 8 + TTF_FontHeight(gizmosFontSmall);
+
+    
+    double sliderVal = Slider((*data-range.x)/(range.y - range.x), x+2, *curHeight, w-7, 14, 1, lightWhite, brightWhite, brightWhite);
+    if(sliderVal > 0){
+        *data = (sliderVal * (range.y - range.x)) + range.x;
+    }
+    *curHeight -= 12;
 }
 
 void FloatField(char *title, float *data,int ommit,int x, int w, int* curField, int* curHeight){
@@ -299,89 +350,30 @@ void FloatBoxInactive(int fieldID, float *data,int ommit, Vector3 pos, Vector3 s
 
 }
 
-void IntField(char *title, int *data,int ommit,int x, int w, int* curField, int* curHeight){
-    *curHeight -= 4;
-    DrawTextColored(title, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
-    *curHeight -= 2 + TTF_FontHeight(gizmosFontSmall);
+double Slider(double t, int x, int y, int w,int iconID, int scale, Vector3 defaultColor, Vector3 mouseOverColor, Vector3 pressedColor){
+    DrawLine((Vector3){x, y+1}, (Vector3){x+w, y+1}, (iconsSize[iconID]-4)*2*scale, fieldColor.x, fieldColor.y, fieldColor.z);
 
-    Vector3 min = { x,*curHeight-TTF_FontHeight(gizmosFont)-2,0};
-    Vector3 max = { x+w,*curHeight,0};
+    if( MouseOverLine(mousePos, (Vector3){x-20, y}, (Vector3){x+w+20, y},(iconsSize[iconID]-2)*scale) && GetMouseButton(SDL_BUTTON_LEFT)){
+        t = ( (mousePos.x - x) / (double) w );
+        t = clamp(t, 0, 1);
+        DrawPoint((Vector3){(x+5)+t*(w-5), y}, iconsSize[iconID], iconsTex[iconID]*scale, defaultColor.x, defaultColor.y, defaultColor.z);
 
-    if(editingField == *curField)
-    {
-        //Field background
-        DrawRectangle(min,max,fieldEditingColor.x, fieldEditingColor.y, fieldEditingColor.z);
-
-        //Get the cursor position by creating a string containing the characters until the cursor
-        //and getting his size when rendered with the used font
-        char buff[13];
-        strncpy(buff,textFieldString,Input.textInputCursorPos);
-        memset(buff+Input.textInputCursorPos,'\0',1);
-        int cursorPos,h;
-        TTF_SizeText(gizmosFont,buff,&cursorPos,&h);
-        cursorPos+=min.x;
-
-        //Cursor line
-        DrawLine((Vector3){cursorPos, min.y},
-                 (Vector3){cursorPos, max.y},
-                 2,0.7,0.7,0.7);
-
-        //Render the string
-        DrawTextColored(textFieldString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
-
-        //Pass the string as float data
-        *data = (int) strtol(textFieldString, NULL,0);
-
+        return t;
     }else{
-        //Not editing, just draw the box and float normally
-        static char valueString[12] = "  0.0";
-
-        //Field background
-        DrawRectangle(min,max,fieldColor.x, fieldColor.y, fieldColor.z);
-        //Data text
-        if(!ommit) snprintf(valueString,12,"%d",*data);
-        else snprintf(valueString,4,"---");
-        DrawTextColored(valueString, lightWhite, min.x, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
-
-        //Fields selection
-        if(editingField<0 && GetMouseButtonDown(SDL_BUTTON_LEFT)){
-            if(MouseOverBox(mousePos,min,max,0)){
-                textFieldString = (char*)calloc(13,sizeof(char));
-
-                if(!ommit) snprintf(textFieldString, 12, "%d", *data);
-                else textFieldString[0] = '\0';
-                
-                GetTextInput(textFieldString, 12, strlen(textFieldString));
-                editingField = *curField;
-            }
-        }
+        DrawPoint((Vector3){clamp((x+5)+t*(w-5),x,x+w), y}, iconsSize[iconID], iconsTex[iconID]*scale, defaultColor.x, defaultColor.y, defaultColor.z);
     }
 
-    //Mark as used ID field
-    *curField +=1;
 
-    *curHeight -= 2 + TTF_FontHeight(gizmosFont);
-}
-
-void RGBField(char *title, Vector3 *data,int ommitR,int ommitG,int ommitB,int x, int w, int* curField, int* curHeight){
-    *curHeight -= 2;
-
-    Vector3Field(title, data, ommitR, ommitG, ommitB, x, w, 4, curField, curHeight);
-
-    *curHeight -= 2;
-    DrawRectangle((Vector3){x,*curHeight-TTF_FontHeight(gizmosFont)-2}, 
-                  (Vector3){x+w,*curHeight},
-                  data->x,data->y,data->z);
-    *curHeight -= 6 + TTF_FontHeight(gizmosFontSmall)*2;
+    return -1;
 }
 
 //-------------------------- Helper functions --------------------------
 
-int MouseOverLineGizmos(Vector3 mousePos, Vector3 originPos, Vector3 handlePos,int mouseOverDistance){
+int MouseOverLine(Vector3 mousePos, Vector3 originPos, Vector3 handlePos,int mouseOverDistance){
     return DistanceFromPointToLine2D(handlePos,originPos,mousePos)<mouseOverDistance && Distance(mousePos,handlePos)<Distance(handlePos, originPos) && Distance(mousePos,originPos)<Distance(handlePos, originPos);
 }
 
-int MouseOverPointGizmos(Vector3 mousePos, Vector3 originPos,int mouseOverDistance){
+int MouseOverPoint(Vector3 mousePos, Vector3 originPos,int mouseOverDistance){
     return Distance(mousePos,originPos)<mouseOverDistance;
 }
 

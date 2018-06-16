@@ -43,7 +43,7 @@ void DrawTransformGizmos(){
             if(!IsSelected(entity)){
                 //Entity not selected, show selection point
                 Vector3 selPointColor = {scrollbarOverColor.x, scrollbarOverColor.y, scrollbarOverColor.z};
-                if(MouseOverPointGizmos(mousePos, originPos, selectMouseOverDistance)){
+                if(MouseOverPoint(mousePos, originPos, selectMouseOverDistance)){
                     selPointColor = (Vector3){1,1,1};
                     
                     if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
@@ -66,7 +66,7 @@ void DrawTransformGizmos(){
                 Vector3 gizmosColor = {1,0.75,0.75};
 
                 if(!movingX){
-                    if(MouseOverLineGizmos(mousePos, originPos, lineXEndPos, axisMouseOverDistance) && !MouseOverPointGizmos(mousePos, originPos, selectMouseOverDistance)){
+                    if(MouseOverLine(mousePos, originPos, lineXEndPos, axisMouseOverDistance) && !MouseOverPoint(mousePos, originPos, selectMouseOverDistance)){
                         if(GetMouseButton(SDL_BUTTON_LEFT)){
                             if(!movingZ && !movingY)
                                 movingX = 1;
@@ -89,7 +89,7 @@ void DrawTransformGizmos(){
                 gizmosColor = (Vector3){0.75,1,0.75};
 
                 if(!movingY){
-                    if(MouseOverLineGizmos(mousePos, originPos, lineYEndPos, axisMouseOverDistance) && !MouseOverPointGizmos(mousePos, originPos, selectMouseOverDistance)){
+                    if(MouseOverLine(mousePos, originPos, lineYEndPos, axisMouseOverDistance) && !MouseOverPoint(mousePos, originPos, selectMouseOverDistance)){
                         
                         if(GetMouseButton(SDL_BUTTON_LEFT)){
                             if(!movingX && !movingZ)
@@ -114,7 +114,7 @@ void DrawTransformGizmos(){
                 gizmosColor = (Vector3){0.75,0.75,1};
                 
                 if(!movingZ){
-                    if(MouseOverLineGizmos(mousePos, originPos, lineZEndPos, axisMouseOverDistance) && !MouseOverPointGizmos(mousePos, originPos, selectMouseOverDistance)){
+                    if(MouseOverLine(mousePos, originPos, lineZEndPos, axisMouseOverDistance) && !MouseOverPoint(mousePos, originPos, selectMouseOverDistance)){
                         if(GetMouseButton(SDL_BUTTON_LEFT)){
                             if(!movingX && !movingY)
                                 movingZ = 1;
@@ -130,7 +130,7 @@ void DrawTransformGizmos(){
                 DrawPoint(lineZEndPos, 5, 0, gizmosColor.x, gizmosColor.y, gizmosColor.z);
 
                 //Origin point
-                if(MouseOverPointGizmos(mousePos, originPos, selectMouseOverDistance)){
+                if(MouseOverPoint(mousePos, originPos, selectMouseOverDistance)){
                     gizmosColor = (Vector3){1,1,0};
 
                     if(GetMouseButtonDown(SDL_BUTTON_LEFT)){

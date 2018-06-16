@@ -19,6 +19,7 @@ void PointLightConstructor(void** data){
     ((PointLightData*)*data)->color = (Vector3){1,1,1};
     ((PointLightData*)*data)->intensity = 0.75;
     ((PointLightData*)*data)->range = 100;
+    ((PointLightData*)*data)->hueShift = 0;
 
 }
 
@@ -47,10 +48,11 @@ cJSON* PointLightEncode(void** data, cJSON* currentData){
         cJSON *curColor = cJSON_GetObjectItem(currentData,"color");
         
         if(pl->color.x != (cJSON_GetArrayItem(curColor,0))->valuedouble ||
-           pl->color.y != (cJSON_GetArrayItem(curColor,1))->valuedouble || 
-           pl->color.z != (cJSON_GetArrayItem(curColor,2))->valuedouble || 
-           pl->intensity != cJSON_GetObjectItem(currentData,"intensity")->valuedouble || 
-           pl->range != cJSON_GetObjectItem(currentData,"range")->valuedouble
+            pl->color.y != (cJSON_GetArrayItem(curColor,1))->valuedouble || 
+            pl->color.z != (cJSON_GetArrayItem(curColor,2))->valuedouble || 
+            pl->intensity != cJSON_GetObjectItem(currentData,"intensity")->valuedouble || 
+            pl->range != cJSON_GetObjectItem(currentData,"range")->valuedouble||
+            pl->hueShift != cJSON_GetObjectItem(currentData,"hueShift")->valuedouble
         ){
             hasChanged = 1;
         }
@@ -67,6 +69,7 @@ cJSON* PointLightEncode(void** data, cJSON* currentData){
 
         cJSON_AddNumberToObject(obj,"intensity",pl->intensity);
         cJSON_AddNumberToObject(obj,"range",pl->range);
+        cJSON_AddNumberToObject(obj,"hueShift",pl->hueShift);
 
         return obj;
     }
@@ -76,13 +79,10 @@ cJSON* PointLightEncode(void** data, cJSON* currentData){
 void* PointLightDecode(cJSON **data){
     PointLightData *pl = malloc(sizeof(PointLightData));
 
-    cJSON *colorArr = cJSON_GetObjectItem(*data,"color");
-    pl->color.x = cJSON_GetArrayItem(colorArr,0)->valuedouble;
-    pl->color.y = cJSON_GetArrayItem(colorArr,1)->valuedouble;
-    pl->color.z = cJSON_GetArrayItem(colorArr,2)->valuedouble;
-
-    pl->intensity = cJSON_GetObjectItem(*data,"intensity")->valuedouble;
-    pl->range = cJSON_GetObjectItem(*data,"range")->valuedouble;
+    pl->color = JSON_GetObjectVector3(*data,"color");
+    pl->intensity = JSON_GetObjectDouble(*data,"intensity");
+    pl->range = JSON_GetObjectDouble(*data,"range");
+    pl->hueShift = JSON_GetObjectDouble(*data,"hueShift");
 
     return pl;
 }
@@ -103,6 +103,10 @@ void SetPointLightColor(EntityID entity, Vector3 rgbColor){
     }
     PointLightData *pl = (PointLightData *)ECS.Components[ThisComponentID()][entity].data;
     pl->color = rgbColor;
+
+    pl->color.x = clamp(pl->color.x, 0, INFINITY);
+    pl->color.y = clamp(pl->color.y, 0, INFINITY);
+    pl->color.z = clamp(pl->color.z, 0, INFINITY);
 }
 
 float GetPointLightIntensity(EntityID entity){
@@ -120,7 +124,7 @@ void SetPointLightIntensity(EntityID entity, float intensity){
         return;
     }
     PointLightData *pl = (PointLightData *)ECS.Components[ThisComponentID()][entity].data;
-    pl->intensity = clamp(intensity,0,INFINITY);
+    pl->intensity = intensity;
 }
 
 float GetPointLightRange(EntityID entity){
@@ -139,6 +143,24 @@ void SetPointLightRange(EntityID entity, float range){
     }
     PointLightData *pl = (PointLightData *)ECS.Components[ThisComponentID()][entity].data;
     pl->range = clamp(range,0,INFINITY);
+}
+
+float GetPointLightHueShift(EntityID entity){
+     if(!EntityContainsComponent(entity, ThisComponentID())){
+        printf("GetPointLightHueShift: Entity doesn't have a PointLight component. (%d)\n",entity);
+        return 0;
+    }
+    PointLightData *pl = (PointLightData *)ECS.Components[ThisComponentID()][entity].data;
+    return pl->hueShift;
+}
+
+void SetPointLightHueShift(EntityID entity, float shift){
+    if(!EntityContainsComponent(entity, ThisComponentID())){
+        printf("SetPointLightHueShift: Entity doesn't have a PointLight component. (%d)\n",entity);
+        return;
+    }
+    PointLightData *pl = (PointLightData *)ECS.Components[ThisComponentID()][entity].data;
+    pl->hueShift = shift;
 }
 
 
@@ -218,6 +240,23 @@ static int l_SetPointLightRange (lua_State *L) {
     return 0; //Return number of results
 }
 
+static int l_GetPointLightHueShift (lua_State *L) {
+    lua_settop(L, 1);
+    EntityID id = luaL_checkinteger (L, 1); //Get the argument
+    float shift = GetPointLightHueShift(id);
+    lua_pushnumber(L, shift); //Put the returned number on the stack
+    return 1; //Return number of results
+}
+
+static int l_SetPointLightHueShift (lua_State *L) {
+    //Get the arguments
+    EntityID id = luaL_checkinteger (L, 1);
+    float shift = luaL_checknumber (L, 2);
+
+    SetPointLightHueShift(id, shift);
+    return 0; //Return number of results
+}
+
 
 void PointLightRegisterLuaFunctions(){
     lua_pushcfunction(Core.lua, l_SetPointLightColor);
@@ -237,4 +276,10 @@ void PointLightRegisterLuaFunctions(){
 
     lua_pushcfunction(Core.lua, l_GetPointLightRange);
     lua_setglobal(Core.lua, "GetPointLightRange");
+
+    lua_pushcfunction(Core.lua, l_SetPointLightHueShift);
+    lua_setglobal(Core.lua, "SetPointLightHueShift");
+
+    lua_pushcfunction(Core.lua, l_GetPointLightHueShift);
+    lua_setglobal(Core.lua, "GetPointLightHueShift");
 }

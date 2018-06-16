@@ -1717,6 +1717,34 @@ void Vector3ToTable(lua_State *L, Vector3 vector){
     lua_rawset(L, -3);           //Store z in table
 }
 
+// ----------- cJSON Wrappers ---------------
+
+
+double JSON_GetObjectDouble(cJSON *object,char *string){
+	cJSON *obj = cJSON_GetObjectItem(object,string);
+	if(obj) return obj->valuedouble;
+	else return 0;
+}
+
+Vector3 JSON_GetObjectVector3(cJSON *object,char *string){
+
+	cJSON *arr = cJSON_GetObjectItem(object,string);
+	if(!arr) return VECTOR3_ZERO;
+
+	Vector3 v = VECTOR3_ZERO;
+
+	cJSON *item = cJSON_GetArrayItem(arr,0);
+    if(item) v.x = item->valuedouble;
+
+    item = cJSON_GetArrayItem(arr,1);
+    if(item) v.y = item->valuedouble;
+
+    item = cJSON_GetArrayItem(arr,2);
+    if(item) v.z = item->valuedouble;
+
+	return v;
+}
+
 // ----------- Misc. functions ---------------
 
 void SaveTextureToPNG(SDL_Texture *tex, char* out){

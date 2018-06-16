@@ -100,7 +100,7 @@ void DrawEntitiesPanel(){
         
         if(mouseOverEntityPanel){
             if(!movingEntitiesScrollbar){
-                if(MouseOverLineGizmos(mousePos, scrollbarStart, scrollbarEnd, scrollbarMouseOverDistance)){
+                if(MouseOverLine(mousePos, scrollbarStart, scrollbarEnd, scrollbarMouseOverDistance)){
                     scrollbarColor = (Vector3){scrollbarOverColor.x, scrollbarOverColor.y, scrollbarOverColor.z};
 
                     if(GetMouseButton(SDL_BUTTON_LEFT)){

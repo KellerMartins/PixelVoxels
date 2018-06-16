@@ -421,22 +421,24 @@ void DrawComponentsPanel(){
                         }else if(c == GetComponentID("PointLight")){
 
                             //Component background
-                            Vector3 bgMin = {Screen.windowWidth-componentWindowLength, componentHeight-180,0};
+                            Vector3 bgMin = {Screen.windowWidth-componentWindowLength, componentHeight-255,0};
                             Vector3 bgMax = {Screen.windowWidth-componentWindowWidthSpacing, componentHeight,0};
                             DrawRectangle(bgMin, bgMax, bgMediumColor.x, bgMediumColor.y, bgMediumColor.z);
 
                             int ommitColorX = 0, ommitColorY = 0, ommitColorZ = 0;
-                            int ommitIntensity = 0, ommitRange = 0;
+                            int ommitIntensity = 0, ommitRange = 0, ommitShift = 0;
 
                             ListCellPointer selEntity = GetFirstCell(SelectedEntities);
                             Vector3 lastColor = GetPointLightColor(GetElementAsType(selEntity,int));
                             float lastIntensity = GetPointLightIntensity(GetElementAsType(selEntity,int));
                             float lastRange = GetPointLightRange(GetElementAsType(selEntity,int));
+                            float lastShift = GetPointLightHueShift(GetElementAsType(selEntity,int));
                             
                             ListForEach(selEntity, SelectedEntities){
                                 Vector3 curColor = GetPointLightColor(GetElementAsType(selEntity,int));
                                 float curIntensity = GetPointLightIntensity(GetElementAsType(selEntity,int));
                                 float curRange = GetPointLightRange(GetElementAsType(selEntity,int));
+                                float curShift = GetPointLightHueShift(GetElementAsType(selEntity,int));
 
                                 if(curColor.x != lastColor.x){
                                     ommitColorX = 1;
@@ -459,17 +461,23 @@ void DrawComponentsPanel(){
                                     ommitRange = 1;
                                     lastRange = 0;
                                 }
+                                if(curShift != lastShift){
+                                    ommitShift = 1;
+                                    lastShift = 0;
+                                }
                             }
                             Vector3 newColor = lastColor;
                             float newIntensity = lastIntensity;
                             float newRange = lastRange;
+                            float newShift = lastShift;
 
                             RGBField("Light color", &newColor,ommitColorX,ommitColorY,ommitColorZ, Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
+                            SliderField("Hue Shift",&newShift,(Vector3){0,8*PI}, ommitShift,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
                             FloatField("Intensity",&newIntensity,ommitIntensity,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
                             FloatField("Range",&newRange,ommitRange,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
 
                             int changedColorX = 0, changedColorY = 0, changedColorZ = 0;
-                            int changedIntensity = 0, changedRange = 0;
+                            int changedIntensity = 0, changedRange = 0, changedShift = 0;
 
                             if(lastColor.x != newColor.x) changedColorX = 1;
                             if(lastColor.y != newColor.y) changedColorY = 1;
@@ -477,8 +485,9 @@ void DrawComponentsPanel(){
 
                             if(lastIntensity != newIntensity) changedIntensity = 1;
                             if(lastRange != newRange) changedRange = 1;
+                            if(lastShift != newShift) changedShift = 1;
                             
-                            if(changedColorX || changedColorY || changedColorZ || changedIntensity || changedRange){
+                            if(changedColorX || changedColorY || changedColorZ || changedIntensity || changedRange || changedShift){
                                 ListForEach(selEntity, SelectedEntities){
                                     Vector3 color = GetPointLightColor(GetElementAsType(selEntity,int));
 
@@ -490,6 +499,7 @@ void DrawComponentsPanel(){
 
                                     if(changedIntensity) SetPointLightIntensity(GetElementAsType(selEntity,int),newIntensity);
                                     if(changedRange) SetPointLightRange(GetElementAsType(selEntity,int),newRange);
+                                    if(changedShift) SetPointLightHueShift(GetElementAsType(selEntity,int),newShift);
                                 }
                             }
                         }else if(c == GetComponentID("LuaScript")){
@@ -544,7 +554,7 @@ void DrawComponentsPanel(){
 
             if(mouseOverComponentPanel){
                 if(!movingComponentsScrollbar){
-                    if(MouseOverLineGizmos(mousePos, scrollbarStart, scrollbarEnd, scrollbarMouseOverDistance)){
+                    if(MouseOverLine(mousePos, scrollbarStart, scrollbarEnd, scrollbarMouseOverDistance)){
                         scrollbarColor = (Vector3){scrollbarOverColor.x, scrollbarOverColor.y, scrollbarOverColor.z};
 
                         if(GetMouseButton(SDL_BUTTON_LEFT)){

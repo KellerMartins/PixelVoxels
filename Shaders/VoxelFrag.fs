@@ -75,9 +75,9 @@ void main(void) {
         float pointLightDist = lights[i].range / pow( distance(ex_Position,lights[i].position.xyz) ,2);
         
         float pointLightLighting = max(0,dot(normal,pointLightDir))*(pointLightDist);
-        pointLighting += step(0.6,pointLightLighting) *lights[i].intensity* lights[i].color.rgb * 0.5;
-        pointLighting += step(0.5,pointLightLighting) *lights[i].intensity* hueShift(lights[i].color.rgb,lights[i].shift/4.0) * 0.4;
-        pointLighting += step(0.4,pointLightLighting) *lights[i].intensity* hueShift(lights[i].color.rgb,lights[i].shift) * 0.1;
+        pointLighting += step(0.6,pointLightLighting) *lights[i].intensity* lights[i].color.rgb;
+        pointLighting += (step(0.5,pointLightLighting)-step(0.6,pointLightLighting)) *lights[i].intensity* hueShift(lights[i].color.rgb,lights[i].shift/4.0)*0.5;
+        pointLighting += (step(0.4,pointLightLighting)-step(0.5,pointLightLighting)) *lights[i].intensity* hueShift(lights[i].color.rgb,lights[i].shift) * 0.1;
     }
 
     gl_FragColor = vec4((ambientAndSun + pointLighting) * ex_Color,1.0);

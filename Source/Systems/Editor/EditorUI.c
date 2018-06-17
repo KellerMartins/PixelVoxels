@@ -394,7 +394,7 @@ void FloatBoxInactive(int fieldID, float *data,int ommit, Vector3 pos, Vector3 s
 double Slider(double t, int x, int y, int w,int iconID, int scale, Vector3 defaultColor, Vector3 mouseOverColor, Vector3 pressedColor){
     DrawLine((Vector3){x, y+1}, (Vector3){x+w, y+1}, (iconsSize[iconID]-4)*2*scale, fieldColor.x, fieldColor.y, fieldColor.z);
 
-    if( MouseOverLine(mousePos, (Vector3){x-20, y}, (Vector3){x+w+20, y},(iconsSize[iconID]-2)*scale) && GetMouseButton(SDL_BUTTON_LEFT)){
+    if( MouseOverLine(mousePos, (Vector3){x, y}, (Vector3){x+w+1, y},(iconsSize[iconID]-2)*scale) && GetMouseButton(SDL_BUTTON_LEFT)){
         t = ( (mousePos.x - x) / (double) w );
         t = clamp(t, 0, 1);
         DrawPoint((Vector3){(x+5)+t*(w-5), y}, iconsSize[iconID], iconsTex[iconID]*scale, defaultColor.x, defaultColor.y, defaultColor.z);

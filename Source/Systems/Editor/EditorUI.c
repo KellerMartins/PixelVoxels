@@ -180,9 +180,9 @@ void Vector3Field(char *title, Vector3 *data, double dragAmount,int ommitX,int o
 
         //None of the three are being edited
         default:
-            FloatBoxInactive(*curField + 0,&(data->x),ommitX, posX, size, 2,2 , 5,6);
-            FloatBoxInactive(*curField + 1,&(data->y),ommitY, posY, size, 2,2 , 5,6);
-            FloatBoxInactive(*curField + 2,&(data->z),ommitZ, posZ, size, 2,2 , 5,6);
+            FloatBoxInactive(*curField + 0,&(data->x),ommitX, posX, size, 1,2 , 5,6);
+            FloatBoxInactive(*curField + 1,&(data->y),ommitY, posY, size, 1,2 , 5,6);
+            FloatBoxInactive(*curField + 2,&(data->z),ommitZ, posZ, size, 1,2 , 5,6);
 
             //Draw an empty box in case any of the fields has been selected, to make an smoother transition to the next frame with the text
             if(lastActiveField != editingField){
@@ -237,12 +237,27 @@ void SliderField(char *title, float *data, Vector3 range, int ommit, int x, int 
     DrawTextColored(title, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
     *curHeight -= 8 + TTF_FontHeight(gizmosFontSmall);
 
-    
-    double sliderVal = Slider((*data-range.x)/(range.y - range.x), x+2, *curHeight, w-7, 14, 1, lightWhite, brightWhite, brightWhite);
-    if(sliderVal > 0){
-        *data = (sliderVal * (range.y - range.x)) + range.x;
+    if(editingField == *curField){
+            FloatBoxActive(data, ommit, (Vector3){x, *curHeight - iconsSize[14]}, (Vector3){w, iconsSize[14]*2}, 5,5,(range.y - range.x)*100);
+    }else{
+        double sliderVal = Slider((*data-range.x)/(range.y - range.x), x+2, *curHeight, w-7, 14, 1, lightWhite, brightWhite, brightWhite);
+        if(sliderVal > 0){
+            *data = (sliderVal * (range.y - range.x)) + range.x;
+        }
+
+        if(editingField == -1 && MouseOverBox(mousePos, (Vector3){x, *curHeight - iconsSize[14]}, (Vector3){x+w, *curHeight + iconsSize[14]}, 0) && GetMouseButtonDown(SDL_BUTTON_RIGHT)){
+            textFieldString = (char*)calloc(FIELD_MAX_CHARS+1,sizeof(char));
+
+            if(!ommit) snprintf(textFieldString, FIELD_MAX_CHARS, "%*.*f", 5, 5, *data);
+            else snprintf(textFieldString, 4, "0.0");
+            
+            GetTextInput(textFieldString, FIELD_MAX_CHARS, strlen(textFieldString));
+            editingField = *curField;
+        }
     }
+
     *curHeight -= 12;
+    *curField +=1;
 }
 
 void FloatField(char *title, float *data, double dragAmount,int ommit,int x, int w, int* curField, int* curHeight){

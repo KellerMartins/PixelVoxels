@@ -132,8 +132,8 @@ void DrawComponentsPanel(){
                             }
                             Vector3 newPos = lastPos;
                             Vector3 newRot = lastRot;
-                            Vector3Field("position",&newPos,ommitPosX,ommitPosY,ommitPosZ,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1,4, &currentComponentField, &componentHeight);
-                            Vector3Field("rotation",&newRot,ommitRotX,ommitRotY,ommitRotZ,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1,4, &currentComponentField, &componentHeight);
+                            Vector3Field("position",&newPos,10,ommitPosX,ommitPosY,ommitPosZ,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1,4, &currentComponentField, &componentHeight);
+                            Vector3Field("rotation",&newRot,1,ommitRotX,ommitRotY,ommitRotZ,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1,4, &currentComponentField, &componentHeight);
 
                             int changedPosX = 0, changedPosY = 0, changedPosZ = 0;
                             int changedRotX = 0, changedRotY = 0, changedRotZ = 0;
@@ -253,10 +253,10 @@ void DrawComponentsPanel(){
                                 float newBounc = lastBounc;
                                 float newMass = lastMass;
 
-                                FloatField("mass",&newMass,ommitMass,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
-                                FloatField("bounciness",&newBounc,ommitBounc,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
-                                Vector3Field("initial velocity",&newVel,ommitVelX,ommitVelY,ommitVelZ,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1,4, &currentComponentField, &componentHeight);
-                                Vector3Field("const. accel.",&newAccel,ommitAccelX,ommitAccelY,ommitAccelZ,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1,4, &currentComponentField, &componentHeight);
+                                FloatField("mass",&newMass,10,ommitMass,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
+                                FloatField("bounciness",&newBounc,1000,ommitBounc,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
+                                Vector3Field("initial velocity",&newVel,10,ommitVelX,ommitVelY,ommitVelZ,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1,4, &currentComponentField, &componentHeight);
+                                Vector3Field("const. accel.",&newAccel,10,ommitAccelX,ommitAccelY,ommitAccelZ,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1,4, &currentComponentField, &componentHeight);
 
                                 int changedVelX = 0, changedVelY = 0, changedVelZ = 0;
                                 int changedAccelX = 0, changedAccelY = 0, changedAccelZ = 0;
@@ -399,7 +399,7 @@ void DrawComponentsPanel(){
                             }
                             Vector3 newCenter = lastCenter;
 
-                            Vector3Field("Center",&newCenter,ommitCenterX,ommitCenterY,ommitCenterZ,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1,4, &currentComponentField, &componentHeight);
+                            Vector3Field("Center",&newCenter,10,ommitCenterX,ommitCenterY,ommitCenterZ,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1,4, &currentComponentField, &componentHeight);
                             int changedCenterX = 0, changedCenterY = 0, changedCenterZ = 0;
 
                             if(lastCenter.x != newCenter.x) changedCenterX = 1;
@@ -473,8 +473,8 @@ void DrawComponentsPanel(){
 
                             RGBField("Light color", &newColor,ommitColorX,ommitColorY,ommitColorZ, Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
                             SliderField("Hue Shift",&newShift,(Vector3){0,8*PI}, ommitShift,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
-                            FloatField("Intensity",&newIntensity,ommitIntensity,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
-                            FloatField("Range",&newRange,ommitRange,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
+                            FloatField("Intensity",&newIntensity,100,ommitIntensity,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
+                            FloatField("Range",&newRange,10,ommitRange,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
 
                             int changedColorX = 0, changedColorY = 0, changedColorZ = 0;
                             int changedIntensity = 0, changedRange = 0, changedShift = 0;

@@ -9,15 +9,14 @@
 void DrawRectangle(Vector3 min, Vector3 max, float r, float g, float b);
 void DrawPointIcon(Vector3 pos,int iconID, int scale, Vector3 color);
 
-void FloatBoxActive(float *data,int ommit, Vector3 pos, Vector3 size,int intDigits,int decDigits);
+void FloatBoxActive(float *data,int ommit, Vector3 pos, Vector3 size,int intDigits,int decDigits, double dragAmount);
 void FloatBoxInactive(int fieldID, float *data,int ommit, Vector3 pos, Vector3 size,int intDigits,int decDigits, int activeIntDigits,int activeDecDigits);
 
 void StringField(char *title, char *data, int maxChars, int ommit,int x, int w, int* curField, int* curHeight);
 void SliderField(char *title, float *data, Vector3 range, int ommit, int x, int w, int* curField, int* curHeight);
 void RGBField(char *title, Vector3 *data,int ommitR,int ommitG,int ommitB,int x, int w, int* curField, int* curHeight);
-void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,int x, int w, int fieldsSpacing, int* curField, int* curHeight);
-void FloatField(char *title, float *data,int ommit,int x, int w, int* curField, int* curHeight);
-void IntListField(char *title, List *list,int x, int w, int* curField, int* curHeight);
+void Vector3Field(char *title, Vector3 *data, double dragAmount,int ommitX,int ommitY,int ommitZ,int x, int w, int fieldsSpacing, int* curField, int* curHeight);
+void FloatField(char *title, float *data, double dragAmount,int ommit,int x, int w, int* curField, int* curHeight);
 
 double Slider(double t, int x, int y, int w,int iconID, int scale, Vector3 defaultColor, Vector3 mouseOverColor, Vector3 pressedColor);
 int PointButton(Vector3 pos,int iconID, int scale, Vector3 defaultColor, Vector3 mouseOverColor, Vector3 pressedColor);

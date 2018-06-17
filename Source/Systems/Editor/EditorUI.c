@@ -14,6 +14,7 @@ extern Vector3 brightWhite;
 
 //Data from Editor.c
 extern Vector3 mousePos;
+extern Vector3 deltaMousePos;
 extern int editingField;
 extern char *textFieldString;
 
@@ -145,7 +146,7 @@ void DrawPointIcon(Vector3 pos,int iconID, int scale, Vector3 color){
     DrawPoint(pos,iconsSize[iconID]*scale, iconsTex[iconID], color.x,color.y,color.z);
 }
 
-void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,int x, int w, int fieldsSpacing, int* curField, int* curHeight){
+void Vector3Field(char *title, Vector3 *data, double dragAmount,int ommitX,int ommitY,int ommitZ,int x, int w, int fieldsSpacing, int* curField, int* curHeight){
     *curHeight -= 2;
     DrawTextColored(title, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
     *curHeight -= 2 + TTF_FontHeight(gizmosFontSmall);
@@ -165,15 +166,15 @@ void Vector3Field(char *title, Vector3 *data,int ommitX,int ommitY,int ommitZ,in
     int lastActiveField = editingField;
     switch(fieldDelta){
         //X is being edited
-        case (0): FloatBoxActive(&(data->x),ommitX, activePos, activeSize, 5,6);
+        case (0): FloatBoxActive(&(data->x),ommitX, activePos, activeSize, 5,6,dragAmount);
         break;
 
         //Y is being edited
-        case (1): FloatBoxActive(&(data->y),ommitY, activePos, activeSize, 5,6);
+        case (1): FloatBoxActive(&(data->y),ommitY, activePos, activeSize, 5,6,dragAmount);
         break;
 
         //Z is being edited
-        case (2): FloatBoxActive(&(data->z),ommitZ, activePos, activeSize, 5,6);
+        case (2): FloatBoxActive(&(data->z),ommitZ, activePos, activeSize, 5,6,dragAmount);
         break;
 
         //None of the three are being edited
@@ -243,7 +244,7 @@ void SliderField(char *title, float *data, Vector3 range, int ommit, int x, int 
     *curHeight -= 12;
 }
 
-void FloatField(char *title, float *data,int ommit,int x, int w, int* curField, int* curHeight){
+void FloatField(char *title, float *data, double dragAmount,int ommit,int x, int w, int* curField, int* curHeight){
     *curHeight -= 4;
     DrawTextColored(title, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall), gizmosFontSmall);
     *curHeight -= 2 + TTF_FontHeight(gizmosFontSmall);
@@ -252,7 +253,7 @@ void FloatField(char *title, float *data,int ommit,int x, int w, int* curField, 
     Vector3 size = { w,TTF_FontHeight(gizmosFont)+2,0};
 
     if(*curField == editingField){
-        FloatBoxActive(data, ommit, pos, size, 6,6);
+        FloatBoxActive(data, ommit, pos, size, 6,6,dragAmount);
     }else{
         FloatBoxInactive(*curField, data, ommit, pos, size, 6,6, 6,6);
     }
@@ -260,7 +261,7 @@ void FloatField(char *title, float *data,int ommit,int x, int w, int* curField, 
     *curField +=1;
 }
 
-void FloatBoxActive(float *data,int ommit, Vector3 pos, Vector3 size,int intDigits,int decDigits){
+void FloatBoxActive(float *data,int ommit, Vector3 pos, Vector3 size,int intDigits,int decDigits, double dragAmount){
 
     //Limits the number of decimal and integer digits to fit into the maximum field size
     intDigits = intDigits > FIELD_MAX_CHARS? FIELD_MAX_CHARS: intDigits;
@@ -278,6 +279,16 @@ void FloatBoxActive(float *data,int ommit, Vector3 pos, Vector3 size,int intDigi
 
     //Field background
     DrawRectangle(min,max,fieldEditingColor.x, fieldEditingColor.y, fieldEditingColor.z);
+
+    if(GetMouseButton(SDL_BUTTON_LEFT) && !GetMouseButtonDown(SDL_BUTTON_LEFT)){
+        *data += deltaMousePos.x/dragAmount;
+
+        const size_t fieldLength = intDigits + decDigits + 1 // 1 for the \n
+                                    + (*data < pow(10,intDigits)) //+1 for the dot, if the int. part fits in the requested int. size
+                                    + (*data < 0); //+1 for the minus, if negative
+
+        snprintf(textFieldString,fieldLength,"%*.*f",intDigits, decDigits,*data);
+    }
 
     //Get the cursor position by creating a string containing the characters until the cursor
     //and getting his size when rendered with the used font

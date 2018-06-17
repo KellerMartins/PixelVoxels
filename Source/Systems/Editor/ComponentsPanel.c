@@ -91,7 +91,7 @@ void DrawComponentsPanel(){
                         //Component specific drawing
                         if(c == GetComponentID("Transform")){
                             //Component background
-                            Vector3 bgMin = {Screen.windowWidth-componentWindowLength, componentHeight-95,0};
+                            Vector3 bgMin = {Screen.windowWidth-componentWindowLength, componentHeight-97,0};
                             Vector3 bgMax = {Screen.windowWidth-componentWindowWidthSpacing, componentHeight,0};
                             DrawRectangle(bgMin, bgMax, bgMediumColor.x, bgMediumColor.y, bgMediumColor.z);
 
@@ -181,7 +181,7 @@ void DrawComponentsPanel(){
 
                             if(!isStatic){
                                 //Component background
-                                Vector3 bgMin = {Screen.windowWidth-componentWindowLength, componentHeight-225,0};
+                                Vector3 bgMin = {Screen.windowWidth-componentWindowLength, componentHeight-230,0};
                                 Vector3 bgMax = {Screen.windowWidth-componentWindowWidthSpacing, componentHeight,0};
                                 DrawRectangle(bgMin, bgMax, bgMediumColor.x, bgMediumColor.y, bgMediumColor.z);
 
@@ -421,7 +421,7 @@ void DrawComponentsPanel(){
                         }else if(c == GetComponentID("PointLight")){
 
                             //Component background
-                            Vector3 bgMin = {Screen.windowWidth-componentWindowLength, componentHeight-255,0};
+                            Vector3 bgMin = {Screen.windowWidth-componentWindowLength, componentHeight-254,0};
                             Vector3 bgMax = {Screen.windowWidth-componentWindowWidthSpacing, componentHeight,0};
                             DrawRectangle(bgMin, bgMax, bgMediumColor.x, bgMediumColor.y, bgMediumColor.z);
 
@@ -502,6 +502,7 @@ void DrawComponentsPanel(){
                                     if(changedShift) SetPointLightHueShift(GetElementAsType(selEntity,int),newShift);
                                 }
                             }
+                        componentHeight -= 7;
                         }else if(c == GetComponentID("LuaScript")){
                             
                             int backgroundHeight = (GetLength(SelectedEntities)==1? 25:0);

@@ -5,6 +5,7 @@
 //Engine data
 extern engineScreen Screen;
 extern engineInput Input;
+extern engineCore Core;
 
 //Color definitions from Editor.c
 extern Vector3 fieldColor;
@@ -281,13 +282,27 @@ void FloatBoxActive(float *data,int ommit, Vector3 pos, Vector3 size,int intDigi
     DrawRectangle(min,max,fieldEditingColor.x, fieldEditingColor.y, fieldEditingColor.z);
 
     if(GetMouseButton(SDL_BUTTON_LEFT) && !GetMouseButtonDown(SDL_BUTTON_LEFT)){
-        *data += deltaMousePos.x/dragAmount;
+        
+        //Loops the mouse movement after passing the edge of the screen
+        int x, y;
+        SDL_CaptureMouse(SDL_TRUE);
+        SDL_GetMouseState(&x,&y);
+        SDL_WarpMouseInWindow(Core.window, Modulus(x, Screen.windowWidth) , y);
 
+        //Ignore the jump of the mouse position caused from the loop from one edge to the other
+        int mouseLooped = (x == Modulus(x, Screen.windowWidth) && abs(deltaMousePos.x) < Screen.gameWidth);
+        *data += ( mouseLooped ? deltaMousePos.x : 0 ) / dragAmount;
+
+        
         const size_t fieldLength = intDigits + decDigits + 1 // 1 for the \n
                                     + (*data < pow(10,intDigits)) //+1 for the dot, if the int. part fits in the requested int. size
                                     + (*data < 0); //+1 for the minus, if negative
 
         snprintf(textFieldString,fieldLength,"%*.*f",intDigits, decDigits,*data);
+
+
+    }else{
+        SDL_CaptureMouse(SDL_FALSE);
     }
 
     //Get the cursor position by creating a string containing the characters until the cursor

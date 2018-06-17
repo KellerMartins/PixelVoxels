@@ -67,7 +67,7 @@ void DrawTransformGizmos(){
 
                 if(!movingX){
                     if(MouseOverLine(mousePos, originPos, lineXEndPos, axisMouseOverDistance) && !MouseOverPoint(mousePos, originPos, selectMouseOverDistance)){
-                        if(GetMouseButton(SDL_BUTTON_LEFT)){
+                        if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
                             if(!movingZ && !movingY)
                                 movingX = 1;
                         }
@@ -91,7 +91,7 @@ void DrawTransformGizmos(){
                 if(!movingY){
                     if(MouseOverLine(mousePos, originPos, lineYEndPos, axisMouseOverDistance) && !MouseOverPoint(mousePos, originPos, selectMouseOverDistance)){
                         
-                        if(GetMouseButton(SDL_BUTTON_LEFT)){
+                        if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
                             if(!movingX && !movingZ)
                                 movingY = 1;
                         }
@@ -115,7 +115,7 @@ void DrawTransformGizmos(){
                 
                 if(!movingZ){
                     if(MouseOverLine(mousePos, originPos, lineZEndPos, axisMouseOverDistance) && !MouseOverPoint(mousePos, originPos, selectMouseOverDistance)){
-                        if(GetMouseButton(SDL_BUTTON_LEFT)){
+                        if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
                             if(!movingX && !movingY)
                                 movingZ = 1;
                         }

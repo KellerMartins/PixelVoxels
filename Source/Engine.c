@@ -1720,16 +1720,16 @@ void Vector3ToTable(lua_State *L, Vector3 vector){
 // ----------- cJSON Wrappers ---------------
 
 
-double JSON_GetObjectDouble(cJSON *object,char *string){
+double JSON_GetObjectDouble(cJSON *object,char *string, double defaultValue){
 	cJSON *obj = cJSON_GetObjectItem(object,string);
 	if(obj) return obj->valuedouble;
-	else return 0;
+	else return defaultValue;
 }
 
-Vector3 JSON_GetObjectVector3(cJSON *object,char *string){
+Vector3 JSON_GetObjectVector3(cJSON *object,char *string, Vector3 defaultValue){
 
 	cJSON *arr = cJSON_GetObjectItem(object,string);
-	if(!arr) return VECTOR3_ZERO;
+	if(!arr) return defaultValue;
 
 	Vector3 v = VECTOR3_ZERO;
 

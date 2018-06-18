@@ -79,10 +79,10 @@ cJSON* PointLightEncode(void** data, cJSON* currentData){
 void* PointLightDecode(cJSON **data){
     PointLightData *pl = malloc(sizeof(PointLightData));
 
-    pl->color = JSON_GetObjectVector3(*data,"color");
-    pl->intensity = JSON_GetObjectDouble(*data,"intensity");
-    pl->range = JSON_GetObjectDouble(*data,"range");
-    pl->hueShift = JSON_GetObjectDouble(*data,"hueShift");
+    pl->color = JSON_GetObjectVector3(*data,"color",VECTOR3_ZERO);
+    pl->intensity = JSON_GetObjectDouble(*data,"intensity",0);
+    pl->range = JSON_GetObjectDouble(*data,"range",0);
+    pl->hueShift = JSON_GetObjectDouble(*data,"hueShift",0);
 
     return pl;
 }

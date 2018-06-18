@@ -251,8 +251,8 @@ void StopTextInput();
 void Vector3ToTable(lua_State *L, Vector3 vector);
 
 //cJSON wrappers
-double JSON_GetObjectDouble(cJSON *object,char *string);
-Vector3 JSON_GetObjectVector3(cJSON *object,char *string);
+double JSON_GetObjectDouble(cJSON *object,char *string, double defaultValue);
+Vector3 JSON_GetObjectVector3(cJSON *object,char *string, Vector3 defaultValue);
 
 //Misc.
 void SaveTextureToPNG(SDL_Texture *tex, char* out);

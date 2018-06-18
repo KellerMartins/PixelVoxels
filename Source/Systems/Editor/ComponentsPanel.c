@@ -558,7 +558,7 @@ void DrawComponentsPanel(){
                     if(MouseOverLine(mousePos, scrollbarStart, scrollbarEnd, scrollbarMouseOverDistance)){
                         scrollbarColor = (Vector3){scrollbarOverColor.x, scrollbarOverColor.y, scrollbarOverColor.z};
 
-                        if(GetMouseButton(SDL_BUTTON_LEFT)){
+                        if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
                             movingComponentsScrollbar = 1;
                         }
                     }else{
@@ -577,34 +577,34 @@ void DrawComponentsPanel(){
                           (Vector3){scrollbarStart.x+scrollbarWidth, scrollbarStart.y},
                           scrollbarColor.x, scrollbarColor.y, scrollbarColor.z);
 
-            if(mouseOverComponentPanel){
-                if(Input.mouseWheelY!=0) movingComponentsScrollbar = 2;
-                if(movingComponentsScrollbar){
+            if(Input.mouseWheelY!=0) movingComponentsScrollbar = 2;
+            if(movingComponentsScrollbar){
 
-                    //Moving with mouse click
-                    if(movingComponentsScrollbar == 1){
-                        if(GetMouseButton(SDL_BUTTON_LEFT)){
-                            if(offscreenPixels>0){
-                                double scrollbarMovement = norm(VectorProjection(deltaMousePos,(Vector3){0,1,0})) * sign(deltaMousePos.y);
-                                componentStartHeight = clamp(componentStartHeight-scrollbarMovement,0,offscreenPixels);
-                            }else{
-                                componentStartHeight = 0;
-                            }
+                //Moving with mouse click
+                if(movingComponentsScrollbar == 1){
+                    if(GetMouseButton(SDL_BUTTON_LEFT)){
+                        if(offscreenPixels>0){
+                            double scrollbarMovement = norm(VectorProjection(deltaMousePos,(Vector3){0,1,0})) * sign(deltaMousePos.y);
+                            //Skips one pixel if the value is odd, to avoid distortions when downscaling to the game resolution
+                            scrollbarMovement += sign(scrollbarMovement) * (abs(scrollbarMovement)%2? 1:0);
+                            componentStartHeight = clamp(componentStartHeight-scrollbarMovement,0,offscreenPixels);
                         }else{
-                            movingComponentsScrollbar = 0;
+                            componentStartHeight = 0;
                         }
                     }else{
-                        //Moving with mouse wheel
-                        if(Input.mouseWheelY!=0){
-                            if(offscreenPixels>0){
-                                double scrollbarMovement = Input.mouseWheelY*scrollbarMouseWheelSpeed;
-                                componentStartHeight = clamp(componentStartHeight-scrollbarMovement,0,offscreenPixels);
-                            }else{
-                                componentStartHeight = 0;
-                            } 
+                        movingComponentsScrollbar = 0;
+                    }
+                }else{
+                    //Moving with mouse wheel
+                    if(Input.mouseWheelY!=0){
+                        if(offscreenPixels>0){
+                            double scrollbarMovement = Input.mouseWheelY*scrollbarMouseWheelSpeed;
+                            componentStartHeight = clamp(componentStartHeight-scrollbarMovement,0,offscreenPixels);
                         }else{
-                            movingComponentsScrollbar = 0;
-                        }
+                            componentStartHeight = 0;
+                        } 
+                    }else{
+                        movingComponentsScrollbar = 0;
                     }
                 }
             }

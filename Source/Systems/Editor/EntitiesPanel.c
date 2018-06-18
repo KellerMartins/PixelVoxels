@@ -86,70 +86,70 @@ void DrawEntitiesPanel(){
     int mouseOverEntityPanel = MouseOverBox(mousePos, (Vector3){-1,-1,0}, (Vector3){entityWindowLength,Screen.windowHeight-entityWindowTopHeightSpacing,0},0);
     int offscreenPixels = -clamp(entityHeight-entityStartHeight,-INFINITY,0);
     
-        Vector3 scrollbarStart = {entityWindowWidthSpacing/2 ,Screen.windowHeight-entityStartHeight - entityWindowTopHeightSpacing,0};
-        Vector3 scrollbarEnd = {entityWindowWidthSpacing/2 ,offscreenPixels - entityStartHeight + 1,0};
-        Vector3 scrollbarColor = {scrollbarInactiveColor.x, scrollbarInactiveColor.y, scrollbarInactiveColor.z};
+    Vector3 scrollbarStart = {entityWindowWidthSpacing/2 ,Screen.windowHeight-entityStartHeight - entityWindowTopHeightSpacing,0};
+    Vector3 scrollbarEnd = {entityWindowWidthSpacing/2 ,offscreenPixels - entityStartHeight + 1,0};
+    Vector3 scrollbarColor = {scrollbarInactiveColor.x, scrollbarInactiveColor.y, scrollbarInactiveColor.z};
 
-        //If the scrollbar is only 10 pixels high, make the bar lerp between the top and bottom height, instead of
-        //showing exactly the pixel movement of the bar
-        if(scrollbarEnd.y > scrollbarStart.y-10){
-            float frac = fabs(entityStartHeight/(float)offscreenPixels);
-            scrollbarStart.y = Lerp(frac, Screen.windowHeight- entityWindowTopHeightSpacing - 5, 8) - 5;
-            scrollbarEnd.y = Lerp(frac, Screen.windowHeight- entityWindowTopHeightSpacing - 5, 8) + 5;
-        }
-        
-        if(mouseOverEntityPanel){
-            if(!movingEntitiesScrollbar){
-                if(MouseOverLine(mousePos, scrollbarStart, scrollbarEnd, scrollbarMouseOverDistance)){
-                    scrollbarColor = (Vector3){scrollbarOverColor.x, scrollbarOverColor.y, scrollbarOverColor.z};
+    //If the scrollbar is only 10 pixels high, make the bar lerp between the top and bottom height, instead of
+    //showing exactly the pixel movement of the bar
+    if(scrollbarEnd.y > scrollbarStart.y-10){
+        float frac = fabs(entityStartHeight/(float)offscreenPixels);
+        scrollbarStart.y = Lerp(frac, Screen.windowHeight- entityWindowTopHeightSpacing - 5, 8) - 5;
+        scrollbarEnd.y = Lerp(frac, Screen.windowHeight- entityWindowTopHeightSpacing - 5, 8) + 5;
+    }
+    
+    if(mouseOverEntityPanel){
+        if(!movingEntitiesScrollbar){
+            if(MouseOverLine(mousePos, scrollbarStart, scrollbarEnd, scrollbarMouseOverDistance)){
+                scrollbarColor = (Vector3){scrollbarOverColor.x, scrollbarOverColor.y, scrollbarOverColor.z};
 
-                    if(GetMouseButton(SDL_BUTTON_LEFT)){
-                        movingEntitiesScrollbar = 1;
-                    }
-                }else{
-                    scrollbarColor = (Vector3){buttonOverColor.x, buttonOverColor.y, buttonOverColor.z};
+                if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
+                    movingEntitiesScrollbar = 1;
                 }
-            }else if (movingEntitiesScrollbar == 1){
-                scrollbarColor = (Vector3){0.55,0.55,0.55};
             }else{
                 scrollbarColor = (Vector3){buttonOverColor.x, buttonOverColor.y, buttonOverColor.z};
             }
+        }else if (movingEntitiesScrollbar == 1){
+            scrollbarColor = (Vector3){0.55,0.55,0.55};
+        }else{
+            scrollbarColor = (Vector3){buttonOverColor.x, buttonOverColor.y, buttonOverColor.z};
         }
+    }
 
     //Scrollbar bar
     DrawRectangle((Vector3){scrollbarEnd.x-scrollbarWidth/2.0, scrollbarEnd.y},
-                  (Vector3){scrollbarStart.x+scrollbarWidth/2.0, scrollbarStart.y},
-                   scrollbarColor.x, scrollbarColor.y, scrollbarColor.z);
+                (Vector3){scrollbarStart.x+scrollbarWidth/2.0, scrollbarStart.y},
+                scrollbarColor.x, scrollbarColor.y, scrollbarColor.z);
 
-    if(mouseOverEntityPanel){
-        if(Input.mouseWheelY!=0) movingEntitiesScrollbar = 2;
-        if(movingEntitiesScrollbar){
 
-            //Moving with mouse click
-            if(movingEntitiesScrollbar == 1){
-                if(GetMouseButton(SDL_BUTTON_LEFT)){
-                    if(offscreenPixels>0){
-                        float scrollMultiplier = clamp(offscreenPixels/(float)(Screen.windowHeight-entityWindowTopHeightSpacing),1,INFINITY);
-                        double scrollbarMovement = norm(VectorProjection(deltaMousePos,(Vector3){0,1,0})) * sign(deltaMousePos.y)*scrollMultiplier;
-                        entityStartHeight = clamp(entityStartHeight-scrollbarMovement,0,offscreenPixels);
-                    }else{
-                        entityStartHeight = 0;
-                    }
+    if(Input.mouseWheelY!=0) movingEntitiesScrollbar = 2;
+    if(movingEntitiesScrollbar){
+        //Moving with mouse click
+        if(movingEntitiesScrollbar == 1){
+            if(GetMouseButton(SDL_BUTTON_LEFT)){
+                if(offscreenPixels>0){
+                    float scrollMultiplier = clamp(offscreenPixels/(float)(Screen.windowHeight-entityWindowTopHeightSpacing),1,INFINITY);
+                    double scrollbarMovement = norm(VectorProjection(deltaMousePos,(Vector3){0,1,0})) * sign(deltaMousePos.y)*scrollMultiplier;
+                    //Skips one pixel if the value is odd, to avoid distortions when downscaling to the game resolution
+                    scrollbarMovement += sign(scrollbarMovement) * (abs(scrollbarMovement)%2? 1:0);
+                    entityStartHeight = clamp(entityStartHeight-scrollbarMovement,0,offscreenPixels);
                 }else{
-                    movingEntitiesScrollbar = 0;
+                    entityStartHeight = 0;
                 }
             }else{
-                //Moving with mouse wheel
-                if(Input.mouseWheelY!=0){
-                    if(offscreenPixels>0){
-                        double scrollbarMovement = Input.mouseWheelY*scrollbarMouseWheelSpeed;
-                        entityStartHeight = clamp(entityStartHeight-scrollbarMovement,0,offscreenPixels);
-                    }else{
-                        entityStartHeight = 0;
-                    } 
+                movingEntitiesScrollbar = 0;
+            }
+        }else{
+            //Moving with mouse wheel
+            if(Input.mouseWheelY!=0){
+                if(offscreenPixels>0){
+                    double scrollbarMovement = Input.mouseWheelY*scrollbarMouseWheelSpeed;
+                    entityStartHeight = clamp(entityStartHeight-scrollbarMovement,0,offscreenPixels);
                 }else{
-                    movingEntitiesScrollbar = 0;
-                }
+                    entityStartHeight = 0;
+                } 
+            }else{
+                movingEntitiesScrollbar = 0;
             }
         }
     }

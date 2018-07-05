@@ -3,11 +3,11 @@ PD = C:
 CC = gcc
 
 #SRC specifies which files to compile as part of the project
-SRC = $(wildcard Source/*.c) $(wildcard Source/Components/*.c) $(wildcard Source/Systems/*.c) $(wildcard Source/Systems/Editor/*.c) $(wildcard Source/Libs/*.c) 
+SRC = $(wildcard Source/*.c) $(wildcard Source/Engine/*.c) $(wildcard Source/Components/*.c) $(wildcard Source/Systems/*.c) $(wildcard Source/Systems/Editor/*.c) $(wildcard Source/Libs/*.c) 
 OBJS = $(SRC:%.c=Build/%.o)
 
 #FOLDERS specifies the folders structure needed to put the .o files
-FOLDERS = Build Build/Source Build/Source/Components Build/Source/Systems Build/Source/Systems/Editor Build/Source/Libs
+FOLDERS = Build Build/Source Build/Source/Engine Build/Source/Components Build/Source/Systems Build/Source/Systems/Editor Build/Source/Libs
 
 #COMPILER_FLAGS specifies the additional compilation options we're using
 COMPILER_FLAGS = -Wall -Wno-unused-result -Wno-missing-braces -ffast-math -O3 -g

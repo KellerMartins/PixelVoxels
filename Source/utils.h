@@ -5,7 +5,12 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+
 #include <SDL2/SDL.h>
+#include "Libs/cJSON.h"
+#include <lua5.3/lua.h>
+#include <lua5.3/lualib.h>
+#include <lua5.3/lauxlib.h>
 
 #define PI_OVER_180 0.01745329251
 #define PI 3.14159265359
@@ -146,6 +151,12 @@ int Step(float edge, float x );
 float Smoothstep(float edge0, float edge1, float x);
 int Modulus(int a, int b);
 float fModulus(float a, float b);
+
+cJSON *OpenJSON(char path[], char name[]);
+double JSON_GetObjectDouble(cJSON *object,char *string, double defaultValue);
+Vector3 JSON_GetObjectVector3(cJSON *object,char *string, Vector3 defaultValue);
+
+void Vector3ToTable(lua_State *L, Vector3 vector);
 
 int StringCompareEqual(char *stringA, char *stringB);
 int StringCompareEqualCaseInsensitive(char *stringA, char *stringB);

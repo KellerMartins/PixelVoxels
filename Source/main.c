@@ -1,5 +1,5 @@
 #include "Engine.h"
-#include "EngineLuaFunctions.h"
+#include "Engine/EngineLuaFunctions.h"
 #include "utils.h"
 
 #include "Components/VoxelModel.h"

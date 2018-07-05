@@ -420,6 +420,96 @@ float fModulus(float a, float b)
     return r < 0 ? r + b : r;
 }
 
+// ----------- cJSON wrapper functions ---------------
+
+cJSON *OpenJSON(char path[], char name[]){
+
+	char fullPath[512+256];
+    strncpy(fullPath,path,512);
+    if(path[strlen(path)-1] != '/'){
+        strcat(fullPath,"/");
+    }
+    strcat(fullPath,name);
+    printf("Opening JSON: (%s)\n",fullPath);
+    FILE* file = fopen(fullPath,"rb");
+
+	if(file){
+		fseek(file,0,SEEK_END);
+		unsigned size = ftell(file);
+		rewind(file);
+
+		char *jsonString = malloc((size+1) * sizeof(char));
+		fread(jsonString, sizeof(char), size, file);
+		jsonString[size] = '\0';
+		fclose(file);
+
+		cJSON *json = cJSON_Parse(jsonString);
+		if (!json)
+		{
+			//Error treatment
+			const char *error_ptr = cJSON_GetErrorPtr();
+			if (error_ptr != NULL)
+			{
+				fprintf(stderr, "OpenJSON: JSON error: %s\n", error_ptr);
+			}
+			free(jsonString);
+			return NULL;
+
+		}else{
+			free(jsonString);
+			return json;
+		}
+		
+	}else{
+		printf("OpenJSON: Failed to open json file!\n");
+	}
+	return NULL;
+}
+
+double JSON_GetObjectDouble(cJSON *object,char *string, double defaultValue){
+	cJSON *obj = cJSON_GetObjectItem(object,string);
+	if(obj) return obj->valuedouble;
+	else return defaultValue;
+}
+
+Vector3 JSON_GetObjectVector3(cJSON *object,char *string, Vector3 defaultValue){
+
+	cJSON *arr = cJSON_GetObjectItem(object,string);
+	if(!arr) return defaultValue;
+
+	Vector3 v = VECTOR3_ZERO;
+
+	cJSON *item = cJSON_GetArrayItem(arr,0);
+    if(item) v.x = item->valuedouble;
+
+    item = cJSON_GetArrayItem(arr,1);
+    if(item) v.y = item->valuedouble;
+
+    item = cJSON_GetArrayItem(arr,2);
+    if(item) v.z = item->valuedouble;
+
+	return v;
+}
+
+// ----------- Lua stack manipulation functions ---------------
+
+//Creates an table with the xyz entries and populate with the vector values
+void Vector3ToTable(lua_State *L, Vector3 vector){
+
+    lua_newtable(L);
+    lua_pushliteral(L, "x");     //x index
+    lua_pushnumber(L, vector.x); //x value
+    lua_rawset(L, -3);           //Store x in table
+
+    lua_pushliteral(L, "y");     //y index
+    lua_pushnumber(L, vector.y); //y value
+    lua_rawset(L, -3);           //Store y in table
+
+    lua_pushliteral(L, "z");     //z index
+    lua_pushnumber(L, vector.z); //z value
+    lua_rawset(L, -3);           //Store z in table
+}
+
 // ----------- Misc. functions ---------------
 
 //Compare if two zero terminated strings are exactly equal

@@ -10,26 +10,24 @@
 				"smallScale":	false,
 				"center":	[16, 16, 32]
 			},
+			"RigidBody":	{
+				"mass":	1,
+				"bounciness":	0.20000000298023224,
+				"velocity":	[0, 0, 0],
+				"acceleration":	[0, 0, 0],
+				"useGravity":	true,
+				"isStatic":	true
+			},
 			"childs":	[{
 					"Transform":	{
-						"position":	[-5.7850866317749023, -8.19351863861084, -14.140583992004395],
-						"rotation":	[0, 0, -45]
-					},
-					"VoxelModel":	{
-						"modelPath":	"Assets/Game/Models/",
-						"modelName":	"minichar.vox",
-						"smallScale":	true,
-						"center":	[5, 2, 10]
-					}
-				}, {
-					"Transform":	{
-						"position":	[6.7544994354248047, -27.898147583007813, -8.7946491241455078],
+						"position":	[6.7544994354248047, -27.898147583007812, -8.7946491241455078],
 						"rotation":	[0, 0, 0]
 					},
 					"PointLight":	{
 						"color":	[0, 0, 1],
 						"intensity":	0.75,
-						"range":	1000
+						"range":	1000,
+						"hueShift":	0
 					}
 				}, {
 					"Transform":	{
@@ -39,17 +37,19 @@
 					"PointLight":	{
 						"color":	[1, 1, 1],
 						"intensity":	0.75,
-						"range":	100
+						"range":	100,
+						"hueShift":	0
 					}
 				}, {
 					"Transform":	{
-						"position":	[-17.273767471313477, -2.9412636756896973, -21.626775741577148],
+						"position":	[-23.629219055175781, -2.9412636756896973, -19.131378173828125],
 						"rotation":	[0, 0, 0]
 					},
 					"PointLight":	{
-						"color":	[1, 1, 1],
-						"intensity":	0.75,
-						"range":	100
+						"color":	[0.056249998509883881, 0.518750011920929, 0.44374999403953552],
+						"intensity":	0.33000001311302185,
+						"range":	513.1998291015625,
+						"hueShift":	4.5830292701721191
 					}
 				}, {
 					"Transform":	{
@@ -59,7 +59,39 @@
 					"PointLight":	{
 						"color":	[1, 1, 1],
 						"intensity":	0.75,
-						"range":	100
+						"range":	100,
+						"hueShift":	0
+					}
+				}]
+		}, {
+			"Transform":	{
+				"position":	[-5.7850866317749023, -8.19351863861084, 24.879131317138672],
+				"rotation":	[0, 0, -45]
+			},
+			"VoxelModel":	{
+				"modelPath":	"Assets/Game/Models/",
+				"modelName":	"minichar.vox",
+				"smallScale":	true,
+				"center":	[5, 2, 10]
+			},
+			"RigidBody":	{
+				"mass":	1,
+				"bounciness":	0.81999999284744263,
+				"velocity":	[0, 0, 0],
+				"acceleration":	[0, 0, 0],
+				"useGravity":	true,
+				"isStatic":	false
+			},
+			"childs":	[{
+					"Transform":	{
+						"position":	[-0.40000000596046448, 0.60000002384185791, -5.4067025184631348],
+						"rotation":	[0, 0, -45]
+					},
+					"PointLight":	{
+						"color":	[1, 1, 1],
+						"intensity":	-0.5,
+						"range":	6.2999978065490723,
+						"hueShift":	0
 					}
 				}]
 		}]

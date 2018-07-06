@@ -208,27 +208,37 @@ void RGBField(char *title, Vector3 *data,int ommitR,int ommitG,int ommitB,int x,
                   data->x,data->y,data->z);
     *curHeight -= 16 + TTF_FontHeight(gizmosFontSmall)*2;
 
+    XYZSliderField("r","G","b", data, (Vector3){0,1}, ommitR, ommitG, ommitB, x, w, curField, curHeight);
+    
+}
 
-    DrawTextColored("r", lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall)/2, gizmosFontSmall);
-    double sliderVal = Slider(data->x, x+12, *curHeight, w-17, 14, 1, lightWhite, brightWhite, brightWhite);
+void XYZSliderField(char *xTitle,char *yTitle,char *zTitle, Vector3 *data, Vector3 range, int ommitX, int ommitY, int ommitZ, int x, int w, int* curField, int* curHeight){
+    int textW, textH;
+
+    TTF_SizeText(gizmosFontSmall, xTitle, &textW, &textH);
+    DrawTextColored(xTitle, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall)/2, gizmosFontSmall);
+    double sliderVal = Slider(data->x, x+textW+2, *curHeight, w-textW-7, 14, 1, lightWhite, brightWhite, brightWhite);
     if(sliderVal > 0){
         data->x = sliderVal;
     }
     *curHeight -= 20;
 
-    DrawTextColored("G", lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall)/2, gizmosFontSmall);
-    sliderVal = Slider(data->y, x+12, *curHeight, w-17, 14, 1, lightWhite, brightWhite, brightWhite);
+    TTF_SizeText(gizmosFontSmall, yTitle, &textW, &textH);
+    DrawTextColored(yTitle, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall)/2, gizmosFontSmall);
+    sliderVal = Slider(data->y, x+textW+2, *curHeight, w-textW-7, 14, 1, lightWhite, brightWhite, brightWhite);
     if(sliderVal > 0){
         data->y = sliderVal;
     }
     *curHeight -= 20;
 
-    DrawTextColored("b", lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall)/2, gizmosFontSmall);
-    sliderVal = Slider(data->z, x+12, *curHeight, w-17, 14, 1, lightWhite, brightWhite, brightWhite);
+    TTF_SizeText(gizmosFontSmall, zTitle, &textW, &textH);
+    DrawTextColored(zTitle, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall)/2, gizmosFontSmall);
+    sliderVal = Slider(data->z, x+textW+2, *curHeight, w-textW-7, 14, 1, lightWhite, brightWhite, brightWhite);
     if(sliderVal > 0){
         data->z = sliderVal;
     }
     *curHeight -= 12;
+    *curField +=1;
 }
 
 void SliderField(char *title, float *data, Vector3 range, int ommit, int x, int w, int* curField, int* curHeight){

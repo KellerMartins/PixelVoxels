@@ -33,8 +33,8 @@ void AllocatePlayModeData(){
 
     int i;
     //Allocate the playmode components and entities copy
-    componentsPlaymodeCopy = malloc(GetLength(ECS.ComponentTypes) * sizeof(Component*));
-    for(i=0;i<GetLength(ECS.ComponentTypes);i++){
+    componentsPlaymodeCopy = malloc(ECS.numberOfComponents * sizeof(Component*));
+    for(i=0;i<ECS.numberOfComponents;i++){
         componentsPlaymodeCopy[i] = calloc(ECS.maxEntities,sizeof(Component));
     }
 
@@ -49,15 +49,13 @@ void FreePlayModeData(){
     }
 
     //Free components backup
-    ListCellPointer comp;
-    ListForEach(comp,ECS.ComponentTypes){
+    for(c=0; c<ECS.numberOfComponents; c++){
         for(i=0;i<ECS.maxEntities;i++){
             if(componentsPlaymodeCopy[c][i].data){
-                GetElementAsType(comp,ComponentType).destructor(&componentsPlaymodeCopy[c][i].data);
+                ECS.ComponentTypes[c].destructor(&componentsPlaymodeCopy[c][i].data);
             }
         }
         free(componentsPlaymodeCopy[c]);
-        c++;
     }
     free(componentsPlaymodeCopy);
 }
@@ -117,7 +115,7 @@ void DrawPlayModeWidget(){
 
 //Function responsible for copying the game state to another structure before starting the play mode
 void EnterPlayMode(){
-    int c=0,i;
+    int c,i;
     for(i=0;i<=ECS.maxUsedIndex;i++){
         //Copy entities data
         entitiesPlaymodeCopy[i] =  ECS.Entities[i];
@@ -129,14 +127,11 @@ void EnterPlayMode(){
             InsertListEnd(&entitiesPlaymodeCopy[i].childs,&chldID);
         }
         
-        c=0;
         //Copy component data
-        ListCellPointer comp;
-        ListForEach(comp,ECS.ComponentTypes){
+        for(c=0; c<ECS.numberOfComponents; c++){
             if(ECS.Components[c][i].data){
-                componentsPlaymodeCopy[c][i].data = GetElementAsType(comp,ComponentType).copy(ECS.Components[c][i].data);
+                componentsPlaymodeCopy[c][i].data = ECS.ComponentTypes[c].copy(ECS.Components[c][i].data);
             }
-            c++;
         }
     }
 
@@ -152,14 +147,12 @@ void ExitPlayMode(){
         if(IsValidEntity(i)){
             //This code is similar to the DestroyEntity function, but without destroying the child objects
             int mask = ECS.Entities[i].mask.mask;
-            c = 0;
-            ListCellPointer compCell;
-            ListForEach(compCell,ECS.ComponentTypes){
+
+            for(c=0; c<ECS.numberOfComponents; c++){
                 if(mask & 1){
-                    ((ComponentType*)(GetElement(*compCell)))->destructor(&ECS.Components[c][i].data);
+                    ECS.ComponentTypes[c].destructor(&ECS.Components[c][i].data);
                 }
                 mask >>=1;
-                c++;
             }
 
             ECS.Entities[i].mask.mask = 0;
@@ -183,12 +176,10 @@ void ExitPlayMode(){
         //Destroy backup
         FreeList(&entitiesPlaymodeCopy[i].childs);
     
-        c=0;
-        ListCellPointer comp;
-        ListForEach(comp,ECS.ComponentTypes){
+        for(c=0; c<ECS.numberOfComponents; c++){
             if(componentsPlaymodeCopy[c][i].data){
                 //Copy the backup data
-                ECS.Components[c][i].data = GetElementAsType(comp,ComponentType).copy(componentsPlaymodeCopy[c][i].data);
+                ECS.Components[c][i].data = ECS.ComponentTypes[c].copy(componentsPlaymodeCopy[c][i].data);
                 ECS.Entities[i].mask.mask |= (1<<c);
 
                 ListCellPointer ent;
@@ -202,9 +193,8 @@ void ExitPlayMode(){
                 }
 
                 //Destroy backup
-                GetElementAsType(comp,ComponentType).destructor(&componentsPlaymodeCopy[c][i].data);
+                ECS.ComponentTypes[c].destructor(&componentsPlaymodeCopy[c][i].data);
             }
-            c++;
         }
         
     }

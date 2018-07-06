@@ -69,8 +69,9 @@ typedef struct engineECS{
     //Array containing dinamicaly allocated arrays with components
     //Each index of the main array is set to be unique to that component type
     Component **Components;
-    //List mapping string component names to indexes
-    List ComponentTypes;
+    //Array containing the name and operation functions of the component types
+    ComponentType *ComponentTypes;
+    unsigned numberOfComponents;
 
     //List containing all systems
     List SystemList;

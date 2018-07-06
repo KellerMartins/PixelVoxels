@@ -118,16 +118,17 @@ void EndEngine(int errorOcurred){
 	FreeList(&ECS.SystemList);
 
 	//Free all ECS structures and lists
-	int i,j;
-	for(i=0;i<GetLength(ECS.ComponentTypes);i++){
+	int c,j;
+	for(c=0; c<ECS.numberOfComponents; c++){
 		for(j=0;j<ECS.maxEntities;j++){
-			if(ECS.Components[i][j].data)
-			((ComponentType*)(GetElementAt(ECS.ComponentTypes,i)))->destructor(&ECS.Components[i][j].data);
+			if(ECS.Components[c][j].data){
+				ECS.ComponentTypes[c].destructor(&ECS.Components[c][j].data);
+			}
 		}
-		free(ECS.Components[i]);
+		free(ECS.Components[c]);
 	}
 	free(ECS.Components);
-	FreeList(&ECS.ComponentTypes);
+	free(ECS.ComponentTypes);
 
 	FreeList(&ECS.AvaliableEntitiesIndexes);
 	free(ECS.Entities);

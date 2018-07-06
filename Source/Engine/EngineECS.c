@@ -7,13 +7,13 @@ extern unsigned char initializedEngine;
 
 ////////////////////////////////////////////////////////////////////////////////
 
-engineECS ECS = {.maxEntities = 0,.maxUsedIndex = 0, .Entities = 0};
+engineECS ECS = {.numberOfComponents = 0, .maxEntities = 0, .maxUsedIndex = 0, .Entities = 0};
 unsigned char initializedECS = 0;
 
 //----------------- ECS Functions -----------------
 
 //Initialize the Entity Component System lists and arrays
-//Needs to be called before registering any component 
+//Needs to be called before registering any system 
 int InitECS(unsigned max_entities){
 	if(initializedECS){
 		printf("ECS already initialized!\n");
@@ -34,9 +34,6 @@ int InitECS(unsigned max_entities){
 		InsertListEnd(&ECS.AvaliableEntitiesIndexes,(void*)&i);
 	}	
 
-	ECS.Components = NULL;
-	ECS.ComponentTypes = InitList(sizeof(ComponentType));
-
 	ECS.SystemList = InitList(sizeof(System));
 
 	initializedECS = 1;
@@ -44,17 +41,12 @@ int InitECS(unsigned max_entities){
 }
 
 int RegisterNewComponent(char componentName[25],void (*constructorFunc)(void** data),void (*destructorFunc)(void** data),void*(*copyFunc)(void*),cJSON*(*encodeFunc)(void** data, cJSON* currentData),void* (*decodeFunc)(cJSON** data)){
-	if(!initializedECS){
-		printf("ECS not initialized! Initialize ECS before registering the components and systems\n");
-		return -1;
-	}
-
 	if(!ECS.Components){
 		ECS.Components = malloc(sizeof(Component*));
 		ECS.Components[0] = calloc(ECS.maxEntities,sizeof(Component));
 	}else{
-		ECS.Components = realloc(ECS.Components,(GetLength(ECS.ComponentTypes) + 1) * sizeof(Component*));
-		ECS.Components[GetLength(ECS.ComponentTypes)] = calloc(ECS.maxEntities,sizeof(Component));
+		ECS.Components = realloc(ECS.Components,(ECS.numberOfComponents + 1) * sizeof(Component*));
+		ECS.Components[ECS.numberOfComponents] = calloc(ECS.maxEntities,sizeof(Component));
 	}
 
 	ComponentType newType;
@@ -65,14 +57,21 @@ int RegisterNewComponent(char componentName[25],void (*constructorFunc)(void** d
 	newType.encode = encodeFunc;
 	newType.decode = decodeFunc;
 
-	InsertListEnd(&ECS.ComponentTypes,(void*)&newType);
+	if(!ECS.ComponentTypes){
+		ECS.ComponentTypes = malloc(sizeof(ComponentType));
+		ECS.ComponentTypes[0] = newType;
+	}else{
+		ECS.ComponentTypes = realloc(ECS.ComponentTypes,(ECS.numberOfComponents + 1) * sizeof(ComponentType));
+		ECS.ComponentTypes[ECS.numberOfComponents] = newType;
+	}
+	ECS.numberOfComponents++;
 
-	return GetLength(ECS.ComponentTypes)-1;
+	return ECS.numberOfComponents-1;
 }
 
 int RegisterNewSystem(char systemName[25], int priority, ComponentMask required, ComponentMask excluded, void (*initFunc)(), void (*updateFunc)(), void (*freeFunc)()){
 	if(!initializedECS){
-		printf("ECS not initialized! Initialize ECS before registering the components and systems\n");
+		printf("ECS not initialized! Initialize ECS before registering the systems\n");
 		return -1;
 	}
 	System newSystem = (System){.priority = priority, .enabled = 1, .required = required, .excluded = excluded, .systemInit = initFunc, .systemUpdate = updateFunc, .systemFree = freeFunc};
@@ -97,15 +96,9 @@ int RegisterNewSystem(char systemName[25], int priority, ComponentMask required,
 
 //----------------- Component functions -----------------
 ComponentID GetComponentID(char componentName[25]){
-	int index = 0;
-	ListCellPointer current = GetFirstCell(ECS.ComponentTypes);
-	while(current){
-		ComponentType currType = *((ComponentType*)GetElement(*current));
-
-		if(StringCompareEqual(currType.name, componentName)) return index;
-
-		index++;
-		current = GetNextCell(current);
+	ComponentID c;
+	for(c=0; c<ECS.numberOfComponents; c++){
+		if(StringCompareEqual(ECS.ComponentTypes[c].name, componentName)) return c;
 	}
 	printf("GetComponentID: Component named %s not found\n",componentName);
 	return -1;
@@ -188,14 +181,13 @@ void DestroyEntity(EntityID entity){
 		}
 	}
 
-	int c = 0, mask = ECS.Entities[entity].mask.mask;
-	ListCellPointer compCell;
-	ListForEach(compCell,ECS.ComponentTypes){
+	int mask = ECS.Entities[entity].mask.mask;
+	ComponentID c;
+	for(c=0; c<ECS.numberOfComponents; c++){
 		if(mask & 1){
-			((ComponentType*)(GetElement(*compCell)))->destructor(&ECS.Components[c][entity].data);
+			ECS.ComponentTypes[c].destructor(&ECS.Components[c][entity].data);
 		}
 		mask >>=1;
-		c++;
 	}
 
 	ECS.Entities[entity].mask.mask = 0;
@@ -240,7 +232,7 @@ void AddComponentToEntity(ComponentID component, EntityID entity){
 		printf("AddComponentToEntity: Entity is not spawned or out of range!(%d)\n",entity);
 		return;
 	}
-	if(component<0 || component>=GetLength(ECS.ComponentTypes)){
+	if(component<0 || component>=ECS.numberOfComponents){
 		printf("AddComponentToEntity: Component index out of range!(%d)\n",component);
 		return;
 	}
@@ -252,10 +244,8 @@ void AddComponentToEntity(ComponentID component, EntityID entity){
 
 	ECS.Entities[entity].mask.mask |= 1 << component;
 	
-	//Get the component type
-	ListCellPointer compType = GetCellAt(ECS.ComponentTypes,component);
 	//Call the component constructor
-	((ComponentType*)(GetElement(*compType)))->constructor(&ECS.Components[component][entity].data);
+	ECS.ComponentTypes[component].constructor(&ECS.Components[component][entity].data);
 }
 
 void RemoveComponentFromEntity(ComponentID component, EntityID entity){
@@ -263,7 +253,7 @@ void RemoveComponentFromEntity(ComponentID component, EntityID entity){
 		printf("RemoveComponentToEntity: Entity is not spawned or out of range!(%d)\n",entity);
 		return;
 	}
-	if(component<0 || component>=GetLength(ECS.ComponentTypes)){
+	if(component<0 || component>=ECS.numberOfComponents){
 		printf("RemoveComponentToEntity: Component index out of range!(%d)\n",component);
 		return;
 	}
@@ -273,11 +263,8 @@ void RemoveComponentFromEntity(ComponentID component, EntityID entity){
 	}
 	ECS.Entities[entity].mask.mask &= ~(1 << component);
 
-	//Get the component type
-	ListCellPointer compType = GetCellAt(ECS.ComponentTypes,component);
-
 	//Call the component destructor
-	((ComponentType*)(GetElement(*compType)))->destructor(&ECS.Components[component][entity].data);
+	ECS.ComponentTypes[component].destructor(&ECS.Components[component][entity].data);
 }
 
 EntityID DuplicateEntity(EntityID entity){
@@ -288,13 +275,11 @@ EntityID DuplicateEntity(EntityID entity){
 
 	EntityID newEntity = CreateEntity();
 	
-	int compIndex = 0;
-	ListCellPointer compCell;
-	ListForEach(compCell,ECS.ComponentTypes){
-		if(EntityContainsComponent(entity,compIndex)){
-			ECS.Components[compIndex][newEntity].data = GetElementAsType(compCell,ComponentType).copy(ECS.Components[compIndex][entity].data);
+	ComponentID c;
+	for(c=0; c<ECS.numberOfComponents; c++){
+		if(EntityContainsComponent(entity,c)){
+			ECS.Components[c][newEntity].data = ECS.ComponentTypes[c].copy(ECS.Components[c][entity].data);
 		}
-		compIndex++;
 	}
 	ECS.Entities[newEntity].mask.mask = ECS.Entities[entity].mask.mask;
 
@@ -342,7 +327,7 @@ int EntityContainsComponent(EntityID entity, ComponentID component){
 		printf("EntityContainsComponent: Entity is not spawned or out of range!(%d)\n",entity);
 		return 0;
 	}
-	if(component<0 || component>GetLength(ECS.ComponentTypes)){
+	if(component<0 || component>ECS.numberOfComponents){
 		printf("EntityContainsComponent: Component index out of range!(%d)\n",component);
 		return 0;
 	}
@@ -351,7 +336,7 @@ int EntityContainsComponent(EntityID entity, ComponentID component){
 }
 
 int MaskContainsComponent(ComponentMask mask, ComponentID component){
-	if(component<0 || component>GetLength(ECS.ComponentTypes)){
+	if(component<0 || component>ECS.numberOfComponents){
 		printf("MaskContainsComponent: Component index out of range!(%d)\n",component);
 		return 0;
 	}
@@ -494,23 +479,19 @@ cJSON *EncodeEntity(EntityID entity,int encodingToPrefab){
 		currentData = OpenJSON(ECS.Entities[entity].prefabPath, ECS.Entities[entity].prefabName);
 	}
 
-	ListCellPointer compCell;
-	ComponentID compID = 0;
-	ListForEach(compCell,ECS.ComponentTypes){
-		if(EntityContainsComponent(entity, compID)){
-			ComponentType compType = GetElementAsType(compCell,ComponentType);
-
+	ComponentID c;
+	for(c=0; c<ECS.numberOfComponents; c++){
+		if(EntityContainsComponent(entity, c)){
 			//Get current json data if it exists
 			cJSON *currentCompJSON = NULL;
 			if(currentData)
-				currentCompJSON = cJSON_GetObjectItemCaseSensitive(currentData, compType.name);
+				currentCompJSON = cJSON_GetObjectItemCaseSensitive(currentData, ECS.ComponentTypes[c].name);
 
-			cJSON *compEncoded = compType.encode(&ECS.Components[compID][entity].data,currentCompJSON);
+			cJSON *compEncoded = ECS.ComponentTypes[c].encode(&ECS.Components[c][entity].data,currentCompJSON);
 			if(compEncoded){
-				cJSON_AddItemToObject(entityObj, compType.name, compEncoded);
+				cJSON_AddItemToObject(entityObj, ECS.ComponentTypes[c].name, compEncoded);
 			}
 		}
-		compID++;
 	}
 
 	if(currentData)
@@ -544,24 +525,21 @@ EntityID DecodeEntity(cJSON **entityObj){
 		newEntity = CreateEntity();
 	}
 
-	ListCellPointer compCell;
-	ComponentID compID = 0;
-	ListForEach(compCell,ECS.ComponentTypes){
-		ComponentType compType = GetElementAsType(compCell,ComponentType);
+	ComponentID c;
+	for(c=0; c<ECS.numberOfComponents; c++){
 
-		cJSON *comp = cJSON_GetObjectItemCaseSensitive(*entityObj, compType.name);
+		cJSON *comp = cJSON_GetObjectItemCaseSensitive(*entityObj, ECS.ComponentTypes[c].name);
 		if(comp){
-			void *compData = compType.decode(&comp);
+			void *compData = ECS.ComponentTypes[c].decode(&comp);
 
 			//In case of a prefab, replace the prefab component with the override component
-			if(ECS.Components[compID][newEntity].data){
-				compType.destructor(&ECS.Components[compID][newEntity].data);
+			if(ECS.Components[c][newEntity].data){
+				ECS.ComponentTypes[c].destructor(&ECS.Components[c][newEntity].data);
 			}
 
-			ECS.Components[compID][newEntity].data = compData;
-			ECS.Entities[newEntity].mask.mask |= 1<<compID;
+			ECS.Components[c][newEntity].data = compData;
+			ECS.Entities[newEntity].mask.mask |= 1<<c;
 		}
-		compID++;
 	}
 
 	cJSON *childsArray = cJSON_GetObjectItem(*entityObj, "childs");

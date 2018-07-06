@@ -113,18 +113,14 @@ static int l_GetEntityComponents(lua_State *L){
     //Create a new table to insert the components of this entity
     lua_newtable(L);
 
-    int compIndex = 0;
-    int tableIndex = 1;
-	ListCellPointer compCell;
-	ListForEach(compCell,ECS.ComponentTypes){
-		if(EntityContainsComponent(id,compIndex)){
-
+    int c;
+	for(c=0; c<ECS.numberOfComponents; c++){
+		if(EntityContainsComponent(id,c)){
             //Put the component in the components table
-			lua_pushinteger(L, tableIndex++);
-            lua_pushstring(L, GetElementAsType(compCell, ComponentType).name);
+			lua_pushinteger(L, c+1);
+            lua_pushstring(L, ECS.ComponentTypes[c].name);
             lua_rawset(L, -3);
 		}
-		compIndex++;
 	}
 
     return 1;

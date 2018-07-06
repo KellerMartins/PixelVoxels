@@ -81,7 +81,7 @@ void DrawComponentsPanel(){
 
             //Show the panel of the components contained by the selected entities
             int c,componentHeight = ComponentsPanelHeight + componentStartHeight;
-            for(c=0;c<GetLength(ECS.ComponentTypes);c++){
+            for(c=0; c<ECS.numberOfComponents; c++){
 
                 if(MaskContainsComponent(mask,c)){
                     //Drawing component element
@@ -611,9 +611,9 @@ void DrawComponentsPanel(){
         }else{
             //Show components to be added
             int buttonHeight = ComponentsPanelHeight - (addComponentScroll>0? 22:0);
-            int w,h,i = 0;
-            ListCellPointer cellComp;
-            ListForEach(cellComp,ECS.ComponentTypes){
+            int w,h,c;
+            int i = 0;
+            for(c=0; c<ECS.numberOfComponents; c++){
                 if(i-addComponentScroll<0 || buttonHeight<componentWindowBottomSpacing ){i++; continue;}
 
                 Vector3 cbMin = {Screen.windowWidth - componentWindowLength+1,buttonHeight-40};
@@ -636,22 +636,21 @@ void DrawComponentsPanel(){
                 }else{
                     DrawRectangle(cbMin, cbMax,0.1,0.1,0.1);
                 }
-                TTF_SizeText(gizmosFont,GetElementAsType(cellComp,ComponentType).name,&w,&h);
-                DrawTextColored(GetElementAsType(cellComp,ComponentType).name, lightWhite, cbMin.x + ((cbMax.x-cbMin.x)-w)/2, cbMin.y + ((cbMax.y-cbMin.y)-h)/2, gizmosFont);
+                TTF_SizeText(gizmosFont,ECS.ComponentTypes[c].name,&w,&h);
+                DrawTextColored(ECS.ComponentTypes[c].name, lightWhite, cbMin.x + ((cbMax.x-cbMin.x)-w)/2, cbMin.y + ((cbMax.y-cbMin.y)-h)/2, gizmosFont);
 
                 buttonHeight-= 42;
                 i++;
             }
 
             //Scrollbar
-            //'i' is now the number of component types
-            if(GetLength(ECS.ComponentTypes) > 16){
+            if(ECS.numberOfComponents > 16){
                 Vector3 scrollbarDownMin = {Screen.windowWidth - componentWindowLength,componentWindowBottomSpacing+2};
                 Vector3 scrollbarDownMax = {Screen.windowWidth,componentWindowBottomSpacing+22};
                 Vector3 scrollbarUpMin = {Screen.windowWidth - componentWindowLength,ComponentsPanelHeight-22};
                 Vector3 scrollbarUpMax = {Screen.windowWidth,ComponentsPanelHeight-2};
 
-                if(addComponentScroll < GetLength(ECS.ComponentTypes)-15){
+                if(addComponentScroll < ECS.numberOfComponents-15){
                     if(MouseOverBox(mousePos,scrollbarDownMin,scrollbarDownMax,0)){
                         DrawRectangle(scrollbarDownMin,scrollbarDownMax,0.1,0.1,0.125);
                         if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
@@ -784,15 +783,13 @@ int DrawComponentHeader(ComponentID component, int* curHeight){
         return 0;
     }
 
-    //Component Name
-    ComponentType *type = ((ComponentType*)GetElementAt(ECS.ComponentTypes,component));
     //Cut names that are too big to be shown
-    if(strlen(type->name)>11){
+    if(strlen(ECS.ComponentTypes[component].name)>11){
         char cName[14] = "OOOOOOOOOO...";
-        strncpy(cName,type->name,10);
+        strncpy(cName,ECS.ComponentTypes[component].name,10);
         DrawTextColored(cName, brightWhite, Screen.windowWidth-componentWindowLength+componentNameLeftSpacing, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
     }else{
-        DrawTextColored(type->name, brightWhite, Screen.windowWidth-componentWindowLength+componentNameLeftSpacing, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
+        DrawTextColored(ECS.ComponentTypes[component].name, brightWhite, Screen.windowWidth-componentWindowLength+componentNameLeftSpacing, *curHeight - TTF_FontHeight(gizmosFont), gizmosFont);
     }
 
     *curHeight -= TTF_FontHeight(gizmosFont)+2;

@@ -48,6 +48,7 @@ void NewSceneSaveScene();
 int menuOpened = 0;
 
 int selectedTab = 0;
+int currentField = -1;
 void DrawMenuWindow(){
     Vector3 bgMin = {Screen.windowWidth/2 -300,Screen.windowHeight/2 -100};
     Vector3 bgMax = {Screen.windowWidth/2 +300,Screen.windowHeight/2 +100};
@@ -89,6 +90,7 @@ void DrawMenuWindow(){
             if(MouseOverBox(mousePos,tabMin,tabMax,0)){
                 DrawRectangle(tabMin,tabMax,bgMediumColor.x, bgMediumColor.y, bgMediumColor.z);
                 if(GetMouseButtonUp(SDL_BUTTON_LEFT)){
+                    currentField = -1;
                     selectedTab = tabIndex;
                 }
             }else{
@@ -195,7 +197,10 @@ void DrawMenuWindow(){
                 //Add some spacing between different categories
                 spacing = bMax.x-bMin.x + 22;
                 bMin.x += spacing;
-                bMax.x += spacing;
+                bMax.x += spacing * 9.0/10.0;
+
+                //Reduce the width of the columns
+                spacing *= 8.0/10.0;
 
                 //Reset button height to top
                 bMin.y = optionsBgMax.y-55;
@@ -203,16 +208,21 @@ void DrawMenuWindow(){
 
                 DrawTextColored("settings", lightWhite, bMin.x, optionsBgMax.y-20, gizmosFontSmall);
 
-                if(MouseOverBox(mousePos, bMin, bMax,0)){
-                    DrawRectangle(bMin,bMax,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
-                    if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
-                        menuOpened = 1;
-                    }
-                }else{
-                    DrawRectangle(bMin,bMax,bgLightColor.x, bgLightColor.y, bgLightColor.z);
-                }
-                TTF_SizeText(gizmosFont,"Save Scene",&btw,&bth);
-                DrawTextColored("Save Scene", brightWhite, bMin.x+ ((bMax.x-bMin.x)-btw)/2, bMin.y+ ((bMax.y-bMin.y)-bth)/2, gizmosFont);
+                Vector3 bgCol = VECTOR3_ZERO,sunCol = VECTOR3_ZERO,sunDir = VECTOR3_ZERO;
+                currentField++;
+                int currentHeight = bMax.y-50;
+                DrawTextColored("Sun direction", lightWhite, bMin.x, optionsBgMax.y-60, gizmosFontSmall);
+                XYZSliderField("X","Y","Z", &sunDir, (Vector3){0,1},0,0,0, bMin.x, bMax.x - bMin.x, &currentField, &currentHeight);
+
+                bMin.x += spacing;
+                bMax.x += spacing;
+                currentHeight = optionsBgMax.y-10;
+                RGBField("Sun color", &sunCol, 0,0,0, bMin.x , bMax.x - bMin.x, &currentField, &currentHeight);
+
+                bMin.x += spacing;
+                bMax.x += spacing;
+                currentHeight = optionsBgMax.y-10;
+                RGBField("Background col", &bgCol, 0,0,0, bMin.x , bMax.x - bMin.x, &currentField, &currentHeight);
 
             break;
             case 1:

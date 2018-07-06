@@ -14,6 +14,7 @@ void FloatBoxInactive(int fieldID, float *data,int ommit, Vector3 pos, Vector3 s
 
 void StringField(char *title, char *data, int maxChars, int ommit,int x, int w, int* curField, int* curHeight);
 void SliderField(char *title, float *data, Vector3 range, int ommit, int x, int w, int* curField, int* curHeight);
+void XYZSliderField(char *xTitle,char *yTitle,char *zTitle, Vector3 *data, Vector3 range, int ommitX, int ommitY, int ommitZ, int x, int w, int* curField, int* curHeight);
 void RGBField(char *title, Vector3 *data,int ommitR,int ommitG,int ommitB,int x, int w, int* curField, int* curHeight);
 void Vector3Field(char *title, Vector3 *data, double dragAmount,int ommitX,int ommitY,int ommitZ,int x, int w, int fieldsSpacing, int* curField, int* curHeight);
 void FloatField(char *title, float *data, double dragAmount,int ommit,int x, int w, int* curField, int* curHeight);

@@ -12,9 +12,7 @@
 #include <lua5.3/lualib.h>
 #include <lua5.3/lauxlib.h>
 
-#define PI_OVER_180 0.01745329251
-#define PI 3.14159265359
-#define ONE_OVER_256 0.00390625
+#define PI 3.14159265358979323846
 #define VECTOR3_ZERO (Vector3){0.0f,0.0f,0.0f}
 #define VECTOR3_FORWARD (Vector3){1.0f,0.0f,0.0f}
 #define VECTOR3_UP (Vector3){0.0f,0.0f,1.0f}
@@ -141,9 +139,7 @@ Vector3 Subtract(Vector3 a, Vector3 b);
 Vector3 ScalarMult(Vector3 v, float s);
 double Distance(Vector3 a, Vector3 b);
 Vector3 VectorProjection(Vector3 a, Vector3 b);
-
 Vector3 Reflection(Vector3 *v1,Vector3 *v2);
-Vector3 RotatePoint(Vector3 p, float rx, float ry, float rz, float pivotX, float pivotY, float pivotZ);
 
 double DistanceFromPointToLine2D(Vector3 lP1,Vector3 lP2, Vector3 p);
 
@@ -155,6 +151,11 @@ typedef struct Matrix3x3{
 Matrix3x3 Transpose(Matrix3x3 m);
 Matrix3x3 Identity();
 Vector3 Matrix3x3ToEulerAngles(Matrix3x3 m);
+Matrix3x3 EulerAnglesToMatrix3x3(Vector3 rotation);
+Vector3 RotateVector(Vector3 v, Matrix3x3 m);
+Vector3 RotatePoint(Vector3 p, Vector3 r, Vector3 pivot);
+Matrix3x3 MultiplyMatrix3x3(Matrix3x3 a, Matrix3x3 b);
+
 
 float Lerp(double t, float a, float b);
 int Step(float edge, float x );

@@ -362,36 +362,8 @@ Vector3 Reflection(Vector3 *v1,Vector3 *v2)
     return result;
 }
 
-Vector3 RotatePoint(Vector3 p, float rx, float ry, float rz, float pivotX, float pivotY, float pivotZ){
-
-	float rotx,roty,rotz,x,y,z;
-
-	float sinx = sin(rx* PI_OVER_180);
-	float cosx = cos(rx* PI_OVER_180);
-
-	float siny = sin(ry * PI_OVER_180);
-	float cosy = cos(ry * PI_OVER_180);
-		
-	float sinz = sin(rz * PI_OVER_180);
-	float cosz = cos(rz * PI_OVER_180);
-
-	x = p.x - pivotX;
-	y = p.y - pivotY;
-	z = p.z - pivotZ;
-
-	rotx = x*cosy*cosz + y*(cosz*sinx*siny - cosx*sinz) + z*(cosx*cosz*siny + sinx*sinz);
-	roty = x*cosy*sinz + z*(cosx*siny*sinz - cosz*sinx) + y*(cosx*cosz + sinx*siny*sinz);
-	rotz = z*cosx*cosy + y*sinx*cosy - x*siny;
-
-	x = rotx + pivotX;
-	y = roty + pivotY;
-	z = rotz + pivotZ;
-
-	p.x = x;
-	p.y = y;
-	p.z = z;
-	return p;
-
+Vector3 RotatePoint(Vector3 p, Vector3 r, Vector3 pivot){
+	return Add(RotateVector(Subtract(p,pivot), EulerAnglesToMatrix3x3(r)),pivot);
 }
 
 double DistanceFromPointToLine2D(Vector3 lP1,Vector3 lP2, Vector3 p){
@@ -401,9 +373,7 @@ double DistanceFromPointToLine2D(Vector3 lP1,Vector3 lP2, Vector3 p){
 
 // ----------- Matrix3x3 type ---------------
 
-
-
-Matrix3x3 Transpose(Matrix3x3 m){
+inline Matrix3x3 Transpose(Matrix3x3 m){
 	Matrix3x3 t;
 
 	t.m[0][1] = m.m[1][0];
@@ -414,6 +384,10 @@ Matrix3x3 Transpose(Matrix3x3 m){
 
 	t.m[1][2] = m.m[2][1];
 	t.m[2][1] = m.m[1][2];
+
+	t.m[0][0] = m.m[0][0];
+	t.m[1][1] = m.m[1][1];
+	t.m[2][2] = m.m[2][2];
 
 	return t;
 }
@@ -446,6 +420,45 @@ Vector3 Matrix3x3ToEulerAngles(Matrix3x3 m){
 	rotation.z = atan2(s1*m.m[2][0] - c1*m.m[1][0], c1*m.m[1][1] - s1*m.m[2][1]);
 
 	return rotation;
+}
+
+Matrix3x3 EulerAnglesToMatrix3x3(Vector3 rotation){
+
+	float s1 = sin(rotation.x * PI/180.0);
+	float c1 = cos(rotation.x * PI/180.0);
+	float s2 = sin(rotation.y * PI/180.0);
+	float c2 = cos(rotation.y * PI/180.0);
+	float s3 = sin(rotation.z * PI/180.0);
+	float c3 = cos(rotation.z * PI/180.0);
+
+	Matrix3x3 m = {{{c2*c3            , c2*s3            , -s2  },
+				    {s1*s2*c3 - c1*s3 , s1*s2*s3 + c1*c3 , s1*c2},
+				    {c1*s2*c3 + s1*s3 , c1*s2*s3 - s1*c3 , c1*c2}}};
+
+	return m;
+}
+
+//Vectors are interpreted as rows
+inline Vector3 RotateVector(Vector3 v, Matrix3x3 m){
+	return (Vector3){v.x*m.m[0][0] + v.y*m.m[1][0] + v.z*m.m[2][0], 
+				     v.x*m.m[0][1] + v.y*m.m[1][1] + v.z*m.m[2][1],
+					 v.x*m.m[0][2] + v.y*m.m[1][2] + v.z*m.m[2][2]};
+}
+
+Matrix3x3 MultiplyMatrix3x3(Matrix3x3 a, Matrix3x3 b){
+	Matrix3x3 r;
+	int i,j,k;
+
+	for(i=0;i<3;i++){
+		for(j=0;j<3;j++){
+			r.m[i][j] = 0;
+			for(k=0;k<3;k++){
+				r.m[i][j] += a.m[i][k]*b.m[k][j];
+			}
+		}
+	}
+
+	return r;
 }
 
 // ----------- Numeric functions ---------------

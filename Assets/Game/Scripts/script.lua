@@ -47,7 +47,7 @@ function float(entity)
     pos = GetPosition(entity)
     SetPosition(entity, {x=pos.x, y=pos.y, z=pos.z+newHeight})
     rot = GetRotation(entity)
-    SetRotation(entity, {x=rot.x, y=rot.y, z=time*20})
+    SetRotation(entity, {x=time*20, y=time*20, z=time*20})
 
     if GetKey("UP") then
         camPos.y = 100;

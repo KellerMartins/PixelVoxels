@@ -4,7 +4,7 @@
 //Defines the local transform of an entity
 typedef struct Transform{
     Vector3 position;
-    Vector3 rotation;
+    Matrix3x3 rotation;
 }Transform;
 
 //Function that returns the ID of this component
@@ -22,6 +22,7 @@ extern engineCore Core;
 void TransformConstructor(void** data){
     if(!data) return;
     *data = calloc(1,sizeof(Transform));
+    ((Transform*)data)->rotation = EulerAnglesToMatrix3x3(VECTOR3_ZERO);
 }
 
 void TransformDestructor(void** data){
@@ -41,6 +42,8 @@ cJSON* TransformEncode(void** data, cJSON* currentData){
     if(!data) return NULL;
     Transform *tr = *data; 
 
+    Vector3 rot = Matrix3x3ToEulerAngles(tr->rotation);
+
     int hasChanged = 0;
     if(currentData){
         //Check if any data has changed
@@ -49,9 +52,9 @@ cJSON* TransformEncode(void** data, cJSON* currentData){
         if(tr->position.x != (cJSON_GetArrayItem(curPos,0))->valuedouble ||
            tr->position.y != (cJSON_GetArrayItem(curPos,1))->valuedouble || 
            tr->position.z != (cJSON_GetArrayItem(curPos,2))->valuedouble || 
-           tr->rotation.x != (cJSON_GetArrayItem(curRot,0))->valuedouble || 
-           tr->rotation.y != (cJSON_GetArrayItem(curRot,1))->valuedouble || 
-           tr->rotation.z != (cJSON_GetArrayItem(curRot,2))->valuedouble
+           rot.x != (cJSON_GetArrayItem(curRot,0))->valuedouble || 
+           rot.y != (cJSON_GetArrayItem(curRot,1))->valuedouble || 
+           rot.z != (cJSON_GetArrayItem(curRot,2))->valuedouble
         ){
             hasChanged = 1;
         }
@@ -67,9 +70,9 @@ cJSON* TransformEncode(void** data, cJSON* currentData){
         cJSON_AddItemToArray(position, cJSON_CreateNumber(tr->position.z));
 
         cJSON *rotation = cJSON_AddArrayToObject(obj,"rotation");
-        cJSON_AddItemToArray(rotation, cJSON_CreateNumber(tr->rotation.x));
-        cJSON_AddItemToArray(rotation, cJSON_CreateNumber(tr->rotation.y));
-        cJSON_AddItemToArray(rotation, cJSON_CreateNumber(tr->rotation.z));
+        cJSON_AddItemToArray(rotation, cJSON_CreateNumber(rot.x));
+        cJSON_AddItemToArray(rotation, cJSON_CreateNumber(rot.y));
+        cJSON_AddItemToArray(rotation, cJSON_CreateNumber(rot.z));
 
         return obj;
     }
@@ -84,9 +87,9 @@ void* TransformDecode(cJSON **data){
                              (cJSON_GetArrayItem(pos,2))->valuedouble};
 
     cJSON *rot = cJSON_GetObjectItem(*data,"rotation");
-    tr->rotation = (Vector3){(cJSON_GetArrayItem(rot,0))->valuedouble,
-                             (cJSON_GetArrayItem(rot,1))->valuedouble,
-                             (cJSON_GetArrayItem(rot,2))->valuedouble};
+    tr->rotation = EulerAnglesToMatrix3x3((Vector3){(cJSON_GetArrayItem(rot,0))->valuedouble,
+                                                    (cJSON_GetArrayItem(rot,1))->valuedouble,
+                                                    (cJSON_GetArrayItem(rot,2))->valuedouble});
 
     return tr;
 }
@@ -104,6 +107,15 @@ Vector3 GetRotation(EntityID entity){
     if(!EntityContainsComponent(entity, ThisComponentID())){
         printf("GetRotation: Entity doesn't have a Transform component. (%d)\n",entity);
         return VECTOR3_ZERO;
+    }
+    Transform *transform = (Transform *)ECS.Components[ThisComponentID()][entity].data;
+    return Matrix3x3ToEulerAngles(transform->rotation);
+}
+
+Matrix3x3 GetRotationMatrix(EntityID entity){
+    if(!EntityContainsComponent(entity, ThisComponentID())){
+        printf("GetRotationMatrix: Entity doesn't have a Transform component. (%d)\n",entity);
+        return Identity();
     }
     Transform *transform = (Transform *)ECS.Components[ThisComponentID()][entity].data;
     return transform->rotation;
@@ -124,10 +136,10 @@ void SetRotation(EntityID entity, Vector3 rot){
         return;
     }
     Transform *transform = (Transform *)ECS.Components[ThisComponentID()][entity].data;
-    transform->rotation = rot;
+    transform->rotation = EulerAnglesToMatrix3x3(rot);
 }
 
-void GetGlobalTransform(EntityID entity, Vector3 *outPos, Vector3 *outRot){
+void GetGlobalTransform(EntityID entity, Vector3 *outPos, Vector3 *outEuler, Matrix3x3 *outRot){
     if(!EntityContainsComponent(entity, ThisComponentID())){
         printf("GetGlobalTransform: Entity doesn't have a Transform component. (%d)\n",entity);
         return;
@@ -135,37 +147,26 @@ void GetGlobalTransform(EntityID entity, Vector3 *outPos, Vector3 *outRot){
     Transform *transform = (Transform *)ECS.Components[ThisComponentID()][entity].data;
 
     if(EntityIsChild(entity)){
-        Vector3 parentGlobalPos, parentGlobalRot;
-        GetGlobalTransform(GetEntityParent(entity),&parentGlobalPos, &parentGlobalRot);
-        Vector3 rot = (Vector3){parentGlobalRot.x,parentGlobalRot.y,parentGlobalRot.z};
+        Vector3 parentGlobalPos, parentGlobalEuler;
+        Matrix3x3 parentGlobalRot;
+        GetGlobalTransform(GetEntityParent(entity),&parentGlobalPos, &parentGlobalEuler, &parentGlobalRot);
 
-        float sinx = sin(rot.x * PI_OVER_180);
-        float cosx = cos(rot.x * PI_OVER_180);
-        float siny = sin(rot.y * PI_OVER_180);
-        float cosy = cos(rot.y * PI_OVER_180);
-        float sinz = sin(rot.z * PI_OVER_180);
-        float cosz = cos(rot.z * PI_OVER_180);
-
-        float rxt1 = cosy*cosz, rxt2 = (cosz*sinx*siny - cosx*sinz), rxt3 = (cosx*cosz*siny + sinx*sinz);
-        float ryt1 = cosy*sinz, ryt2 = (cosx*siny*sinz - cosz*sinx), ryt3 = (cosx*cosz + sinx*siny*sinz);
-        float rzt1 = cosx*cosy, rzt2 = sinx*cosy,                    rzt3 = siny;
-        
-        Vector3 rotatedPos;
         //Apply rotation matrix
         Vector3 p = (Vector3){transform->position.x, transform->position.y, transform->position.z};
-        rotatedPos.x = p.x*rxt1 + p.y*rxt2 + p.z*rxt3;
-        rotatedPos.y = p.x*ryt1 + p.z*ryt2 + p.y*ryt3;
-        rotatedPos.z = p.z*rzt1 + p.y*rzt2 - p.x*rzt3;
+        Vector3 rotatedPos = RotateVector(p,parentGlobalRot);
 
         rotatedPos = (Vector3){ rotatedPos.x + parentGlobalPos.x, rotatedPos.y + parentGlobalPos.y, rotatedPos.z + parentGlobalPos.z};
 
+        Matrix3x3 rotatedRot = MultiplyMatrix3x3(transform->rotation, parentGlobalRot);
+
         if(outPos) *outPos = rotatedPos;
-        //Currently incorrect, need to fix
-        if(outRot) *outRot = Add(transform->rotation, parentGlobalRot);
+        if(outRot) *outRot = rotatedRot;
+        if(outEuler) *outEuler = Matrix3x3ToEulerAngles(rotatedRot);
         
     }else{
         if(outPos) *outPos = transform->position;
         if(outRot) *outRot = transform->rotation;
+        if(outEuler) *outEuler = Matrix3x3ToEulerAngles(transform->rotation);
     }
 }
 
@@ -227,7 +228,7 @@ static int l_GetGlobalTransform (lua_State *L) {
     lua_settop(L, 1);
     EntityID id = luaL_checkinteger (L, 1); //Get the argument
     Vector3 pos, rot;
-    GetGlobalTransform(id, &pos, &rot);
+    GetGlobalTransform(id, &pos, &rot,NULL);
 
     Vector3ToTable(L, pos); //Create return tables and store the values
     Vector3ToTable(L, rot);

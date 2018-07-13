@@ -35,7 +35,7 @@ void DrawTransformGizmos(){
         if(IsValidEntity(entity) && EntityContainsComponent(entity,GetComponentID("Transform"))){
 
             Vector3 position;
-            GetGlobalTransform(entity,&position,NULL);
+            GetGlobalTransform(entity,&position,NULL,NULL);
             Vector3 screenPos = PositionToGameScreenCoords(position);
 
             Vector3 originPos = (Vector3){screenPos.x,screenPos.y,0};

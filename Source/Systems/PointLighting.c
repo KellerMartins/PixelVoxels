@@ -53,7 +53,7 @@ void PointLightingUpdate(){
 
         if(currentLight>=MAX_POINT_LIGHTS) break;
 
-        GetGlobalTransform(entity, &lights[currentLight].position,NULL);
+        GetGlobalTransform(entity, &lights[currentLight].position,NULL,NULL);
         lights[currentLight].color = ((PointLightData*) ECS.Components[PointLightComp][entity].data)->color;
         lights[currentLight].hueShift = ((PointLightData*) ECS.Components[PointLightComp][entity].data)->hueShift;
         lights[currentLight].intensity = ((PointLightData*) ECS.Components[PointLightComp][entity].data)->intensity;

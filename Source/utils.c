@@ -419,7 +419,7 @@ Vector3 Matrix3x3ToEulerAngles(Matrix3x3 m){
 	float c1 = cos(rotation.x);
 	rotation.z = atan2(s1*m.m[2][0] - c1*m.m[1][0], c1*m.m[1][1] - s1*m.m[2][1]);
 
-	return rotation;
+	return ScalarMult(rotation,180.0/PI);
 }
 
 Matrix3x3 EulerAnglesToMatrix3x3(Vector3 rotation){

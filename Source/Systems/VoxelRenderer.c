@@ -97,8 +97,8 @@ void VoxelRendererUpdate(){
             continue;
         }
         Vector3 position;
-        Vector3 rotation;
-        GetGlobalTransform(entity, &position, &rotation);
+        Matrix3x3 rotation;
+        GetGlobalTransform(entity, &position, NULL,&rotation);
 
         if(obj->smallScale){    
             glPointSize(2);
@@ -109,18 +109,6 @@ void VoxelRendererUpdate(){
             glPointSize(cubeTexDimension);
             glEnable(GL_POINT_SPRITE);
         }
-
-        //Define the rotation matrix
-        float sinx = sin(rotation.x * PI_OVER_180);
-        float cosx = cos(rotation.x * PI_OVER_180);
-        float siny = sin(rotation.y * PI_OVER_180);
-        float cosy = cos(rotation.y * PI_OVER_180);
-        float sinz = sin(rotation.z * PI_OVER_180);
-        float cosz = cos(rotation.z * PI_OVER_180);
-
-        GLfloat RotationMatrix[3][3]={{cosy*cosz , cosz*sinx*siny - cosx*sinz , cosx*cosz*siny + sinx*sinz},
-                                     {cosy*sinz  , cosx*cosz + sinx*siny*sinz , cosx*siny*sinz - cosz*sinx},
-                                     {-siny      , cosy*sinx                  , cosx*cosy                 }};
 
 
         glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[0]);
@@ -149,7 +137,7 @@ void VoxelRendererUpdate(){
         glBindBufferBase(GL_UNIFORM_BUFFER, glGetUniformBlockIndex(Rendering.Shaders[usedProgram], "PointLight"), GetPointLightsBuffer());
 
         glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[usedProgram], "projection"), 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix[0]);
-        glUniformMatrix3fv(glGetUniformLocation(Rendering.Shaders[usedProgram], "rotation"), 1, GL_FALSE, (const GLfloat*)&RotationMatrix[0]);
+        glUniformMatrix3fv(glGetUniformLocation(Rendering.Shaders[usedProgram], "rotation"), 1, GL_FALSE, (const GLfloat*)&Transpose(rotation).m[0]);
         glUniform3f(glGetUniformLocation(Rendering.Shaders[usedProgram], "objPos"), position.x, position.y, position.z);
         glUniform3f(glGetUniformLocation(Rendering.Shaders[usedProgram], "centerPos"), obj->center.x, obj->center.y, obj->center.z);
         glUniform3f(glGetUniformLocation(Rendering.Shaders[usedProgram], "camPos"), Rendering.cameraPosition.x, Rendering.cameraPosition.y, Rendering.cameraPosition.z);

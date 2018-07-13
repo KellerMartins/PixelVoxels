@@ -40,8 +40,8 @@ void main(void) {
     float py = rotPos.y;
     float pz = rotPos.z;
 
-    vec4 pixelPos = vec4( ((px + round(objPos.x)) - (py + round(objPos.y)))*2 + round(-camPos.x) + 0.375,
-                          ((px + round(objPos.x)) + (py + round(objPos.y))) + (pz + round(objPos.z) + camPos.z )*2 + round(-camPos.y)+ 0.375,
+    vec4 pixelPos = vec4( ((px + objPos.x) - (py + objPos.y))*2 + round(-camPos.x) + 0.375,
+                          ((px + objPos.x) + (py + objPos.y)) + (pz + objPos.z + camPos.z )*2 + round(-camPos.y)+ 0.375,
                           (pz + objPos.z)-(py+px + objPos.y+objPos.x)/2, 1);
 
     gl_Position = projection * pixelPos;

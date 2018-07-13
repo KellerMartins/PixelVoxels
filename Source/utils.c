@@ -121,6 +121,10 @@ void InsertListStart(List *list, void* e){
 
 void InsertListIndex(List *list, void* e, int index){
 	int i;
+
+	if(index<0) //Support acessing from the end of the list
+		index += list->length;
+
 	//Get the element that will go after the element to be inserted
 	ListCellPointer current = list->first;
 	for(i=0;i<index;i++){
@@ -216,6 +220,10 @@ void RemoveListStart(List *list){
 
 void RemoveListIndex(List *list,int index){
 	int i;
+
+	if(index<0) //Support acessing from the end of the list
+		index += list->length;
+
 	if(index == 0) return RemoveListStart(list);
 	else if(index == list->length-1) return RemoveListEnd(list);
 
@@ -249,6 +257,9 @@ void* GetFirstElement(List list){
 
 void* GetElementAt(List list,int index){
 	int i;
+
+	if(index<0) //Support acessing from the end of the list
+		index += list.length;
 
 	ListCellPointer current = list.first;
 	for(i=0;i<index;i++){
@@ -386,6 +397,55 @@ Vector3 RotatePoint(Vector3 p, float rx, float ry, float rz, float pivotX, float
 double DistanceFromPointToLine2D(Vector3 lP1,Vector3 lP2, Vector3 p){
 	//https://en.wikipedia.org/wiki/Distance_from_a_point_to_a_line
 	return abs((lP2.y - lP1.y)*p.x - (lP2.x - lP1.x)*p.y + lP2.x*lP1.y - lP2.y*lP1.x)/Distance(lP1,lP2);
+}
+
+// ----------- Matrix3x3 type ---------------
+
+
+
+Matrix3x3 Transpose(Matrix3x3 m){
+	Matrix3x3 t;
+
+	t.m[0][1] = m.m[1][0];
+	t.m[1][0] = m.m[0][1];
+
+	t.m[0][2] = m.m[2][0];
+	t.m[2][0] = m.m[0][2];
+
+	t.m[1][2] = m.m[2][1];
+	t.m[2][1] = m.m[1][2];
+
+	return t;
+}
+
+Matrix3x3 Identity(){
+	Matrix3x3 m;
+
+	memset(m.m[0],0,3*sizeof(int));
+	memset(m.m[1],0,3*sizeof(int));
+	memset(m.m[2],0,3*sizeof(int));
+
+	m.m[0][0] = 1;
+	m.m[1][1] = 1;
+	m.m[2][2] = 1;
+
+	return m;
+}
+
+
+//Based on the article: Extracting Euler Angles from a Rotation Matrix - Mike Day, Insomniac Games
+Vector3 Matrix3x3ToEulerAngles(Matrix3x3 m){
+	Vector3 rotation = VECTOR3_ZERO;
+	rotation.x = atan2(m.m[1][2],m.m[2][2]);
+
+	float c2 = sqrt(m.m[0][0]*m.m[0][0] + m.m[0][1]*m.m[0][1] );
+	rotation.y = atan2(-m.m[0][2],c2);
+
+	float s1 = sin(rotation.x);
+	float c1 = cos(rotation.x);
+	rotation.z = atan2(s1*m.m[2][0] - c1*m.m[1][0], c1*m.m[1][1] - s1*m.m[2][1]);
+
+	return rotation;
 }
 
 // ----------- Numeric functions ---------------

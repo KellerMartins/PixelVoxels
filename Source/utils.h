@@ -134,6 +134,7 @@ void InitFPS();
 void ProcessFPS();
 float GetFPS();
 
+
 Vector3 NormalizeVector(Vector3 v);
 Vector3 Add(Vector3 a, Vector3 b);
 Vector3 Subtract(Vector3 a, Vector3 b);
@@ -146,17 +147,28 @@ Vector3 RotatePoint(Vector3 p, float rx, float ry, float rz, float pivotX, float
 
 double DistanceFromPointToLine2D(Vector3 lP1,Vector3 lP2, Vector3 p);
 
+
+typedef struct Matrix3x3{
+	float m[3][3];
+}Matrix3x3;
+
+Matrix3x3 Transpose(Matrix3x3 m);
+Matrix3x3 Identity();
+Vector3 Matrix3x3ToEulerAngles(Matrix3x3 m);
+
 float Lerp(double t, float a, float b);
 int Step(float edge, float x );
 float Smoothstep(float edge0, float edge1, float x);
 int Modulus(int a, int b);
 float fModulus(float a, float b);
 
+
 cJSON *OpenJSON(char path[], char name[]);
 double JSON_GetObjectDouble(cJSON *object,char *string, double defaultValue);
 Vector3 JSON_GetObjectVector3(cJSON *object,char *string, Vector3 defaultValue);
 
 void Vector3ToTable(lua_State *L, Vector3 vector);
+
 
 int StringCompareEqual(char *stringA, char *stringB);
 int StringCompareEqualCaseInsensitive(char *stringA, char *stringB);

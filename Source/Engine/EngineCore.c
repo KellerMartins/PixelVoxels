@@ -72,6 +72,9 @@ void UpdateTime(){
 }
 
 void WaitUntilNextFrame(){
+	if(Screen.maxFPS == 0) return;
+
 	Time.msTime = SDL_GetTicks()-Time.frameTicks;
     while( SDL_GetTicks()-Time.frameTicks <  (1000/Screen.maxFPS) ){ }
 }
+

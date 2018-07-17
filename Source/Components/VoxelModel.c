@@ -1093,7 +1093,7 @@ void CalculateLighting(EntityID entity){
         float edgeVal = (edgeIndx<5? edge:edgeIndx == 5? base:crease);
 
         //Multiply illuminations and convert from (0,256) to (0,1) range
-        double illuminFrac = lightVal * edgeVal * heightVal * ONE_OVER_256;
+        double illuminFrac = lightVal * edgeVal * heightVal * 1.0/256.0;
 
         //Transform the color from a Int16 to each RGB component
         obj->vColors[i] = clamp(color.r * illuminFrac,0,1);

@@ -7,7 +7,11 @@ SRC = $(wildcard Source/*.c) $(wildcard Source/Engine/*.c) $(wildcard Source/Com
 OBJS = $(SRC:%.c=Build/%.o)
 
 #FOLDERS specifies the folders structure needed to put the .o files
+ifeq ($(OS),Windows_NT)
+FOLDERS = Build Build\Source Build\Source\Engine Build\Source\Components Build\Source\Systems Build\Source\Systems\Editor Build\Source\Libs 
+else
 FOLDERS = Build Build/Source Build/Source/Engine Build/Source/Components Build/Source/Systems Build/Source/Systems/Editor Build/Source/Libs
+endif
 
 #COMPILER_FLAGS specifies the additional compilation options we're using
 COMPILER_FLAGS = -Wall -Wno-unused-result -Wno-missing-braces -ffast-math -O3 -g
@@ -16,7 +20,7 @@ COMPILER_FLAGS = -Wall -Wno-unused-result -Wno-missing-braces -ffast-math -O3 -g
 #Both LINKER_FLAGS and MKDIR are defined based on the OS
 ifeq ($(OS),Windows_NT)
 #Include and Library paths needed on Windows
-INCLUDE_PATHS = -I $(PD)\SDL2\SDL2_MinGW_32Bits\include -I $(PD)\SoLoud\include -I $(PD)\glew\include -I $(PD)\lua5.3\include
+INCLUDE_PATHS = -I $(PD) -I $(PD)\SDL2\SDL2_MinGW_32Bits\include -I $(PD)\SoLoud\include -I $(PD)\glew\include -I $(PD)\lua5.3\include
 LIBRARY_PATHS = -L $(PD)\SDL2\SDL2_MinGW_32Bits\lib -L $(PD)\SoLoud\lib -L $(PD)\glew\lib -L $(PD)\lua5.3\lib
 LINKER_FLAGS = -lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lglew32.dll -llua53 -lopengl32 $(PD)\SoLoud\lib\soloud_x86.lib Source/resource.res
 MKDIR = @mkdir
@@ -32,7 +36,7 @@ OBJ_NAME = Space
 
 #Compilation Targets
 all : $(OBJ_NAME) 
-
+	@echo Build finished!
 
 $(OBJ_NAME): $(FOLDERS)/ $(OBJS) 
 	@echo "+ Compiling program \"$@\""

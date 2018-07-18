@@ -14,7 +14,7 @@ unsigned char initializedInput = 0;
 
 int InitInput(){
 	if(initializedInput){
-		printf("Input already initialized!\n");
+		PrintLog(Warning,"Input already initialized!\n");
 		return 0;
 	}
 	
@@ -40,7 +40,7 @@ int InitInput(){
 
 int FreeInput(){
 	if(!initializedInput){
-		printf("FreeInput: Input not initialized!\n");
+		PrintLog(Warning,"FreeInput: Input not initialized!\n");
 		return 0;
 	}
 	
@@ -180,33 +180,33 @@ void InputUpdate(){
 
 int GetKey(SDL_Scancode key){
 	if(!initializedInput){
-		printf("GetKey: Input not initialized!\n");
+		PrintLog(Warning,"GetKey: Input not initialized!\n");
 		return 0;
 	}
 	if(key >= SDL_NUM_SCANCODES){
-		printf("GetKey: Key out of bounds! (%d)\n",key);
+		PrintLog(Warning,"GetKey: Key out of bounds! (%d)\n",key);
 		return 0;
 	}
 	return Input.keyboardCurrent[key];
 }
 int GetKeyDown(SDL_Scancode key){
 	if(!initializedInput){
-		printf("GetKeyDown: Input not initialized!\n");
+		PrintLog(Warning,"GetKeyDown: Input not initialized!\n");
 		return 0;
 	}
 	if(key >= SDL_NUM_SCANCODES){
-		printf("GetKeyDown: Key out of bounds! (%d)\n",key);
+		PrintLog(Warning,"GetKeyDown: Key out of bounds! (%d)\n",key);
 		return 0;
 	}
 	return (Input.keyboardCurrent[key] && !Input.keyboardLast[key]);
 } 
 int GetKeyUp(SDL_Scancode key){
 	if(!initializedInput){
-		printf("GetKeyUp: Input not initialized!\n");
+		PrintLog(Warning,"GetKeyUp: Input not initialized!\n");
 		return 0;
 	}
 	if(key >= SDL_NUM_SCANCODES){
-		printf("GetKeyUp: Key out of bounds! (%d)\n",key);
+		PrintLog(Warning,"GetKeyUp: Key out of bounds! (%d)\n",key);
 		return 0;
 	}
 	return (!Input.keyboardCurrent[key] && Input.keyboardLast[key]);
@@ -215,33 +215,33 @@ int GetKeyUp(SDL_Scancode key){
 
 int GetMouseButton(int button){
 	if(!initializedInput){
-		printf("GetMouseButton: Input not initialized!\n");
+		PrintLog(Warning,"GetMouseButton: Input not initialized!\n");
 		return 0;
 	}
 	if(button < SDL_BUTTON_LEFT || button > SDL_BUTTON_RIGHT){
-		printf("GetMouseButton: Button out of bounds! (%d)\n",button);
+		PrintLog(Warning,"GetMouseButton: Button out of bounds! (%d)\n",button);
 		return 0;
 	}
 	return (Input.mouseButtonCurrent[button-SDL_BUTTON_LEFT]);
 }
 int GetMouseButtonDown(int button){
 	if(!initializedInput){
-		printf("GetMouseButtonDown: Input not initialized!\n");
+		PrintLog(Warning,"GetMouseButtonDown: Input not initialized!\n");
 		return 0;
 	}
 	if(button < SDL_BUTTON_LEFT || button > SDL_BUTTON_RIGHT){
-		printf("GetMouseButtonDown: Button out of bounds! (%d)\n",button);
+		PrintLog(Warning,"GetMouseButtonDown: Button out of bounds! (%d)\n",button);
 		return 0;
 	}
 	return (Input.mouseButtonCurrent[button-SDL_BUTTON_LEFT] && !Input.mouseButtonLast[button-SDL_BUTTON_LEFT]);
 }
 int GetMouseButtonUp(int button){
 	if(!initializedInput){
-		printf("GetMouseButtonUp: Input not initialized!\n");
+		PrintLog(Warning,"GetMouseButtonUp: Input not initialized!\n");
 		return 0;
 	}
 	if(button < SDL_BUTTON_LEFT || button > SDL_BUTTON_RIGHT){
-		printf("GetMouseButtonUp: Button out of bounds! (%d)\n",button);
+		PrintLog(Warning,"GetMouseButtonUp: Button out of bounds! (%d)\n",button);
 		return 0;
 	}
 	return (!Input.mouseButtonCurrent[button-SDL_BUTTON_LEFT] && Input.mouseButtonLast[button-SDL_BUTTON_LEFT]);
@@ -249,7 +249,7 @@ int GetMouseButtonUp(int button){
 
 void GetTextInput(char* outputTextPointer, int maxLength, int currentLength){
 	if(SDL_IsTextInputActive()){
-		printf("GetTextInput: Text input active, stop with StopTextInput() before calling again.\n");
+		PrintLog(Warning,"GetTextInput: Text input active, stop with StopTextInput() before calling again.\n");
 		return;
 	}
 
@@ -262,7 +262,7 @@ void GetTextInput(char* outputTextPointer, int maxLength, int currentLength){
 
 void StopTextInput(){
 	if(!SDL_IsTextInputActive()){
-		printf("StopTextInput: Text input already disabled.\n");
+		PrintLog(Warning,"StopTextInput: Text input already disabled.\n");
 		return;
 	}
     SDL_StopTextInput();

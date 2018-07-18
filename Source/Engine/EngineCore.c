@@ -20,23 +20,23 @@ int InitCore(){
 	srand( (unsigned)time(NULL) );
 
 	if(IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG){
-		printf("SDL Image could not initialize! \n");
+		PrintLog(Error,"SDL Image could not initialize! \n");
         return 0;
 	}
 
 	if(TTF_Init()==-1) {
-    	printf("TTF_Init could not initialize! %s\n", TTF_GetError());
+    	PrintLog(Error,"TTF_Init could not initialize! %s\n", TTF_GetError());
         return 0;
 	}
 
     if(SDL_Init(SDL_INIT_EVERYTHING) < 0)
 	{
-        printf("SDL could not initialize! SLD_Error: %s\n", SDL_GetError());
+        PrintLog(Error,"SDL could not initialize! SLD_Error: %s\n", SDL_GetError());
         return 0;
     }
 	Core.window = SDL_CreateWindow( "Vopix Engine", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,  Screen.windowWidth,  Screen.windowHeight, SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN);
 	if(Core.window == NULL){
-		printf("Window could not be created! SDL_Error %s\n", SDL_GetError() );
+		PrintLog(Error,"Window could not be created! SDL_Error %s\n", SDL_GetError() );
         return 0;
 	}
 

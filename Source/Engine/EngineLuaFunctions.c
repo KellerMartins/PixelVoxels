@@ -106,7 +106,7 @@ static int l_GetEntityComponents(lua_State *L){
     int id = luaL_checkinteger (L, 1);
 
     if(!IsValidEntity(id)){
-		printf("GetEntityComponents(Lua): Entity is not spawned or out of range!(%d)\n",id);
+		PrintLog(Warning,"GetEntityComponents(Lua): Entity is not spawned or out of range!(%d)\n",id);
 		return 0;
 	}
 
@@ -129,7 +129,7 @@ static int l_GetEntityComponents(lua_State *L){
 static int l_EntityContainsComponents(lua_State *L){
     int id = luaL_checkinteger (L, 1);
     if(!lua_istable(L, 2)){
-        printf("EntityContainsComponents(Lua): Second argument must be a array table with components names or indexes!\n");
+        PrintLog(Warning,"EntityContainsComponents(Lua): Second argument must be a array table with components names or indexes!\n");
         luaL_checktype(L, 2, LUA_TTABLE); //Check again to cause script error and stop execution
         return 0;
     }
@@ -255,7 +255,7 @@ static int l_GameExited(lua_State *L){
 static int l_PositionToGameScreenCoords(lua_State *L){
     //Get the position
     if(!lua_istable(L, 1)){
-        printf("PositionToGameScreenCoords(Lua): First argument must be a table with 'x', 'y' and 'z' numbers!\n");
+        PrintLog(Warning,"PositionToGameScreenCoords(Lua): First argument must be a table with 'x', 'y' and 'z' numbers!\n");
         luaL_checktype(L, 1, LUA_TTABLE); //Check again to cause script error and stop execution
         return 0;
     }
@@ -281,7 +281,7 @@ static int l_PositionToGameScreenCoords(lua_State *L){
 
 static int l_MoveCamera(lua_State *L){
     if(!lua_istable(L, 1)){
-        printf("MoveCamera(Lua): First argument must be a table with 'x', 'y' and 'z' numbers!\n");
+        PrintLog(Warning,"MoveCamera(Lua): First argument must be a table with 'x', 'y' and 'z' numbers!\n");
         luaL_checktype(L, 1, LUA_TTABLE); //Check again to cause script error and stop execution
         return 0;
     }

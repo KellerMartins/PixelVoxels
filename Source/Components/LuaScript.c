@@ -86,7 +86,7 @@ void* LuaScriptDecode(cJSON **data){
 
 void SetLuaScript(EntityID entity, char* scriptPath, char* scriptName){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("SetLuaScript: Entity doesn't have a LuaScript component. (%d)\n",entity);
+        PrintLog(Warning,"SetLuaScript: Entity doesn't have a LuaScript component. (%d)\n",entity);
         return;
     }
 
@@ -98,7 +98,7 @@ void SetLuaScript(EntityID entity, char* scriptPath, char* scriptName){
 
 int GetLuaScriptIndex(EntityID entity){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("GetLuaScriptIndex: Entity doesn't have a LuaScript component. (%d)\n",entity);
+        PrintLog(Warning,"GetLuaScriptIndex: Entity doesn't have a LuaScript component. (%d)\n",entity);
         return -1;
     }
 
@@ -107,7 +107,7 @@ int GetLuaScriptIndex(EntityID entity){
 
 void SetLuaScriptIndex(EntityID entity, int index){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("SetLuaScriptIndex: Entity doesn't have a LuaScript component. (%d)\n",entity);
+        PrintLog(Warning,"SetLuaScriptIndex: Entity doesn't have a LuaScript component. (%d)\n",entity);
         return;
     }
 
@@ -116,7 +116,7 @@ void SetLuaScriptIndex(EntityID entity, int index){
 
 char *GetLuaScriptName(EntityID entity){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("GetLuaScriptName: Entity doesn't have a LuaScript component. (%d)\n",entity);
+        PrintLog(Warning,"GetLuaScriptName: Entity doesn't have a LuaScript component. (%d)\n",entity);
         return NULL;
     }
 
@@ -125,7 +125,7 @@ char *GetLuaScriptName(EntityID entity){
 
 char *GetLuaScriptPath(EntityID entity){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("GetLuaScriptPath: Entity doesn't have a LuaScript component. (%d)\n",entity);
+        PrintLog(Warning,"GetLuaScriptPath: Entity doesn't have a LuaScript component. (%d)\n",entity);
         return NULL;
     }
 

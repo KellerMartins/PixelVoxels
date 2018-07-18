@@ -349,7 +349,7 @@ GLuint TextToTexture(char *text, Vector3 color, TTF_Font* font, int *w, int* h){
 	SDL_Surface * sFont = SDL_ConvertSurfaceFormat(originalFont,SDL_PIXELFORMAT_ARGB8888,0);
 
 	SDL_FreeSurface(originalFont);
-    if(!sFont){printf("Failed to render text!\n"); return 0;}
+    if(!sFont){PrintLog(Error,"TextToTexture: Failed to render text!\n"); return 0;}
 
     GLuint texture;
     glGenTextures(1, &texture);
@@ -404,13 +404,13 @@ static int l_LoadFontTTF(lua_State *L){
 
     TTF_Font *newFont = TTF_OpenFont(fullPath,fontSize);
     if(!newFont){
-        printf("LoadFontTTF(Lua): failed to load font! (%s)\n", fullPath);
+        PrintLog(Error,"LoadFontTTF(Lua): failed to load font! (%s)\n", fullPath);
         return 0;
     }
 
     char **newFontNames = realloc(luaFontNames,(GetLength(luaFonts)+2) * sizeof(char*)); //+1 for the new string, and another for the NULL
     if(!newFontNames || !newFont){
-        printf("LoadFontTTF(Lua): failed to realloc the font name vector!\n");
+        PrintLog(Error,"LoadFontTTF(Lua): failed to realloc the font name vector!\n");
         return 0;
     }
 
@@ -431,7 +431,7 @@ static int l_DrawTextColored (lua_State *L) {
 
     //Text color
     if(!lua_istable(L, 2)){
-        printf("DrawTextColored(Lua): Second argument must be a table with 'r', 'g' and 'b' numbers!\n");
+        PrintLog(Warning,"DrawTextColored(Lua): Second argument must be a table with 'r', 'g' and 'b' numbers!\n");
         luaL_checktype(L, 2, LUA_TTABLE); //Check again to cause script error and stop execution
         return 0;
     }
@@ -443,7 +443,7 @@ static int l_DrawTextColored (lua_State *L) {
 
     //Text position
     if(!lua_istable(L, 3)){
-        printf("DrawTextColored(Lua): Third argument must be a table with 'x' and 'y' numbers!\n");
+        PrintLog(Warning,"DrawTextColored(Lua): Third argument must be a table with 'x' and 'y' numbers!\n");
         luaL_checktype(L, 3, LUA_TTABLE); //Check again to cause script error and stop execution
         return 0;
     }
@@ -465,7 +465,7 @@ static int l_DrawRectangle (lua_State *L) {
 
     //Minimum rectangle coordinates
     if(!lua_istable(L, 1)){
-        printf("DrawRectangle(Lua): First argument must be a table with 'x' and 'y' numbers!\n");
+        PrintLog(Warning,"DrawRectangle(Lua): First argument must be a table with 'x' and 'y' numbers!\n");
         luaL_checktype(L, 1, LUA_TTABLE); //Check again to cause script error and stop execution
         return 0;
     }
@@ -475,7 +475,7 @@ static int l_DrawRectangle (lua_State *L) {
 
     //Maximum rectangle coordinates
     if(!lua_istable(L, 2)){
-        printf("DrawRectangle(Lua): Second argument must be a table with 'x' and 'y' numbers!\n");
+        PrintLog(Warning,"DrawRectangle(Lua): Second argument must be a table with 'x' and 'y' numbers!\n");
         luaL_checktype(L, 2, LUA_TTABLE); //Check again to cause script error and stop execution
         return 0;
     }
@@ -485,7 +485,7 @@ static int l_DrawRectangle (lua_State *L) {
 
     //Rectangle colors
     if(!lua_istable(L, 3)){
-        printf("DrawRectangle(Lua): Third argument must be a table with 'r', 'g' and 'b' numbers!\n");
+        PrintLog(Warning,"DrawRectangle(Lua): Third argument must be a table with 'r', 'g' and 'b' numbers!\n");
         luaL_checktype(L, 3, LUA_TTABLE); //Check again to cause script error and stop execution
         return 0;
     }
@@ -503,7 +503,7 @@ static int l_DrawLine (lua_State *L) {
 
     //Line start coordinate
     if(!lua_istable(L, 1)){
-        printf("DrawLine(Lua): First argument must be a table with 'x' and 'y' numbers!\n");
+        PrintLog(Warning,"DrawLine(Lua): First argument must be a table with 'x' and 'y' numbers!\n");
         luaL_checktype(L, 1, LUA_TTABLE); //Check again to cause script error and stop execution
         return 0;
     }
@@ -514,7 +514,7 @@ static int l_DrawLine (lua_State *L) {
 
     //Line end coordinate
     if(!lua_istable(L, 2)){
-        printf("DrawLine(Lua): Second argument must be a table with 'x' and 'y' numbers!\n");
+        PrintLog(Warning,"DrawLine(Lua): Second argument must be a table with 'x' and 'y' numbers!\n");
         luaL_checktype(L, 2, LUA_TTABLE); //Check again to cause script error and stop execution
         return 0;
     }
@@ -526,7 +526,7 @@ static int l_DrawLine (lua_State *L) {
 
     //Rectangle colors
     if(!lua_istable(L, 4)){
-        printf("DrawRectangle(Lua): Third argument must be a table with 'r', 'g' and 'b' numbers!\n");
+        PrintLog(Warning,"DrawRectangle(Lua): Third argument must be a table with 'r', 'g' and 'b' numbers!\n");
         luaL_checktype(L, 4, LUA_TTABLE); //Check again to cause script error and stop execution
         return 0;
     }

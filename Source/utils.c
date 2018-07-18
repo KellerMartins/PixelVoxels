@@ -1,6 +1,6 @@
 #include "utils.h"
 
-//-------- FPS counter functions -------------
+// --------------- FPS counter functions ---------------
 
 #define STORED_FRAMES 10
 Uint32 frameTimes[STORED_FRAMES];
@@ -59,7 +59,7 @@ void ProcessFPS() {
 	framesPerSecond = 1000.f / framesPerSecond;
 }
 
-//-------- Generic List Functions -------------
+// --------------- Generic List Functions ---------------
 
 List InitList(unsigned size){
 	List l;
@@ -307,7 +307,7 @@ unsigned GetLength(List list){
 	return list.length;
 }
 
-//-------- Vector Functions ---------
+// --------------- Vector Functions ---------------
 
 Vector3 NormalizeVector(Vector3 v){
 	float length = 1/sqrt((v.x*v.x)+(v.y*v.y)+(v.z*v.z));
@@ -371,7 +371,7 @@ double DistanceFromPointToLine2D(Vector3 lP1,Vector3 lP2, Vector3 p){
 	return abs((lP2.y - lP1.y)*p.x - (lP2.x - lP1.x)*p.y + lP2.x*lP1.y - lP2.y*lP1.x)/Distance(lP1,lP2);
 }
 
-// ----------- Matrix3x3 type ---------------
+// --------------- Matrix3x3 type ---------------
 
 inline Matrix3x3 Transpose(Matrix3x3 m){
 	Matrix3x3 t;
@@ -461,7 +461,7 @@ Matrix3x3 MultiplyMatrix3x3(Matrix3x3 a, Matrix3x3 b){
 	return r;
 }
 
-// ----------- Numeric functions ---------------
+// --------------- Numeric functions ---------------
 
 float Lerp(double t, float a, float b){
     return (1-t)*a + t*b;
@@ -493,7 +493,7 @@ float fModulus(float a, float b)
     return r < 0 ? r + b : r;
 }
 
-// ----------- cJSON wrapper functions ---------------
+// --------------- cJSON wrapper functions ---------------
 
 cJSON *OpenJSON(char path[], char name[]){
 
@@ -503,7 +503,7 @@ cJSON *OpenJSON(char path[], char name[]){
         strcat(fullPath,"/");
     }
     strcat(fullPath,name);
-    printf("Opening JSON: (%s)\n",fullPath);
+    PrintLog(Info,"Opening JSON: (%s)\n",fullPath);
     FILE* file = fopen(fullPath,"rb");
 
 	if(file){
@@ -523,7 +523,7 @@ cJSON *OpenJSON(char path[], char name[]){
 			const char *error_ptr = cJSON_GetErrorPtr();
 			if (error_ptr != NULL)
 			{
-				fprintf(stderr, "OpenJSON: JSON error: %s\n", error_ptr);
+				PrintLog(Error,"OpenJSON: JSON error: %s\n", error_ptr);
 			}
 			free(jsonString);
 			return NULL;
@@ -534,7 +534,7 @@ cJSON *OpenJSON(char path[], char name[]){
 		}
 		
 	}else{
-		printf("OpenJSON: Failed to open json file!\n");
+		PrintLog(Error,"OpenJSON: Failed to open json file!\n");
 	}
 	return NULL;
 }
@@ -564,7 +564,7 @@ Vector3 JSON_GetObjectVector3(cJSON *object,char *string, Vector3 defaultValue){
 	return v;
 }
 
-// ----------- Lua stack manipulation functions ---------------
+// --------------- Lua stack manipulation functions ---------------
 
 //Creates an table with the xyz entries and populate with the vector values
 void Vector3ToTable(lua_State *L, Vector3 vector){
@@ -583,7 +583,41 @@ void Vector3ToTable(lua_State *L, Vector3 vector){
     lua_rawset(L, -3);           //Store z in table
 }
 
-// ----------- Misc. functions ---------------
+// --------------- Program Log functions ---------------
+
+LogLevel maxLogLevel = Info;
+FILE* logFile = NULL;
+
+void SetLogLevel(LogLevel lvl){
+	maxLogLevel = lvl;
+}
+
+void PrintLog(LogLevel lvl, const char *string, ...){
+	if(lvl > maxLogLevel) return;
+	
+	va_list args;
+	va_start(args, string);
+
+	vprintf(string, args);
+	if(logFile)
+		vfprintf(logFile, string, args);
+
+	va_end(args);
+}
+
+void OpenLogFile(const char *path){
+	if(logFile) CloseLogFile();
+	logFile = fopen(path, "w");
+	if(!logFile){
+		PrintLog(Error, "OpenLogFile: Failed to open log file, file logging disabled\n");
+	}
+}
+
+void CloseLogFile(){
+	if(logFile)	fclose(logFile);
+}
+
+// --------------- Misc. functions ---------------
 
 //Compare if two zero terminated strings are exactly equal
 int StringCompareEqual(char *stringA, char *stringB){

@@ -13,6 +13,8 @@
 #include <GL/glew.h>
 #include <SDL2/SDL_opengl.h>
 
+#include "../utils.h"
+
 typedef struct engineCore{
     SDL_Renderer * renderer;
     SDL_Window* window;	

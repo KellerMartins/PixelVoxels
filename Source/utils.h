@@ -171,6 +171,12 @@ Vector3 JSON_GetObjectVector3(cJSON *object,char *string, Vector3 defaultValue);
 void Vector3ToTable(lua_State *L, Vector3 vector);
 
 
+typedef enum LogLevel {NoLogging, Error, Warning, Info, Debug}LogLevel;
+void SetLogLevel(LogLevel lvl);
+void PrintLog(LogLevel lvl, const char *string, ...);
+void OpenLogFile(const char *path);
+void CloseLogFile();
+
 int StringCompareEqual(char *stringA, char *stringB);
 int StringCompareEqualCaseInsensitive(char *stringA, char *stringB);
 

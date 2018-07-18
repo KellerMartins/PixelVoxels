@@ -209,7 +209,7 @@ void ExecuteShortcuts(){
             EntityID newEntity = ImportEntityPrefab("Assets", "newPrefab.prefab");
             FreeList(&SelectedEntities);
             InsertListEnd(&SelectedEntities,&newEntity);
-            printf("Created entity %d!\n",newEntity);
+            PrintLog(Info,"Created entity %d!\n",newEntity);
             //LoadScene("Assets", "newScene.scene");
         }
 }

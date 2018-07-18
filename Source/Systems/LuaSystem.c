@@ -60,7 +60,7 @@ void LuaSystemUpdate(){
         lua_pushinteger(L, entity);
         status = lua_pcall(L, 1, 0, 0);
         if (status) {
-            fprintf(stderr, "LuaSystem: Failed to run script: %s\n", lua_tostring(L, -1));
+            PrintLog(Error,"LuaSystem: Failed to run script: %s\n", lua_tostring(L, -1));
             ls->status = 0;
         }
     }
@@ -103,14 +103,14 @@ int LoadNewScript(char* scriptPath, char* scriptName, EntityID entity){
 
                 //If the script is error free, just reload and prime run it
                 if(luaL_loadfile(L, fullPath)) {
-                    printf("LoadNewScript: Couldn't reload file (%s): %s\n", scriptName, lua_tostring(L, -1));
+                    PrintLog(Error,"LoadNewScript: Couldn't reload file (%s): %s\n", scriptName, lua_tostring(L, -1));
                     script->status = 0;
                     return i;
                 }
 
                 //Prime run script to get the functions and to define variables
                 if (lua_pcall(L, 0, 1, 0)) {
-                    printf("LoadNewScript: Failed to re-run script (%s): %s\n", scriptName, lua_tostring(L, -1));
+                    PrintLog(Error,"LoadNewScript: Failed to re-run script (%s): %s\n", scriptName, lua_tostring(L, -1));
                     script->status = 0;
                 }
                 return i;
@@ -121,7 +121,7 @@ int LoadNewScript(char* scriptPath, char* scriptName, EntityID entity){
 
     //Load the new script chunk into Lua
     if(luaL_loadfile(L, fullPath)) {
-        printf("LoadNewScript: Couldn't load file (%s): %s\n", scriptName, lua_tostring(L, -1));
+        PrintLog(Error,"LoadNewScript: Couldn't load file (%s): %s\n", scriptName, lua_tostring(L, -1));
         
         //Put the script on the list, but mark as with error
         LuaScript newScript;
@@ -142,7 +142,7 @@ int LoadNewScript(char* scriptPath, char* scriptName, EntityID entity){
     //Prime run script to get the functions and to define variables
     if(ThisSystem->enabled){
         if (lua_pcall(L, 0, 1, 0)) {
-            printf("LoadNewScript: Failed to run script (%s): %s\n", scriptName, lua_tostring(L, -1));
+            PrintLog(Error,"LoadNewScript: Failed to run script (%s): %s\n", scriptName, lua_tostring(L, -1));
 
             //Put the script on the list, but mark as with error
             LuaScript newScript;
@@ -158,7 +158,7 @@ int LoadNewScript(char* scriptPath, char* scriptName, EntityID entity){
 
         //If the value returned is not a string with the name of the loop function, mark as with error
         if(lua_type(L, -1) != LUA_TSTRING){
-            printf("LoadNewScript: Returned value is not a string (%s): %s\n", scriptName, lua_tostring(L, -1));
+            PrintLog(Error,"LoadNewScript: Returned value is not a string (%s): %s\n", scriptName, lua_tostring(L, -1));
 
             //Put the script on the list, but mark as with error
             LuaScript newScript;
@@ -210,7 +210,7 @@ int ReloadScript(LuaScript* ls){
 
     //Reload the script chunk into Lua
     if(luaL_loadfile(L, fullPath)) {
-        printf("ReloadScript: Couldn't load file (%s): %s\n", ls->scriptName, lua_tostring(L, -1));
+        PrintLog(Error,"ReloadScript: Couldn't load file (%s): %s\n", ls->scriptName, lua_tostring(L, -1));
         ls->status = 0;
         return 0;
     }
@@ -219,14 +219,14 @@ int ReloadScript(LuaScript* ls){
     //Prime run script to get the functions and to define variables
     if(ThisSystem->enabled){
         if (lua_pcall(L, 0, 1, 0)) {
-            printf("ReloadScript: Failed to run script (%s): %s\n", ls->scriptName, lua_tostring(L, -1));
+            PrintLog(Error,"ReloadScript: Failed to run script (%s): %s\n", ls->scriptName, lua_tostring(L, -1));
             ls->status = 0;
             return 0;
         }
 
         //If the value returned is not a string with the name of the loop function, ignore this script
         if(lua_type(L, -1) != LUA_TSTRING){
-            printf("ReloadScript: Returned value is not a string (%s): %s\n", ls->scriptName, lua_tostring(L, -1));
+            PrintLog(Error,"ReloadScript: Returned value is not a string (%s): %s\n", ls->scriptName, lua_tostring(L, -1));
             ls->status = 0;
             return 0;
         }

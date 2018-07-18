@@ -23,7 +23,7 @@ void VoxelRendererInit(){
 
     //Normal
     SDL_Surface *cubeimg = IMG_Load("Assets/Game/Textures/cube.png");
-    if(!cubeimg){ printf("Failed to load!\n"); return; }
+    if(!cubeimg){ PrintLog(Error,"VoxelRendererInit: Failed to load normal map texture!\n"); return; }
     glBindTexture(GL_TEXTURE_2D, CubeTex[0]);
     
     int Mode = GL_RGB;

@@ -3,6 +3,7 @@
 
 #include "../Libs/cJSON.h"
 #include "../utils.h"
+#include "EngineCore.h"
 
 //ECS Types
 typedef struct ComponentMask{

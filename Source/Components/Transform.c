@@ -96,7 +96,7 @@ void* TransformDecode(cJSON **data){
 
 Vector3 GetPosition(EntityID entity){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("GetPosition: Entity doesn't have a Transform component. (%d)\n",entity);
+        PrintLog(Warning,"GetPosition: Entity doesn't have a Transform component. (%d)\n",entity);
         return VECTOR3_ZERO;
     }
     Transform *transform = (Transform *)ECS.Components[ThisComponentID()][entity].data;
@@ -105,7 +105,7 @@ Vector3 GetPosition(EntityID entity){
 
 Vector3 GetRotation(EntityID entity){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("GetRotation: Entity doesn't have a Transform component. (%d)\n",entity);
+        PrintLog(Warning,"GetRotation: Entity doesn't have a Transform component. (%d)\n",entity);
         return VECTOR3_ZERO;
     }
     Transform *transform = (Transform *)ECS.Components[ThisComponentID()][entity].data;
@@ -114,7 +114,7 @@ Vector3 GetRotation(EntityID entity){
 
 Matrix3x3 GetRotationMatrix(EntityID entity){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("GetRotationMatrix: Entity doesn't have a Transform component. (%d)\n",entity);
+        PrintLog(Warning,"GetRotationMatrix: Entity doesn't have a Transform component. (%d)\n",entity);
         return Identity();
     }
     Transform *transform = (Transform *)ECS.Components[ThisComponentID()][entity].data;
@@ -123,7 +123,7 @@ Matrix3x3 GetRotationMatrix(EntityID entity){
 
 void SetPosition(EntityID entity, Vector3 pos){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("SetPosition: Entity doesn't have a Transform component. (%d)\n",entity);
+        PrintLog(Warning,"SetPosition: Entity doesn't have a Transform component. (%d)\n",entity);
         return;
     }
     Transform *transform = (Transform *)ECS.Components[ThisComponentID()][entity].data;
@@ -132,7 +132,7 @@ void SetPosition(EntityID entity, Vector3 pos){
 
 void SetRotation(EntityID entity, Vector3 rot){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("SetRotation: Entity doesn't have a Transform component. (%d)\n",entity);
+        PrintLog(Warning,"SetRotation: Entity doesn't have a Transform component. (%d)\n",entity);
         return;
     }
     Transform *transform = (Transform *)ECS.Components[ThisComponentID()][entity].data;
@@ -141,7 +141,7 @@ void SetRotation(EntityID entity, Vector3 rot){
 
 void GetGlobalTransform(EntityID entity, Vector3 *outPos, Vector3 *outEuler, Matrix3x3 *outRot){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("GetGlobalTransform: Entity doesn't have a Transform component. (%d)\n",entity);
+        PrintLog(Warning,"GetGlobalTransform: Entity doesn't have a Transform component. (%d)\n",entity);
         return;
     }
     Transform *transform = (Transform *)ECS.Components[ThisComponentID()][entity].data;
@@ -174,7 +174,7 @@ static int l_SetPosition (lua_State *L) {
     //Get the arguments
     EntityID id = luaL_checkinteger (L, 1);
     if(!lua_istable(L, 2)){
-        printf("SetPosition(Lua): Second argument must be a table with 'x', 'y' and 'z' numbers!\n");
+        PrintLog(Warning,"SetPosition(Lua): Second argument must be a table with 'x', 'y' and 'z' numbers!\n");
         luaL_checktype(L, 2, LUA_TTABLE); //Check again to cause script error and stop execution
         return 0;
     }
@@ -193,7 +193,7 @@ static int l_SetRotation (lua_State *L) {
     //Get the arguments
     EntityID id = luaL_checkinteger (L, 1);
     if(!lua_istable(L, 2)){
-        printf("SetRotation(Lua): Second argument must be a table with 'x', 'y' and 'z' numbers!\n");
+        PrintLog(Warning,"SetRotation(Lua): Second argument must be a table with 'x', 'y' and 'z' numbers!\n");
         luaL_checktype(L, 2, LUA_TTABLE); //Check again to cause script error and stop execution
         return 0;
     }

@@ -37,12 +37,12 @@ void InitEditorUI(){
 
     gizmosFont = TTF_OpenFont("Interface/Fonts/gros/Gros.ttf",16);
 	if(!gizmosFont){
-		printf("Font: Error loading font!");
+		PrintLog(Error,"InitEditorUI: Error loading font!");
 	}
 
     gizmosFontSmall= TTF_OpenFont("Interface/Fonts/coolthre/CoolThre.ttf",12);
     if(!gizmosFontSmall){
-		printf("Font: Error loading small font!");
+		PrintLog(Error,"InitEditorUI: Error loading small font!");
 	}
 
     //Load UI icons
@@ -443,7 +443,7 @@ Vector3 WorldVectorToScreenVector(Vector3 v){
 
 void LoadUITexture(char *path,int index){
     SDL_Surface *img = IMG_Load(path);
-    if(!img){ printf("Failed to load UI Icon! (%s)\n",path); return; }
+    if(!img){ PrintLog(Error,"LoadUITexture: Failed to load UI Icon! (%s)\n",path); return; }
     iconsSize[index] = max(img->w,img->h);
 
     glBindTexture(GL_TEXTURE_2D, iconsTex[index]);

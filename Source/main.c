@@ -30,6 +30,7 @@ void* f(void* p){
 
 int main(int argc, char *argv[]){
 
+	OpenLogFile("gameLog.txt");
 	InitECS(110);
 
 	//Register ECS Components
@@ -40,13 +41,13 @@ int main(int argc, char *argv[]){
 	ComponentID luaScriptComponent = RegisterNewComponent("LuaScript", &LuaScriptConstructor, &LuaScriptDestructor,&LuaScriptCopy, &LuaScriptEncode, &LuaScriptDecode);
 
 	//Register ECS Systems
-	if(RegisterNewSystem("VoxelPhysics",3,CreateComponentMaskByID(3,transformComponent, voxelModelComponent,rigidBodyComponent),(ComponentMask){0},&VoxelPhysicsInit,&VoxelPhysicsUpdate,&VoxelPhysicsFree) < 0) printf("Failed to register VoxelPhysics system!\n");
-	if(RegisterNewSystem("PointLighting",2,CreateComponentMaskByID(2,transformComponent, pointLightComponent),(ComponentMask){0},&PointLightingInit,&PointLightingUpdate,&PointLightingFree) < 0) printf("Failed to register PointLighting system!\n");
-	if(RegisterNewSystem("VoxelRenderer",0,CreateComponentMaskByID(2,transformComponent, voxelModelComponent),(ComponentMask){0},&VoxelRendererInit,&VoxelRendererUpdate,&VoxelRendererFree) < 0) printf("Failed to register VoxelRender system!\n");
-	if(RegisterNewSystem("VoxelModification",4,CreateComponentMaskByID(2,voxelModelComponent, transformComponent),(ComponentMask){0},&VoxelModificationInit,&VoxelModificationUpdate,&VoxelModificationFree) < 0) printf("Failed to register VoxelModification system!\n");
-	if(RegisterNewSystem("Editor",-1,CreateComponentMaskByID(0),(ComponentMask){0},&EditorInit,&EditorUpdate,&EditorFree) < 0) printf("Failed to register Editor system!\n");
-	if(RegisterNewSystem("UIRenderer",-2,CreateComponentMaskByID(0),(ComponentMask){0},&UIRendererInit,&UIRendererUpdate,&UIRendererFree) < 0) printf("Failed to register UIRenderer system!\n");
-	if(RegisterNewSystem("LuaSystem",1,CreateComponentMaskByID(1,luaScriptComponent),(ComponentMask){0},&LuaSystemInit,&LuaSystemUpdate,&LuaSystemFree) < 0) printf("Failed to register LuaSystem system!\n");
+	if(RegisterNewSystem("VoxelPhysics",3,CreateComponentMaskByID(3,transformComponent, voxelModelComponent,rigidBodyComponent),(ComponentMask){0},&VoxelPhysicsInit,&VoxelPhysicsUpdate,&VoxelPhysicsFree) < 0) PrintLog(Error,"Main: Failed to register VoxelPhysics system!\n");
+	if(RegisterNewSystem("PointLighting",2,CreateComponentMaskByID(2,transformComponent, pointLightComponent),(ComponentMask){0},&PointLightingInit,&PointLightingUpdate,&PointLightingFree) < 0) PrintLog(Error,"Main: Failed to register PointLighting system!\n");
+	if(RegisterNewSystem("VoxelRenderer",0,CreateComponentMaskByID(2,transformComponent, voxelModelComponent),(ComponentMask){0},&VoxelRendererInit,&VoxelRendererUpdate,&VoxelRendererFree) < 0) PrintLog(Error,"Main: Failed to register VoxelRender system!\n");
+	if(RegisterNewSystem("VoxelModification",4,CreateComponentMaskByID(2,voxelModelComponent, transformComponent),(ComponentMask){0},&VoxelModificationInit,&VoxelModificationUpdate,&VoxelModificationFree) < 0) PrintLog(Error,"Main: Failed to register VoxelModification system!\n");
+	if(RegisterNewSystem("Editor",-1,CreateComponentMaskByID(0),(ComponentMask){0},&EditorInit,&EditorUpdate,&EditorFree) < 0) PrintLog(Error,"Main: Failed to register Editor system!\n");
+	if(RegisterNewSystem("UIRenderer",-2,CreateComponentMaskByID(0),(ComponentMask){0},&UIRendererInit,&UIRendererUpdate,&UIRendererFree) < 0) PrintLog(Error,"Main: Failed to register UIRenderer system!\n");
+	if(RegisterNewSystem("LuaSystem",1,CreateComponentMaskByID(1,luaScriptComponent),(ComponentMask){0},&LuaSystemInit,&LuaSystemUpdate,&LuaSystemFree) < 0) PrintLog(Error,"Main: Failed to register LuaSystem system!\n");
 	if(!InitEngine()) return 1;
 
 	//Register C functions in Lua
@@ -69,12 +70,12 @@ int main(int argc, char *argv[]){
 	//Initialize font
 	font = TTF_OpenFont("Interface/Fonts/Visitor.ttf",18);
 	if(!font){
-		printf("Font: Error loading font!");
+		PrintLog(Error,"Main: Error loading font!");
 	}
 
 	LoadScene("Assets", "Sea.scene");
 
-	printf("GameLoop Initialized\n");
+	PrintLog(Info,"GameLoop Initialized\n");
 	//Game Loop
 	while (!GameExited())
 	{
@@ -112,7 +113,7 @@ int main(int argc, char *argv[]){
 		if (GetKeyDown(SDL_SCANCODE_R))
 		{
 			if(ReloadAllScripts()){
-				printf("Reloaded Lua scripts without errors!\n");
+				PrintLog(Info,"Reloaded Lua scripts without errors!\n");
 			}
 		}
 		if (GetKeyDown(SDL_SCANCODE_T))
@@ -142,5 +143,6 @@ int main(int argc, char *argv[]){
 	 	TTF_CloseFont(font);
 
 	EndEngine(0);
+	CloseLogFile();
     return 0;
 }

@@ -28,14 +28,14 @@ unsigned char initializedEngine = 0;
 //Return 1 if suceeded, 0 if failed
 int InitEngine(){
 	if(initializedEngine){
-		printf("InitEngine: Engine already initialized\n");
+		PrintLog(Warning,"InitEngine: Engine already initialized\n");
 	}
 	if(!initializedECS){
-		printf("InitEngine: ECS not initialized! Initialize and configure ECS before initializing the engine!\n");
+		PrintLog(Warning,"InitEngine: ECS not initialized! Initialize and configure ECS before initializing the engine!\n");
 		return 0;
 	}
 
-	printf("Initializing Engine...\n");
+	PrintLog(Info,"Initializing Engine...\n");
 
 	InitTime();
 	InitScreen(1280,720,2,60);
@@ -60,7 +60,7 @@ int InitEngine(){
 	SDL_StopTextInput();
 
 	initializedEngine = 1;
-    printf("Engine sucessfully initialized!\n\n");
+    PrintLog(Info,"Engine sucessfully initialized!\n\n");
     return 1;
 }
 
@@ -156,9 +156,9 @@ void EndEngine(int errorOcurred){
 		lua_close(Core.lua);
 
     if(errorOcurred){
-		printf("Engine finished with errors!\n");
+		PrintLog(Warning,"Engine finished with errors!\n");
 		system("pause");
 	}else{
-		printf("Engine finished sucessfully\n");
+		PrintLog(Info,"Engine finished sucessfully\n");
 	}
 }

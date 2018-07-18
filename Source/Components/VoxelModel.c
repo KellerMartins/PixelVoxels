@@ -153,7 +153,7 @@ void* VoxelModelDecode(cJSON **data){
 
 VoxelModel* GetVoxelModelPointer(EntityID entity){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("GetVoxelModelPointer: Entity doesn't have a VoxelModel component. (%d)\n",entity);
+        PrintLog(Warning,"GetVoxelModelPointer: Entity doesn't have a VoxelModel component. (%d)\n",entity);
         return NULL;
     }
     return (VoxelModel *) ECS.Components[ThisComponentID()][entity].data;
@@ -161,7 +161,7 @@ VoxelModel* GetVoxelModelPointer(EntityID entity){
 
 Vector3 GetVoxelModelCenter(EntityID entity){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("GetVoxelModelCenter: Entity doesn't have a VoxelModel component. (%d)\n",entity);
+        PrintLog(Warning,"GetVoxelModelCenter: Entity doesn't have a VoxelModel component. (%d)\n",entity);
         return VECTOR3_ZERO;
     }
     VoxelModel *m = GetVoxelModelPointer(entity);
@@ -170,7 +170,7 @@ Vector3 GetVoxelModelCenter(EntityID entity){
 
 void SetVoxelModelCenter(EntityID entity, Vector3 center){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("SetVoxelModelCenter: Entity doesn't have a VoxelModel component. (%d)\n",entity);
+        PrintLog(Warning,"SetVoxelModelCenter: Entity doesn't have a VoxelModel component. (%d)\n",entity);
         return;
     }
     VoxelModel *m = GetVoxelModelPointer(entity);
@@ -179,7 +179,7 @@ void SetVoxelModelCenter(EntityID entity, Vector3 center){
 
 int IsVoxelModelEnabled(EntityID entity){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("IsVoxelModelEnabled: Entity doesn't have a VoxelModel component. (%d)\n",entity);
+        PrintLog(Warning,"IsVoxelModelEnabled: Entity doesn't have a VoxelModel component. (%d)\n",entity);
         return 0;
     }
     VoxelModel *m = GetVoxelModelPointer(entity);
@@ -188,7 +188,7 @@ int IsVoxelModelEnabled(EntityID entity){
 
 void SetVoxelModelEnabled(EntityID entity, int booleanVal){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("SetVoxelModelEnabled: Entity doesn't have a VoxelModel component. (%d)\n",entity);
+        PrintLog(Warning,"SetVoxelModelEnabled: Entity doesn't have a VoxelModel component. (%d)\n",entity);
         return;
     }
     VoxelModel *m = GetVoxelModelPointer(entity);
@@ -197,7 +197,7 @@ void SetVoxelModelEnabled(EntityID entity, int booleanVal){
 
 int IsVoxelModelSmallScale(EntityID entity){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("IsVoxelModelSmallScale: Entity doesn't have a VoxelModel component. (%d)\n",entity);
+        PrintLog(Warning,"IsVoxelModelSmallScale: Entity doesn't have a VoxelModel component. (%d)\n",entity);
         return 0;
     }
     VoxelModel *m = GetVoxelModelPointer(entity);
@@ -206,7 +206,7 @@ int IsVoxelModelSmallScale(EntityID entity){
 
 void SetVoxelModelSmallScale(EntityID entity, int booleanVal){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("SetVoxelModelSmallScale: Entity doesn't have a VoxelModel component. (%d)\n",entity);
+        PrintLog(Warning,"SetVoxelModelSmallScale: Entity doesn't have a VoxelModel component. (%d)\n",entity);
         return;
     }
     VoxelModel *m = GetVoxelModelPointer(entity);
@@ -227,7 +227,7 @@ typedef struct Voxel
 void LoadVoxelModel(EntityID entity, char modelPath[], char modelName[])
 {
     if(entity<0 || entity>=ECS.maxEntities){
-		printf("LoadVoxelModel: Entity index out of range!(%d)\n",entity);
+		PrintLog(Warning,"LoadVoxelModel: Entity index out of range!(%d)\n",entity);
 		return;
 	}
     
@@ -299,7 +299,7 @@ int IsMultiVoxelModelFile(char modelPath[], char modelName[]){
         }
         free(chunkId);
     }else{
-        printf("IsMultiVoxelModelFile: Magic word is not \"VOX \" (%s)\n",magic);
+        PrintLog(Error,"IsMultiVoxelModelFile: Magic word is not \"VOX \" (%s)\n",magic);
         return 0;
     }
     free(magic);
@@ -445,7 +445,7 @@ void InternalLoadMultiVoxelModelObject(VoxelModel **modelPointer, char modelPath
             free(chunkId);
             free(magic);
             fclose(file);
-            printf("LoadMultiVoxelModelObject: Object with name \"%s\" not found in file!\n",objectName);
+            PrintLog(Error,"LoadMultiVoxelModelObject: Object with name \"%s\" not found in file!\n",objectName);
             return;
         }
 
@@ -487,7 +487,7 @@ void InternalLoadMultiVoxelModelObject(VoxelModel **modelPointer, char modelPath
             free(chunkId);
             free(magic);
             fclose(file);
-            printf("LoadMultiVoxelModelObject: nSHP property not found in file!\n");
+            PrintLog(Error,"LoadMultiVoxelModelObject: nSHP property not found in file!\n");
             return;
         }
 
@@ -582,7 +582,7 @@ void InternalLoadMultiVoxelModelObject(VoxelModel **modelPointer, char modelPath
         }
         free(chunkId);
     }else{
-        printf("LoadMultiVoxelModelObject: Magic word is not \"VOX \" (%s)\n",magic);
+        PrintLog(Error,"LoadMultiVoxelModelObject: Magic word is not \"VOX \" (%s)\n",magic);
         return;
     }
     free(magic);
@@ -597,7 +597,7 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
         strcat(fullPath,"/");
     }
     strcat(fullPath,modelName);
-    printf("\nLoading model: (%s)\n",fullPath);
+    PrintLog(Info,"\nLoading model: (%s)\n",fullPath);
     FILE* file = fopen(fullPath,"rb");
 
     if(file == NULL){
@@ -619,7 +619,7 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
     //Get file length and return to start
     fseek(file, 0L, SEEK_END);
     int fileLength = ftell(file);
-    printf("File length: %d\n",fileLength);
+    PrintLog(Info,"File length: %d\n",fileLength);
     rewind(file);
 
     //Get magic word to see if this is a magicavoxel .vox file
@@ -629,7 +629,7 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
     //Get file version
     int version;
     fread(&version,sizeof(int),1,file);
-    printf("Version: %d\n",version);
+    PrintLog(Info,"Version: %d\n",version);
 
     // All MagicaVoxel .vox file starts with a 'magic' 4 character 'VOX ' identifier
     if (strcmp("VOX ",magic) == 0)
@@ -648,7 +648,7 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
             int childChunks;
             fread(&childChunks,sizeof(int),1,file);
 
-            //printf("Chunk: %s\n",chunkId);
+            //PrintLog(Info,"Chunk: %s\n",chunkId);
 
             //There are only 2 chunks we only care about, and they are SIZE and XYZI
             //SIZE chunk contains the dimensions of the model
@@ -662,10 +662,10 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
                     fread(&obj->dimension[1],sizeof(int),1,file);
                     fread(&obj->dimension[2],sizeof(int),1,file);
 
-                    printf("Dimension: %d %d %d\n",obj->dimension[0],obj->dimension[1],obj->dimension[2]);
+                    PrintLog(Info,"Dimension: %d %d %d\n",obj->dimension[0],obj->dimension[1],obj->dimension[2]);
 
                 }else{
-                    printf("Multiple voxel models found on this object, ignoring new size\n");
+                    PrintLog(Warning,"InternalLoadVoxelModel: Multiple voxel models found on this object, ignoring new size\n");
                     fseek(file,chunkSize,SEEK_CUR);
                 }
             }
@@ -679,13 +679,13 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
 
                     // XYZI contains n voxels
                     fread(&numVoxels,sizeof(int),1,file);
-                    printf("Number of Voxels: %d\n",numVoxels);
+                    PrintLog(Info,"Number of Voxels: %d\n",numVoxels);
                     
                     voxelData = calloc(numVoxels,sizeof(Voxel));
 
                     //Free strings and return empty Object if it fails to allocate memory
                     if(!voxelData){
-                        printf("Failed to allocate voxel array!\n");
+                        PrintLog(Error,"InternalLoadVoxelModel: Failed to allocate voxel array!\n");
                         free(magic);
                         free(chunkId);
                         return;
@@ -700,7 +700,7 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
                     }
 
                 }else{
-                    printf("Multiple voxel models found on this object, ignoring new model\n");
+                    PrintLog(Warning,"InternalLoadVoxelModel: Multiple voxel models found on this object, ignoring new model\n");
                     fseek(file,chunkSize,SEEK_CUR);
                 }
             }
@@ -729,7 +729,7 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
         }
         free(chunkId);
     }else{
-        printf("Magic word is not 'VOX ', but '%s'\n",magic);
+        PrintLog(Error,"InternalLoadVoxelModel: Magic word is not 'VOX ', but '%s'\n",magic);
         return;
     }
     free(magic);
@@ -758,7 +758,7 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
 
     fclose(file);
 
-    printf(">DONE!\n\n");
+    PrintLog(Info,">DONE!\n\n");
 }
 
 //Calculate the surface voxels to be shown and put into a GLfloat vertex array inside the component to be rendered
@@ -1121,7 +1121,7 @@ typedef struct MagicaProperties{
 void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
 {
     if(!IsMultiVoxelModelFile(modelPath, modelName)){
-        printf("LoadMultiVoxelModel: File doesn't contain more than one object, use LoadVoxelModel\n");
+        PrintLog(Warning,"LoadMultiVoxelModel: File doesn't contain more than one object, use LoadVoxelModel\n");
         return;
     }
 
@@ -1148,7 +1148,7 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
     //Get file length and return to start
     fseek(file, 0L, SEEK_END);
     int fileLength = ftell(file);
-    printf("File length: %d\n",fileLength);
+    PrintLog(Info,"File length: %d\n",fileLength);
     rewind(file);
 
     //Get magic word to see if this is a magicavoxel .vox file
@@ -1158,7 +1158,7 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
     //Get file version
     int version;
     fread(&version,sizeof(int),1,file);
-    printf("Version: %d\n",version);
+    PrintLog(Info,"Version: %d\n",version);
 
     // All MagicaVoxel .vox file starts with a 'magic' 4 character 'VOX ' identifier
     if (strcmp("VOX ",magic) == 0)
@@ -1177,7 +1177,7 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
             int childChunks;
             fread(&childChunks,sizeof(int),1,file);
 
-            //printf("Chunk: %s\n",chunkId);
+            //PrintLog(Info,"Chunk: %s\n",chunkId);
 
             //There are 5 chunks we only care about: SIZE, XYZI, nTRN, nSHP and nGRP
             //SIZE chunk contains the dimensions of the model
@@ -1198,7 +1198,7 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
                     free(newModel);
 
                 }else{
-                    printf("LoadMultiVoxelModel: An error loading has ocurred!\n");
+                    PrintLog(Error,"LoadMultiVoxelModel: An error loading has ocurred!\n");
                     fclose(file);
                     return;
                 }
@@ -1442,7 +1442,7 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
         free(chunkId);
     }else{
         //Magic word is not VOX
-        printf("LoadMultiVoxelModel: Magic word is not 'VOX ', but '%s'\n",magic);
+        PrintLog(Error,"LoadMultiVoxelModel: Magic word is not 'VOX ', but '%s'\n",magic);
     }
     free(magic);
     fclose(file);
@@ -1458,7 +1458,7 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
         switch (current->Type){
             case nTRN:
             //Set object transform
-            //printf("\n Type:%s Data: %d %d %d %d %d %d %d Name: [%s] Hidden: %d Rot: %d Pos: %.1f %.1f %.1f \n",current->Type? (current->Type == 2? "nGRP":"nSHP"):"nTRN", current->data[0], current->data[1], current->data[2], current->data[3], current->data[4], current->data[5], current->data[6], current->name? current->name:"", current->hidden,current->rotation, current->position.x, current->position.y, current->position.z);
+            //PrintLog(Info,"\n Type:%s Data: %d %d %d %d %d %d %d Name: [%s] Hidden: %d Rot: %d Pos: %.1f %.1f %.1f \n",current->Type? (current->Type == 2? "nGRP":"nSHP"):"nTRN", current->data[0], current->data[1], current->data[2], current->data[3], current->data[4], current->data[5], current->data[6], current->name? current->name:"", current->hidden,current->rotation, current->position.x, current->position.y, current->position.z);
 
             enab = !current->hidden;
             pos = current->position;
@@ -1621,12 +1621,12 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
             break;
             case nSHP:
             //This data is used in nTRN type properties to get the shape in the list
-           // printf("\n Type:%s Data: %d %d %d %d %d\n",current->Type? (current->Type == 2? "nGRP":"nSHP"):"nTRN", current->data[0], current->data[1], current->data[2], current->data[3], current->data[4]);
+           // PrintLog(Info,"\n Type:%s Data: %d %d %d %d %d\n",current->Type? (current->Type == 2? "nGRP":"nSHP"):"nTRN", current->data[0], current->data[1], current->data[2], current->data[3], current->data[4]);
 
             break;
             case nGRP:
             //This group data is ignored, as it is not supported
-            //printf("\n Type:%s\n", current->Type? (current->Type == 2? "nGRP":"nSHP"):"nTRN");  
+            //PrintLog(Info,"\n Type:%s\n", current->Type? (current->Type == 2? "nGRP":"nSHP"):"nTRN");  
             break;
         }
         current = current->next;
@@ -1649,7 +1649,7 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
     }
     FreeList(&modelsList);
 
-    printf(">DONE!\n\n");
+    PrintLog(Info,">DONE!\n\n");
 }
 
 //Lua interface functions
@@ -1697,7 +1697,7 @@ static int l_SetVoxelModelCenter (lua_State *L) {
     //Get the arguments
     EntityID id = luaL_checkinteger (L, 1);
     if(!lua_istable(L, 2)){
-        printf("SetVoxelModelCenter(Lua): Second argument must be a table with 'x', 'y' and 'z' numbers!\n");
+        PrintLog(Warning,"SetVoxelModelCenter(Lua): Second argument must be a table with 'x', 'y' and 'z' numbers!\n");
         luaL_checktype(L, 2, LUA_TTABLE); //Check again to cause script error and stop execution
         return 0;
     }

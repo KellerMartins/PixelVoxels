@@ -47,7 +47,6 @@ void* RigidBodyCopy(void* data){
 
 cJSON* RigidBodyEncode(void** data, cJSON* currentData){
     if(!data) return NULL;
-    printf("RB\n");
     RigidBody *rb = *data;
     
     
@@ -141,7 +140,7 @@ void* RigidBodyDecode(cJSON **data){
 
 Vector3 GetVelocity(EntityID entity){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("GetVelocity: Entity doesn't have a RigidBody component. (%d)\n",entity);
+        PrintLog(Warning,"GetVelocity: Entity doesn't have a RigidBody component. (%d)\n",entity);
         return VECTOR3_ZERO;
     }
     RigidBody *rb = (RigidBody *)ECS.Components[ThisComponentID()][entity].data;
@@ -150,7 +149,7 @@ Vector3 GetVelocity(EntityID entity){
 
 Vector3 GetAcceleration(EntityID entity){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("GetAcceleration: Entity doesn't have a RigidBody component. (%d)\n",entity);
+        PrintLog(Warning,"GetAcceleration: Entity doesn't have a RigidBody component. (%d)\n",entity);
         return VECTOR3_ZERO;
     }
     RigidBody *rb = (RigidBody *)ECS.Components[ThisComponentID()][entity].data;
@@ -159,7 +158,7 @@ Vector3 GetAcceleration(EntityID entity){
 
 float GetMass(EntityID entity){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("GetMass: Entity doesn't have a RigidBody component. (%d)\n",entity);
+        PrintLog(Warning,"GetMass: Entity doesn't have a RigidBody component. (%d)\n",entity);
         return 1;
     }
     RigidBody *rb = (RigidBody *)ECS.Components[ThisComponentID()][entity].data;
@@ -168,7 +167,7 @@ float GetMass(EntityID entity){
 
 float GetBounciness(EntityID entity){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("GetBounciness: Entity doesn't have a RigidBody component. (%d)\n",entity);
+        PrintLog(Warning,"GetBounciness: Entity doesn't have a RigidBody component. (%d)\n",entity);
         return 1;
     }
     RigidBody *rb = (RigidBody *)ECS.Components[ThisComponentID()][entity].data;
@@ -177,7 +176,7 @@ float GetBounciness(EntityID entity){
 
 void SetVelocity(EntityID entity, Vector3 vel){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("SetVelocity: Entity doesn't have a RigidBody component. (%d)\n",entity);
+        PrintLog(Warning,"SetVelocity: Entity doesn't have a RigidBody component. (%d)\n",entity);
         return;
     }
     RigidBody *rb = (RigidBody *)ECS.Components[ThisComponentID()][entity].data;
@@ -186,7 +185,7 @@ void SetVelocity(EntityID entity, Vector3 vel){
 
 void SetAcceleration(EntityID entity, Vector3 acc){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("SetAcceleration: Entity doesn't have a RigidBody component. (%d)\n",entity);
+        PrintLog(Warning,"SetAcceleration: Entity doesn't have a RigidBody component. (%d)\n",entity);
         return;
     }
     RigidBody *rb = (RigidBody *)ECS.Components[ThisComponentID()][entity].data;
@@ -195,7 +194,7 @@ void SetAcceleration(EntityID entity, Vector3 acc){
 
 void SetMass(EntityID entity, float mass){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("SetMass: Entity doesn't have a RigidBody component. (%d)\n",entity);
+        PrintLog(Warning,"SetMass: Entity doesn't have a RigidBody component. (%d)\n",entity);
         return;
     }
     RigidBody *rb = (RigidBody *)ECS.Components[ThisComponentID()][entity].data;
@@ -204,7 +203,7 @@ void SetMass(EntityID entity, float mass){
 
 void SetBounciness(EntityID entity, float bounciness){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("SetBounciness: Entity doesn't have a RigidBody component. (%d)\n",entity);
+        PrintLog(Warning,"SetBounciness: Entity doesn't have a RigidBody component. (%d)\n",entity);
         return;
     }
     RigidBody *rb = (RigidBody *)ECS.Components[ThisComponentID()][entity].data;
@@ -213,7 +212,7 @@ void SetBounciness(EntityID entity, float bounciness){
 
 int UsesGravity(EntityID entity){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("UsesGravity: Entity doesn't have a RigidBody component. (%d)\n",entity);
+        PrintLog(Warning,"UsesGravity: Entity doesn't have a RigidBody component. (%d)\n",entity);
         return 0;
     }
     RigidBody *rb = (RigidBody *)ECS.Components[ThisComponentID()][entity].data;
@@ -222,7 +221,7 @@ int UsesGravity(EntityID entity){
 
 void SetUseGravity(EntityID entity,unsigned booleanVal){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("SetUseGravity: Entity doesn't have a RigidBody component. (%d)\n",entity);
+        PrintLog(Warning,"SetUseGravity: Entity doesn't have a RigidBody component. (%d)\n",entity);
         return;
     }
     RigidBody *rb = (RigidBody *)ECS.Components[ThisComponentID()][entity].data;
@@ -231,7 +230,7 @@ void SetUseGravity(EntityID entity,unsigned booleanVal){
 
 int IsStaticRigidBody(EntityID entity){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("IsStaticRigidBody: Entity doesn't have a RigidBody component. (%d)\n",entity);
+        PrintLog(Warning,"IsStaticRigidBody: Entity doesn't have a RigidBody component. (%d)\n",entity);
         return 0;
     }
     RigidBody *rb = (RigidBody *)ECS.Components[ThisComponentID()][entity].data;
@@ -240,7 +239,7 @@ int IsStaticRigidBody(EntityID entity){
 
 void SetStaticRigidBody(EntityID entity,unsigned booleanVal){
     if(!EntityContainsComponent(entity, ThisComponentID())){
-        printf("SetStaticRigidBody: Entity doesn't have a RigidBody component. (%d)\n",entity);
+        PrintLog(Warning,"SetStaticRigidBody: Entity doesn't have a RigidBody component. (%d)\n",entity);
         return;
     }
     RigidBody *rb = (RigidBody *)ECS.Components[ThisComponentID()][entity].data;
@@ -303,7 +302,7 @@ static int l_SetVelocity (lua_State *L) {
     //Get the arguments
     EntityID id = luaL_checkinteger (L, 1);
     if(!lua_istable(L, 2)){
-        printf("SetVelocity(Lua): Second argument must be a table with 'x', 'y' and 'z' numbers!\n");
+        PrintLog(Warning,"SetVelocity(Lua): Second argument must be a table with 'x', 'y' and 'z' numbers!\n");
         luaL_checktype(L, 2, LUA_TTABLE); //Check again to cause script error and stop execution
         return 0;
     }
@@ -322,7 +321,7 @@ static int l_SetAcceleration (lua_State *L) {
     //Get the arguments
     EntityID id = luaL_checkinteger (L, 1);
     if(!lua_istable(L, 2)){
-        printf("SetAcceleration(Lua): Second argument must be a table with 'x', 'y' and 'z' numbers!\n");
+        PrintLog(Warning,"SetAcceleration(Lua): Second argument must be a table with 'x', 'y' and 'z' numbers!\n");
         luaL_checktype(L, 2, LUA_TTABLE); //Check again to cause script error and stop execution
         return 0;
     }

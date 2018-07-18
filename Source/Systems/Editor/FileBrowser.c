@@ -322,7 +322,7 @@ void DrawFileBrowser(){
             if(PointButton((Vector3){x,y,0},10,3, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){scrollbarOverColor.x, scrollbarOverColor.y, scrollbarOverColor.z}) == 1){
                 char *path = calloc(_TINYDIR_PATH_MAX,sizeof(char));
                 strncpy(path,file.path,_TINYDIR_PATH_MAX);
-                printf("(%s)\n", path);
+                PrintLog(Info,"(%s)\n", path);
                 OpenFileBrowser(mode,path,fileBrowser.onConfirmFunction);
                 memcpy(fileBrowser.filePath,path,_TINYDIR_PATH_MAX*sizeof(char));
 

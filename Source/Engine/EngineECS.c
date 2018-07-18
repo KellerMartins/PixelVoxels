@@ -16,11 +16,11 @@ unsigned char initializedECS = 0;
 //Needs to be called before registering any system 
 int InitECS(unsigned max_entities){
 	if(initializedECS){
-		printf("ECS already initialized!\n");
+		PrintLog(Warning,"ECS already initialized!\n");
 		return 0;
 	}
 	if(initializedEngine){
-		printf("Engine already initialized! Initialize and configure ECS before initializing the engine!\n");
+		PrintLog(Warning,"Engine already initialized! Initialize and configure ECS before initializing the engine!\n");
 		return 0;
 	}
 
@@ -71,7 +71,7 @@ int RegisterNewComponent(char componentName[25],void (*constructorFunc)(void** d
 
 int RegisterNewSystem(char systemName[25], int priority, ComponentMask required, ComponentMask excluded, void (*initFunc)(), void (*updateFunc)(), void (*freeFunc)()){
 	if(!initializedECS){
-		printf("ECS not initialized! Initialize ECS before registering the systems\n");
+		PrintLog(Warning,"ECS not initialized! Initialize ECS before registering the systems\n");
 		return -1;
 	}
 	System newSystem = (System){.priority = priority, .enabled = 1, .required = required, .excluded = excluded, .systemInit = initFunc, .systemUpdate = updateFunc, .systemFree = freeFunc};
@@ -100,7 +100,7 @@ ComponentID GetComponentID(char componentName[25]){
 	for(c=0; c<ECS.numberOfComponents; c++){
 		if(StringCompareEqual(ECS.ComponentTypes[c].name, componentName)) return c;
 	}
-	printf("GetComponentID: Component named %s not found\n",componentName);
+	PrintLog(Warning,"GetComponentID: Component named %s not found\n",componentName);
 	return -1;
 }
 
@@ -114,7 +114,7 @@ ComponentMask CreateComponentMaskByName(int numComp, ...){
 	for(i=0;i<numComp;i++){
 		int index = GetComponentID(va_arg(args,char *));
 		if(index<0 || index>31){
-			printf("CreateComponentMaskByName: Component index out of range! (%d)\n",index);
+			PrintLog(Warning,"CreateComponentMaskByName: Component index out of range! (%d)\n",index);
 			continue;
 		}
 
@@ -135,7 +135,7 @@ ComponentMask CreateComponentMaskByID(int numComp, ...){
 	for(i=0;i<numComp;i++){
 		int index = va_arg(args,int);
 		if(index<0 || index>31){
-			printf("CreateComponentMaskByID: Component index out of range! (%d)\n",index);
+			PrintLog(Warning,"CreateComponentMaskByID: Component index out of range! (%d)\n",index);
 			continue;
 		}
 
@@ -164,13 +164,13 @@ EntityID CreateEntity(){
 		RemoveListStart(&ECS.AvaliableEntitiesIndexes);
 		return index;
 	}
-	printf("CreateEntity: No entity avaliable to spawn! (Max %ud)\n",ECS.maxEntities);
+	PrintLog(Error,"CreateEntity: No entity avaliable to spawn! (Max %ud)\n",ECS.maxEntities);
 	return -1;
 }
 
 void DestroyEntity(EntityID entity){
 	if(!IsValidEntity(entity)){
-		printf("DestroyEntity: Entity is not spawned or out of range!(%d)\n",entity);
+		PrintLog(Warning,"DestroyEntity: Entity is not spawned or out of range!(%d)\n",entity);
 		return;
 	}
 
@@ -214,14 +214,14 @@ int EntityIsPrefab(EntityID entity){
 
 char *GetPrefabPath(EntityID entity){
 	if(!EntityIsPrefab(entity)){
-		printf("GetPrefabPath: Entity is not a prefab! (%d)", entity);
+		PrintLog(Warning,"GetPrefabPath: Entity is not a prefab! (%d)", entity);
 		return NULL;
 	}
 	return ECS.Entities[entity].prefabPath;
 }
 char *GetPrefabName(EntityID entity){
 	if(!EntityIsPrefab(entity)){
-		printf("GetPrefabName: Entity is not a prefab! (%d)", entity);
+		PrintLog(Warning,"GetPrefabName: Entity is not a prefab! (%d)", entity);
 		return NULL;
 	}
 	return ECS.Entities[entity].prefabName;
@@ -229,15 +229,15 @@ char *GetPrefabName(EntityID entity){
 
 void AddComponentToEntity(ComponentID component, EntityID entity){
 	if(!IsValidEntity(entity)){
-		printf("AddComponentToEntity: Entity is not spawned or out of range!(%d)\n",entity);
+		PrintLog(Warning,"AddComponentToEntity: Entity is not spawned or out of range!(%d)\n",entity);
 		return;
 	}
 	if(component<0 || component>=ECS.numberOfComponents){
-		printf("AddComponentToEntity: Component index out of range!(%d)\n",component);
+		PrintLog(Warning,"AddComponentToEntity: Component index out of range!(%d)\n",component);
 		return;
 	}
 	if(EntityContainsMask(entity, CreateComponentMaskByID(1,component))){
-		printf("AddComponentToEntity: An entity can only have one of each component type! (E:%d C:%d)\n",entity, component);
+		PrintLog(Warning,"AddComponentToEntity: An entity can only have one of each component type! (E:%d C:%d)\n",entity, component);
 		return;
 	}
 	
@@ -250,15 +250,15 @@ void AddComponentToEntity(ComponentID component, EntityID entity){
 
 void RemoveComponentFromEntity(ComponentID component, EntityID entity){
 	if(!IsValidEntity(entity)){
-		printf("RemoveComponentToEntity: Entity is not spawned or out of range!(%d)\n",entity);
+		PrintLog(Warning,"RemoveComponentToEntity: Entity is not spawned or out of range!(%d)\n",entity);
 		return;
 	}
 	if(component<0 || component>=ECS.numberOfComponents){
-		printf("RemoveComponentToEntity: Component index out of range!(%d)\n",component);
+		PrintLog(Warning,"RemoveComponentToEntity: Component index out of range!(%d)\n",component);
 		return;
 	}
 	if(!EntityContainsMask(entity, CreateComponentMaskByID(1,component))){
-		printf("AddComponentToEntity: This entity doesnt have this component! (E:%d C:%d)\n",entity, component);
+		PrintLog(Warning,"AddComponentToEntity: This entity doesnt have this component! (E:%d C:%d)\n",entity, component);
 		return;
 	}
 	ECS.Entities[entity].mask.mask &= ~(1 << component);
@@ -269,7 +269,7 @@ void RemoveComponentFromEntity(ComponentID component, EntityID entity){
 
 EntityID DuplicateEntity(EntityID entity){
 	if(!IsValidEntity(entity)){
-		printf("DuplicateEntity: Entity is not spawned or out of range!(%d)\n",entity);
+		PrintLog(Warning,"DuplicateEntity: Entity is not spawned or out of range!(%d)\n",entity);
 		return -1;
 	}
 
@@ -307,7 +307,7 @@ EntityID DuplicateEntity(EntityID entity){
 
 ComponentMask GetEntityComponents(EntityID entity){
 	if(!IsValidEntity(entity)){
-		printf("GetEntityComponents: Entity is not spawned or out of range!(%d)\n",entity);
+		PrintLog(Warning,"GetEntityComponents: Entity is not spawned or out of range!(%d)\n",entity);
 		return (ComponentMask){0};
 	}
 	return ECS.Entities[entity].mask;
@@ -324,11 +324,11 @@ int EntityContainsMask(EntityID entity, ComponentMask mask){
 
 int EntityContainsComponent(EntityID entity, ComponentID component){
 	if(!IsValidEntity(entity)){
-		printf("EntityContainsComponent: Entity is not spawned or out of range!(%d)\n",entity);
+		PrintLog(Warning,"EntityContainsComponent: Entity is not spawned or out of range!(%d)\n",entity);
 		return 0;
 	}
 	if(component<0 || component>ECS.numberOfComponents){
-		printf("EntityContainsComponent: Component index out of range!(%d)\n",component);
+		PrintLog(Warning,"EntityContainsComponent: Component index out of range!(%d)\n",component);
 		return 0;
 	}
 	unsigned long compMask = 1<<component;
@@ -337,7 +337,7 @@ int EntityContainsComponent(EntityID entity, ComponentID component){
 
 int MaskContainsComponent(ComponentMask mask, ComponentID component){
 	if(component<0 || component>ECS.numberOfComponents){
-		printf("MaskContainsComponent: Component index out of range!(%d)\n",component);
+		PrintLog(Warning,"MaskContainsComponent: Component index out of range!(%d)\n",component);
 		return 0;
 	}
 
@@ -355,7 +355,7 @@ ComponentMask IntersectComponentMasks(ComponentMask mask1, ComponentMask mask2){
 //----------------- Parenting functions -----------------
 int EntityIsParent(EntityID entity){
     if(!IsValidEntity(entity)){
-        printf("EntityIsParent: Entity is not spawned or out of range!(%d)\n",entity);
+        PrintLog(Warning,"EntityIsParent: Entity is not spawned or out of range!(%d)\n",entity);
         return 0;
     }
     return ECS.Entities[entity].isParent;
@@ -363,7 +363,7 @@ int EntityIsParent(EntityID entity){
 
 int EntityIsChild(EntityID entity){
     if(!IsValidEntity(entity)){
-        printf("EntityIsChild: Entity is not spawned or out of range!(%d)\n",entity);
+        PrintLog(Warning,"EntityIsChild: Entity is not spawned or out of range!(%d)\n",entity);
         return 0;
     }
     return ECS.Entities[entity].isChild;
@@ -371,15 +371,15 @@ int EntityIsChild(EntityID entity){
 
 void SetEntityParent(EntityID child, EntityID parent){
     if(child == parent){
-        printf("SetEntityParent: Child and parent can't be the same! (%d) (%d)\n",child,parent);
+        PrintLog(Warning,"SetEntityParent: Child and parent can't be the same! (%d) (%d)\n",child,parent);
         return;
     }
 	if(!IsValidEntity(child)){
-        printf("EntityIsParent: Child is not spawned or out of range!(%d)\n",child);
+        PrintLog(Warning,"EntityIsParent: Child is not spawned or out of range!(%d)\n",child);
         return;
     }
 	if(!IsValidEntity(parent)){
-        printf("EntityIsParent: Parent is not spawned or out of range!(%d)\n",parent);
+        PrintLog(Warning,"EntityIsParent: Parent is not spawned or out of range!(%d)\n",parent);
         return;
     }
 
@@ -397,7 +397,7 @@ void SetEntityParent(EntityID child, EntityID parent){
 
 EntityID GetEntityParent(EntityID entity){
 	if(!IsValidEntity(entity)){
-        printf("GetEntityParent: Entity is not spawned or out of range!(%d)\n",entity);
+        PrintLog(Warning,"GetEntityParent: Entity is not spawned or out of range!(%d)\n",entity);
         return 0;
     }
     return ECS.Entities[entity].isChild? ECS.Entities[entity].parent:-1;
@@ -405,7 +405,7 @@ EntityID GetEntityParent(EntityID entity){
 
 List* GetChildsList(EntityID parent){
 	if(!IsValidEntity(parent)){
-        printf("GetChildsList: Parent is not spawned or out of range!(%d)\n",parent);
+        PrintLog(Warning,"GetChildsList: Parent is not spawned or out of range!(%d)\n",parent);
         return NULL;
     }
     return ECS.Entities[parent].isParent? &ECS.Entities[parent].childs : NULL;
@@ -413,11 +413,11 @@ List* GetChildsList(EntityID parent){
 
 int UnsetParent(EntityID child){
 	if(!IsValidEntity(child)){
-        printf("UnsetParent: Child is not spawned or out of range!(%d)\n",child);
+        PrintLog(Warning,"UnsetParent: Child is not spawned or out of range!(%d)\n",child);
         return 0;
     }
     if(!EntityIsChild(child)){
-        printf("UnsetParent: Entity is not anyone's child. (%d)\n",child);
+        PrintLog(Warning,"UnsetParent: Entity is not anyone's child. (%d)\n",child);
         return 0;
     }
 
@@ -447,7 +447,7 @@ int UnsetParent(EntityID child){
     }
 
     //Return zero if can't find the child's index in the list (Indicative of implementation error)
-    printf("RemoveChild: Child is not an parent's child (Shouldn't happen). (P:%d  C:%d)\n",parentID,child);
+    PrintLog(Error,"RemoveChild: Child is not an parent's child (Shouldn't happen). (P:%d  C:%d)\n",parentID,child);
     return 0;
 }
 
@@ -570,7 +570,7 @@ int ExportEntityPrefab(EntityID entity, char path[], char name[]){
 		strcat(fullPath,".prefab");
 	}
 
-    printf("Saving prefab: (%s)\n",fullPath);
+    PrintLog(Info,"Saving prefab: (%s)\n",fullPath);
     FILE* file = fopen(fullPath,"w");
 
 	if(file){
@@ -588,7 +588,7 @@ int ExportEntityPrefab(EntityID entity, char path[], char name[]){
 
 		return 1;
 	}else{
-		printf("ExportEntityPrefab: Failed to create/open json file!\n");
+		PrintLog(Error,"ExportEntityPrefab: Failed to create/open json file!\n");
 		return 0;
 	}
 	
@@ -632,7 +632,7 @@ int ExportScene(char path[], char name[]){
     }
     strcat(fullPath,name);
 	strcat(fullPath,".scene");
-    printf("Saving scene: (%s)\n",fullPath);
+    PrintLog(Info,"Saving scene: (%s)\n",fullPath);
     FILE* file = fopen(fullPath,"w");
 
 	if(file){
@@ -642,7 +642,7 @@ int ExportScene(char path[], char name[]){
 		fclose(file);
 		return 1;
 	}else{
-		printf("ExportScene: Failed to create/open json file!\n");
+		PrintLog(Error,"ExportScene: Failed to create/open json file!\n");
 		return 0;
 	}
 	

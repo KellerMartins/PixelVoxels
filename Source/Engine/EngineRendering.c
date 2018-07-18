@@ -28,7 +28,7 @@ int InitRenderer(){
 	Core.glContext = SDL_GL_CreateContext(Core.window);
     if (Core.glContext == NULL)
     {
-        printf("Cannot create OpenGL context with error: %s\n",SDL_GetError());
+        PrintLog(Error,"InitRenderer: Cannot create OpenGL context with error: %s\n",SDL_GetError());
         return 0;
     }
 
@@ -37,14 +37,14 @@ int InitRenderer(){
 	GLenum glewError = glewInit();
 	if( glewError != GLEW_OK )
 	{
-		printf( "Error initializing GLEW! %s\n", glewGetErrorString( glewError ) );
+		PrintLog(Error, "InitRenderer: Error initializing GLEW! %s\n", glewGetErrorString( glewError ) );
         return 0;
 	}
 
 	//Unset Vsync
 	if( SDL_GL_SetSwapInterval( 0 ) < 0 )
 	{
-		printf( "Warning: Unable to unset VSync! SDL Error: %s\n", SDL_GetError() );
+		PrintLog(Warning, "InitRenderer: Unable to unset VSync! SDL Error: %s\n", SDL_GetError() );
 	}
 
 	//Initialize OpenGL features
@@ -81,7 +81,7 @@ int InitRenderer(){
     glDrawBuffers(1, DrawBuffers); // "1" is the size of DrawBuffers
 
     if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE){
-		printf("InitEngine: Error generating framebuffer! (%x)\n",glCheckFramebufferStatus(GL_FRAMEBUFFER));
+		PrintLog(Error,"InitRenderer: Error generating framebuffer! (%x)\n",glCheckFramebufferStatus(GL_FRAMEBUFFER));
         return 0;
 	}
 
@@ -114,17 +114,17 @@ int InitRenderer(){
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
 	
     //Compile shaders
-    if(!CompileAndLinkShader("Shaders/ScreenVert.vs","Shaders/ScreenFrag.fs",0)) printf(">Failed to compile/link Screen shader! Description above\n\n");
-    else printf(">Compiled/linked Screen shader sucessfully!\n");
+    if(!CompileAndLinkShader("Shaders/ScreenVert.vs","Shaders/ScreenFrag.fs",0)) PrintLog(Error,"InitRenderer: Failed to compile/link Screen shader! Description above\n\n");
+    else PrintLog(Info,">Compiled/linked Screen shader sucessfully!\n");
 
-    if(!CompileAndLinkShader("Shaders/VoxelVert.vs","Shaders/VoxelFrag.fs",1)) printf(">Failed to compile/link VoxelVert shader! Description above\n\n");
-    else printf(">Compiled/linked Voxel shader sucessfully!\n");
+    if(!CompileAndLinkShader("Shaders/VoxelVert.vs","Shaders/VoxelFrag.fs",1)) PrintLog(Error,"InitRenderer: Failed to compile/link VoxelVert shader! Description above\n\n");
+    else PrintLog(Info,">Compiled/linked Voxel shader sucessfully!\n");
 
-	if(!CompileAndLinkShader("Shaders/VoxelSmallVert.vs","Shaders/VoxelSmallFrag.fs",2)) printf(">Failed to compile/link VoxelSmall shader! Description above\n\n");
-    else printf(">Compiled/linked VoxelSmall shader sucessfully!\n");
+	if(!CompileAndLinkShader("Shaders/VoxelSmallVert.vs","Shaders/VoxelSmallFrag.fs",2)) PrintLog(Error,"InitRenderer: Failed to compile/link VoxelSmall shader! Description above\n\n");
+    else PrintLog(Info,">Compiled/linked VoxelSmall shader sucessfully!\n");
 
-	if(!CompileAndLinkShader("Shaders/UIVert.vs","Shaders/UIFrag.fs",3)) printf(">Failed to compile/link UI shader! Description above\n\n");
-    else printf(">Compiled/linked UI shader sucessfully!\n");
+	if(!CompileAndLinkShader("Shaders/UIVert.vs","Shaders/UIFrag.fs",3)) PrintLog(Error,"InitRenderer: Failed to compile/link UI shader! Description above\n\n");
+    else PrintLog(Info,">Compiled/linked UI shader sucessfully!\n");
 
 	//Load voxel palette
 	LoadVoxelPalette("Assets/Game/Textures/magicaPalette.png");
@@ -243,7 +243,7 @@ void RenderTextDebug(char *text, SDL_Color color, int x, int y, TTF_Font* font)
 	SDL_Surface * sFont = SDL_ConvertSurfaceFormat(originalFont,SDL_PIXELFORMAT_ARGB8888,0);
 
 	SDL_FreeSurface(originalFont);
-    if(!sFont){printf("Failed to render text!\n"); return;}
+    if(!sFont){PrintLog(Warning,"Failed to render text!\n"); return;}
 
     //Define the projection matrix
 	GLfloat ProjectionMatrix[4][4] = {{0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}};
@@ -349,7 +349,7 @@ int CompileAndLinkShader(char *vertPath, char *fragPath, unsigned shaderIndex){
         glDeleteShader(vertexShader);
         free((void*)vShaderSource);
 
-        printf("Vertex Shader Info Log:\n%s\n",infoLog);
+        PrintLog(Error,"Vertex Shader Info Log:\n%s\n",infoLog);
         
         free(infoLog);
         
@@ -383,7 +383,7 @@ int CompileAndLinkShader(char *vertPath, char *fragPath, unsigned shaderIndex){
         glDeleteShader(vertexShader);
         free((void*)vShaderSource);
 
-        printf("Fragment Shader Info Log:\n%s\n",infoLog);
+        PrintLog(Error,"Fragment Shader Info Log:\n%s\n",infoLog);
         
         free(infoLog);
 
@@ -422,7 +422,7 @@ int CompileAndLinkShader(char *vertPath, char *fragPath, unsigned shaderIndex){
         glDeleteShader(fragmentShader);
         free((void*)fShaderSource);
 
-        printf("Shader linkage Info Log:\n%s\n",infoLog);
+        PrintLog(Error,"Shader linkage Info Log:\n%s\n",infoLog);
         
         free(infoLog);
         return 0;
@@ -444,34 +444,34 @@ void ReloadShaders(){
     }
 
     if(!CompileAndLinkShader("Shaders/ScreenVert.vs","Shaders/ScreenFrag.fs",0)){
-        printf(">Failed to compile/link Screen shader! Description above\n\n");
+        PrintLog(Error,"ReloadShaders: Failed to compile/link Screen shader! Description above\n\n");
 	}else{ 
-        printf(">Compiled/linked Screen shader sucessfully!\n\n");
+        PrintLog(Info,">Compiled/linked Screen shader sucessfully!\n\n");
 	}
 
     if(!CompileAndLinkShader("Shaders/VoxelVert.vs","Shaders/VoxelFrag.fs",1)){ 
-        printf(">Failed to compile/link Voxel shader! Description above\n\n");
+        PrintLog(Error,"ReloadShaders: Failed to compile/link Voxel shader! Description above\n\n");
 	}else{
-        printf(">Compiled/linked Voxel shader sucessfully!\n\n");
+        PrintLog(Info,">Compiled/linked Voxel shader sucessfully!\n\n");
 	}
 
 	if(!CompileAndLinkShader("Shaders/VoxelSmallVert.vs","Shaders/VoxelSmallFrag.fs",2)){
-		printf(">Failed to compile/link VoxelSmall shader! Description above\n\n");
+		PrintLog(Error,"ReloadShaders: Failed to compile/link VoxelSmall shader! Description above\n\n");
 	}   
     else{
-        printf(">Compiled/linked VoxelSmall shader sucessfully!\n\n");
+        PrintLog(Info,">Compiled/linked VoxelSmall shader sucessfully!\n\n");
 	}
 
 	if(!CompileAndLinkShader("Shaders/UIVert.vs","Shaders/UIFrag.fs",3)){
-		printf(">Failed to compile/link UI shader! Description above\n\n");
+		PrintLog(Error,"ReloadShaders: Failed to compile/link UI shader! Description above\n\n");
     }else{
-		printf(">Compiled/linked UI shader sucessfully!\n");
+		PrintLog(Info,">Compiled/linked UI shader sucessfully!\n");
 	}
 }
 
 void LoadVoxelPalette(char path[]){
     SDL_Surface * palSurf = IMG_Load(path);
-    if(!palSurf){ printf(">Error loading palette!\n"); return; }
+    if(!palSurf){ PrintLog(Error,"LoadVoxelPalette: Error loading palette!\n"); return; }
 
     int i;
     Uint8 r,g,b,a;
@@ -484,14 +484,14 @@ void LoadVoxelPalette(char path[]){
         Rendering.voxelColors[i+1] = color;
     }
     SDL_FreeSurface(palSurf);
-    printf(">Loaded palette sucessfully!\n");
+    PrintLog(Info,">Loaded palette sucessfully!\n");
 }
 
 void MoveCamera(float x, float y, float z){
     Rendering.cameraPosition.x +=x*Time.deltaTime;
     Rendering.cameraPosition.y +=y*Time.deltaTime;
     Rendering.cameraPosition.z +=z*Time.deltaTime;
-    //printf("CamPos: |%2.1f|%2.1f|%2.1f|\n",cameraPosition.x,cameraPosition.y,cameraPosition.z);
+    //PrintLog(Info,"CamPos: |%2.1f|%2.1f|%2.1f|\n",cameraPosition.x,cameraPosition.y,cameraPosition.z);
 }
 
 void TranslateCamera(float x, float y, float z){

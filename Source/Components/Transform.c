@@ -22,7 +22,7 @@ extern engineCore Core;
 void TransformConstructor(void** data){
     if(!data) return;
     *data = calloc(1,sizeof(Transform));
-    ((Transform*)data)->rotation = EulerAnglesToMatrix3x3(VECTOR3_ZERO);
+    ((Transform*)*data)->rotation = EulerAnglesToMatrix3x3(VECTOR3_ZERO);
 }
 
 void TransformDestructor(void** data){

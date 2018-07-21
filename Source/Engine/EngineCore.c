@@ -28,7 +28,7 @@ int InitCore(){
     	PrintLog(Error,"TTF_Init could not initialize! %s\n", TTF_GetError());
         return 0;
 	}
-
+	SDL_SetHint(SDL_HINT_WINDOWS_DISABLE_THREAD_NAMING, "1");
     if(SDL_Init(SDL_INIT_EVERYTHING) < 0)
 	{
         PrintLog(Error,"SDL could not initialize! SLD_Error: %s\n", SDL_GetError());

@@ -13,6 +13,8 @@ extern engineCore Core;
 extern engineECS ECS;
 extern engineRendering Rendering;
 
+Vector3 DecodeMagicaVoxelRotation(int rot);
+
 void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char modelName[]);
 void InternalLoadMultiVoxelModelObject(VoxelModel **modelPointer, char modelPath[], char modelName[], char objectName[]);
 
@@ -134,7 +136,7 @@ void* VoxelModelDecode(cJSON **data){
     if(objName){
         InternalLoadMultiVoxelModelObject(&v, cJSON_GetObjectItem(*data, "modelPath")->valuestring, cJSON_GetObjectItem(*data, "modelName")->valuestring, objName->valuestring);
     }else{
-    InternalLoadVoxelModel(&v, cJSON_GetObjectItem(*data, "modelPath")->valuestring, cJSON_GetObjectItem(*data, "modelName")->valuestring);
+        InternalLoadVoxelModel(&v, cJSON_GetObjectItem(*data, "modelPath")->valuestring, cJSON_GetObjectItem(*data, "modelName")->valuestring);
     }
 
     cJSON *center = cJSON_GetObjectItem(*data,"center");
@@ -1110,12 +1112,15 @@ typedef struct MagicaProperties *mpNode;
 typedef struct MagicaProperties{
     mpTypes Type;
     int data[7];
+    int* groupChildIds;
     int hidden;
     char *name;
     Vector3 position;
     int rotation;
     mpNode next;
 }MagicaProperties;
+
+void GenerateModelStructure(int nodeID, EntityID parentID,char* modelPath, char* modelName, mpNode sceneGraphStart, List modelsList);
 
 //Load a voxel model with various parts into multiple entities parented to a main object
 void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
@@ -1419,8 +1424,7 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
                 fread(&propertiesListEnd->data[4],sizeof(int),1,file);
             }
             //Chunk containing the models inside a group
-            //Will be put into a properties list, but wont be used for now
-            //In the future, read the data instead of just ignore it
+            //Will be put into a properties list
             else if (strcmp(chunkId,"nGRP") == 0)
             {
                 //Create a new property element
@@ -1435,7 +1439,19 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
                 propertiesListEnd->next = NULL;
                 propertiesListEnd->Type = nGRP;
 
-                fseek(file,chunkSize,SEEK_CUR);
+                //0: Index in list
+                fread(&propertiesListEnd->data[0],sizeof(int),1,file);
+                //1: Number of attributes (should be zero)
+                fread(&propertiesListEnd->data[1],sizeof(int),1,file);
+                //2: Number of childs
+                fread(&propertiesListEnd->data[2],sizeof(int),1,file);
+
+                propertiesListEnd->groupChildIds = propertiesListEnd->data[2]==0? NULL : malloc(propertiesListEnd->data[2] * sizeof(int));
+                int i;
+                for(i=0; i<propertiesListEnd->data[2]; i++){
+                    fread(&propertiesListEnd->groupChildIds[i],sizeof(int),1,file);
+                }
+
             }
             else {fseek(file,chunkSize,SEEK_CUR);}   //Read any excess bytes
         }
@@ -1447,151 +1463,71 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
     free(magic);
     fclose(file);
 
-    //Create the models to be inserted on the MultiObject and copy the needed data
+    //Generate the entities models and group transforms
+    GenerateModelStructure(0, entity, modelPath, modelName, propertiesListStart, modelsList);
 
-    VoxelModel *obj = NULL;
-    Vector3 pos = VECTOR3_ZERO,rot;
-    int enab = 1;
-
+    //Free properties list
     mpNode current = propertiesListStart;
     while(current){
-        switch (current->Type){
-            case nTRN:
-            //Set object transform
-            //PrintLog(Info,"\n Type:%s Data: %d %d %d %d %d %d %d Name: [%s] Hidden: %d Rot: %d Pos: %.1f %.1f %.1f \n",current->Type? (current->Type == 2? "nGRP":"nSHP"):"nTRN", current->data[0], current->data[1], current->data[2], current->data[3], current->data[4], current->data[5], current->data[6], current->name? current->name:"", current->hidden,current->rotation, current->position.x, current->position.y, current->position.z);
+        if(current->Type == nTRN){
+            free(current->name);
+        }
+        mpNode aux = current;
+        current = current->next;
+        free(aux);
+    }
+    ListCellPointer modelsCell;
+    ListForEach(modelsCell,modelsList){
+        free(GetElementAsType(modelsCell,VoxelModel).model);
+        free(GetElementAsType(modelsCell,VoxelModel).lighting);
+    }
+    FreeList(&modelsList);
 
-            enab = !current->hidden;
-            pos = current->position;
-            //Each number is a binary encodification of a rotation. As I haven't figured
-            //how it works, i just enumerated each possible rotation and inversion (28 with identity)
-            //for now, single axis inversion is not supported, and others coincide with common rotations
-            switch(current->rotation){
-                case 40:
-                    rot = (Vector3){90,0,0};
-                break;
-                case 105:
-                    rot = (Vector3){90,90,0};
-                break;
-                case 100:
-                    rot = (Vector3){180,0,0};
-                break;
-                case 118:
-                    rot = (Vector3){180,90,0};
-                break;
-                case 65:
-                    rot = (Vector3){180,0,90};
-                break;
-                case 9:
-                    rot = (Vector3){270,270,0};
-                break;
-                case 72:
-                    rot = (Vector3){270,0,0};
-                break;
-                case 82:
-                    rot = (Vector3){270,0,90};
-                break;
-                case 70:
-                    rot = (Vector3){0,90,0};
-                break;
-                case 89:
-                    rot = (Vector3){0,90,90};
-                break;
-                case 84:
-                    rot = (Vector3){0,180,0};
-                break;
-                case 24:
-                    rot = (Vector3){270,180,0};
-                break;
-                case 113:
-                    rot = (Vector3){0,180,90};
-                break;
-                case 22:
-                    rot = (Vector3){0,270,0};
-                break;
-                case 50:
-                    rot = (Vector3){90,0,270};
-                break;
-                case 17:
-                    rot = (Vector3){0,0,90};
-                break;
-                case 57:
-                    rot = (Vector3){90,270,0};
-                break;
-                case 2:
-                    rot = (Vector3){90,0,90};
-                break;
-                case 52:
-                    rot = (Vector3){0,0,180};
-                break;
-                case 120:
-                    rot = (Vector3){90,180,0};
-                break;
-                case 38:
-                    rot = (Vector3){90,270,90};
-                break;
-                case 33:
-                    rot = (Vector3){0,0,270};
-                break;
-                case 98:
-                    rot = (Vector3){270,0,270};
-                break;
-                case 20:
-                    rot = (Vector3){0,0,0};
-                break;
-                case 36:
-                    rot = (Vector3){0,0,0};
-                break;
-                case 68:
-                    rot = (Vector3){0,0,0};
-                break;
-                default:
-                    rot = VECTOR3_ZERO;
-                break;
-            }
+    PrintLog(Info,">DONE!\n\n");
+}
 
-            //Get shape corresponding to the object
-            mpNode shp = propertiesListStart;
-            for(i=0;i<current->data[2];i++){
-                shp = shp->next;
-            }
+void GenerateModelStructure(int nodeID, EntityID parentID,char* modelPath, char* modelName, mpNode sceneGraphStart, List modelsList){
 
-            //Ignore this nTRN if its not a model (groups not supported)
-            if(shp->Type != nSHP){current = current->next; continue;}
-            
+    //Get the current node by ID
+    mpNode current = sceneGraphStart;
+    if(nodeID != 0){
+        while(nodeID-- > 0){
+            current = current->next;
+        }
+    }
+
+    int i;
+    int enab = 1;
+    Vector3 pos = VECTOR3_ZERO;
+    Vector3 rot = VECTOR3_ZERO;
+    switch (current->Type){
+        case nTRN:
+        //Set object transform
+        //PrintLog(Info,"\n Type:%s Data: %d %d %d %d %d %d %d Name: [%s] Hidden: %d Rot: %d Pos: %.1f %.1f %.1f \n",current->Type? (current->Type == 2? "nGRP":"nSHP"):"nTRN", current->data[0], current->data[1], current->data[2], current->data[3], current->data[4], current->data[5], current->data[6], current->name? current->name:"", current->hidden,current->rotation, current->position.x, current->position.y, current->position.z);
+
+        enab = !current->hidden;
+        pos = current->position;
+        rot = DecodeMagicaVoxelRotation(current->rotation);
+
+        //Get node corresponding to the object
+        mpNode childNode = sceneGraphStart;
+        for(i=0;i<current->data[2];i++){
+            childNode = childNode->next;
+        }
+
+        //In case this transform is from an object, create an entity with this model and parent with the entity
+        if(childNode->Type == nSHP){
+            //printf("SHP\n");
             //Allocate and copy data to the final object
-            EntityID subModel;
-
-            int foundChild = -1;
-            if(EntityIsParent(entity)){
-                
-                ListCellPointer child;
-                ListForEach(child,*GetChildsList(entity)){
-                    if(EntityContainsComponent(GetElementAsType(child,EntityID),ThisComponentID())){
-                        VoxelModel *childObj = GetVoxelModelPointer(GetElementAsType(child,EntityID));
-                        if(childObj->objectName[0] != '\0' && !strcmp(childObj->objectName,current->name)){
-                            foundChild = GetElementAsType(child,EntityID);
-                            break;
-                        }
-                    }
-                }
-            }
-
-            //Create the new entity
-            if(foundChild>=0){
-                subModel = foundChild;
-                if(!EntityContainsComponent(subModel, GetComponentID("Transform")))
-                    AddComponentToEntity(GetComponentID("Transform"),subModel);
-            }else{
-                subModel = CreateEntity();
-                SetEntityParent(subModel,entity);
-                AddComponentToEntity(ThisComponentID(),subModel);
-                AddComponentToEntity(GetComponentID("Transform"),subModel);
-            }
+            EntityID subModel = CreateEntity();
+            SetEntityParent(subModel,parentID);
+            AddComponentToEntity(ThisComponentID(),subModel);
+            AddComponentToEntity(GetComponentID("Transform"),subModel);
+            
 
             //Pass the data to the entity
-            obj = GetVoxelModelPointer(subModel);
-
-            VoxelModel *curModel = GetCellAt(modelsList,shp->data[3])->element;
+            VoxelModel* obj = GetVoxelModelPointer(subModel);
+            VoxelModel *curModel = GetCellAt(modelsList,childNode->data[3])->element;
 
             obj->dimension[0] = curModel->dimension[0];
             obj->dimension[1] = curModel->dimension[1];
@@ -1609,7 +1545,7 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
             memcpy(obj->vertices,curModel->vertices,obj->numberOfVertices * 3 * sizeof(GLfloat) );
             memcpy(obj->vColors,curModel->vColors,obj->numberOfVertices * 3 * sizeof(GLfloat) );
 
-            SetPosition(subModel,(Vector3){pos.x - (obj->dimension[0]/2),pos.y - (obj->dimension[1]/2),pos.z - (obj->dimension[2]/2)});
+            SetPosition(subModel,pos);
             SetRotation(subModel,rot);
             obj->enabled = enab;
             obj->smallScale = 0;
@@ -1617,39 +1553,140 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
             strncpy(obj->modelPath,modelPath,512);
             strncpy(obj->modelName,modelName,256);
             strncpy(obj->objectName,current->name,65);
-
-            break;
-            case nSHP:
-            //This data is used in nTRN type properties to get the shape in the list
-           // PrintLog(Info,"\n Type:%s Data: %d %d %d %d %d\n",current->Type? (current->Type == 2? "nGRP":"nSHP"):"nTRN", current->data[0], current->data[1], current->data[2], current->data[3], current->data[4]);
-
-            break;
-            case nGRP:
-            //This group data is ignored, as it is not supported
-            //PrintLog(Info,"\n Type:%s\n", current->Type? (current->Type == 2? "nGRP":"nSHP"):"nTRN");  
-            break;
         }
-        current = current->next;
-    }
+        else{
+            //printf("GRP\n");
+            //In case this is the transform of a group, generate an entity with a Transform component
+            EntityID group;
 
-    //Free properties list
-    current = propertiesListStart;
-    while(current){
-        if(current->Type == nTRN){
-            free(current->name);
+            //Treat the initial nTRN and nGRP, as the origin entity is already created, use it instead of generating another
+            if(nodeID == 0){
+                group = parentID;
+
+                if(!EntityContainsComponent(group, GetComponentID("Transform")))
+                    AddComponentToEntity(GetComponentID("Transform"),group);
+
+                if(EntityContainsComponent(group, ThisComponentID()))
+                    RemoveComponentFromEntity(ThisComponentID(),group);
+
+            }else{
+                group = CreateEntity();
+                SetEntityParent(group,parentID);
+                AddComponentToEntity(GetComponentID("Transform"),group);
+
+                SetPosition(group,pos);
+                SetRotation(group,rot);
+            }
+
+            //printf("%d\n", group);
+            //Generate the objects and groups that are inside of this group and parent to the 'group' Entity
+            for(i=0; i<childNode->data[2]; i++){
+                GenerateModelStructure(childNode->groupChildIds[i], group, modelPath, modelName, sceneGraphStart, modelsList);
+            }
+            
         }
-        mpNode aux = current;
-        current = current->next;
-        free(aux);
-    }
-    ListCellPointer modelsCell;
-    ListForEach(modelsCell,modelsList){
-        free(GetElementAsType(modelsCell,VoxelModel).model);
-        free(GetElementAsType(modelsCell,VoxelModel).lighting);
-    }
-    FreeList(&modelsList);
 
-    PrintLog(Info,">DONE!\n\n");
+        break;
+        case nSHP:
+        //Keeping this case for debug
+        // PrintLog(Info,"\n Type:%s Data: %d %d %d %d %d\n",current->Type? (current->Type == 2? "nGRP":"nSHP"):"nTRN", current->data[0], current->data[1], current->data[2], current->data[3], current->data[4]);
+
+        break;
+        case nGRP:
+        //Keeping this case for debug
+        //PrintLog(Info,"\n Type:%s\n", current->Type? (current->Type == 2? "nGRP":"nSHP"):"nTRN");  
+        break;
+    }
+}
+
+Vector3 DecodeMagicaVoxelRotation(int rot){
+    //Each number is a binary encodification of a rotation. As I haven't figured
+    //how it works, i just enumerated each possible rotation and inversion (28 with identity)
+    //for now, single axis inversion is not supported, and others coincide with common rotations
+    switch(rot){
+        case 40:
+            return (Vector3){90,0,0};
+        break;
+        case 105:
+            return (Vector3){90,90,0};
+        break;
+        case 100:
+            return (Vector3){180,0,0};
+        break;
+        case 118:
+            return (Vector3){180,90,0};
+        break;
+        case 65:
+            return (Vector3){180,0,90};
+        break;
+        case 9:
+            return (Vector3){270,270,0};
+        break;
+        case 72:
+            return (Vector3){270,0,0};
+        break;
+        case 82:
+            return (Vector3){270,0,90};
+        break;
+        case 70:
+            return (Vector3){0,90,0};
+        break;
+        case 89:
+            return (Vector3){0,90,90};
+        break;
+        case 84:
+            return (Vector3){0,180,0};
+        break;
+        case 24:
+            return (Vector3){270,180,0};
+        break;
+        case 113:
+            return (Vector3){0,180,90};
+        break;
+        case 22:
+            return (Vector3){0,270,0};
+        break;
+        case 50:
+            return (Vector3){90,0,270};
+        break;
+        case 17:
+            return (Vector3){0,0,90};
+        break;
+        case 57:
+            return (Vector3){90,270,0};
+        break;
+        case 2:
+            return (Vector3){90,0,90};
+        break;
+        case 52:
+            return (Vector3){0,0,180};
+        break;
+        case 120:
+            return (Vector3){90,180,0};
+        break;
+        case 38:
+            return (Vector3){90,270,90};
+        break;
+        case 33:
+            return (Vector3){0,0,270};
+        break;
+        case 98:
+            return (Vector3){270,0,270};
+        break;
+        case 20:
+            return (Vector3){0,0,0};
+        break;
+        case 36:
+            return (Vector3){0,0,0};
+        break;
+        case 68:
+            return (Vector3){0,0,0};
+        break;
+        default:
+            return VECTOR3_ZERO;
+        break;
+    }
+
 }
 
 //Lua interface functions

@@ -136,7 +136,7 @@ int InitRenderer(){
 
 Vector3 PositionToGameScreenCoords(Vector3 position){
 	Vector3 screenPos;
-	position = (Vector3){roundf(position.x),roundf(position.y),roundf(position.z)};
+	position = (Vector3){position.x,position.y,position.z};
 
 	//Position to screen projection
 	screenPos.x = (int)(((position.x) - (position.y))*2 + roundf(-Rendering.cameraPosition.x)) + 0.375;

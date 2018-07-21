@@ -35,7 +35,9 @@ void DrawTransformGizmos(){
         if(IsValidEntity(entity) && EntityContainsComponent(entity,GetComponentID("Transform"))){
 
             Vector3 position;
-            GetGlobalTransform(entity,&position,NULL,NULL);
+            Matrix3x3 rotation;
+            GetGlobalTransform(entity,&position,NULL,&rotation);
+            rotation = MultiplyMatrix3x3(Transpose(GetRotationMatrix(entity)),rotation);
             Vector3 screenPos = PositionToGameScreenCoords(position);
 
             Vector3 originPos = (Vector3){screenPos.x,screenPos.y,0};
@@ -60,7 +62,7 @@ void DrawTransformGizmos(){
             }else{
                 //Entity selected, show transform gizmos and deselection point
                 //Forward (X) gizmos
-                Vector3 lineXEndPos = PositionToGameScreenCoords(Add(position,(Vector3){positionGizmosLength * 2/Screen.gameScale,0,0}));
+                Vector3 lineXEndPos = PositionToGameScreenCoords(Add(position,RotateVector((Vector3){positionGizmosLength * 2/Screen.gameScale,0,0},rotation)));
                 lineXEndPos.z = 0;
 
                 Vector3 gizmosColor = {1,0.75,0.75};
@@ -83,7 +85,7 @@ void DrawTransformGizmos(){
 
 
                 //Left (Y) gizmos
-                Vector3 lineYEndPos = PositionToGameScreenCoords(Add(position,(Vector3){0,positionGizmosLength* 2/Screen.gameScale,0}));
+                Vector3 lineYEndPos = PositionToGameScreenCoords(Add(position,RotateVector((Vector3){0,positionGizmosLength * 2/Screen.gameScale,0},rotation)));
                 lineYEndPos.z = 0;
 
                 gizmosColor = (Vector3){0.75,1,0.75};
@@ -108,7 +110,7 @@ void DrawTransformGizmos(){
 
 
                 //Up (Z) gizmos
-                Vector3 lineZEndPos = PositionToGameScreenCoords(Add(position,(Vector3){0,0,positionGizmosLength* 2/Screen.gameScale}));
+                Vector3 lineZEndPos = PositionToGameScreenCoords(Add(position,RotateVector((Vector3){0,0,positionGizmosLength * 2/Screen.gameScale},rotation)));
                 lineZEndPos.z = 0;
 
                 gizmosColor = (Vector3){0.75,0.75,1};
@@ -144,7 +146,8 @@ void DrawTransformGizmos(){
                 //Arrow movement
                 if(movingX){
                     if(GetMouseButton(SDL_BUTTON_LEFT)){
-                        double mouseMovementX = norm(VectorProjection(deltaMousePos,Subtract(lineXEndPos,originPos)))/(norm(WorldVectorToScreenVector(VECTOR3_FORWARD))*2) * sign(deltaMousePos.y);
+                        Vector3 arrowScreen = WorldVectorToScreenVector(RotateVector(VECTOR3_FORWARD,rotation));
+                        double mouseMovementX = norm(deltaMousePos) * dot(NormalizeVector(arrowScreen), NormalizeVector(deltaMousePos))/(norm(arrowScreen)*2);
                         SetPosition(entity,Add(GetPosition(entity),(Vector3){mouseMovementX,0,0}));
                     }else{
                         movingX = 0;
@@ -153,7 +156,8 @@ void DrawTransformGizmos(){
 
                 if(movingY){
                     if(GetMouseButton(SDL_BUTTON_LEFT)){
-                        double mouseMovementY = norm(VectorProjection(deltaMousePos,Subtract(lineYEndPos,originPos)))/(norm(WorldVectorToScreenVector(VECTOR3_LEFT))*2) * sign(deltaMousePos.y);
+                        Vector3 arrowScreen = WorldVectorToScreenVector(RotateVector(VECTOR3_LEFT,rotation));
+                        double mouseMovementY = norm(deltaMousePos) * dot(NormalizeVector(arrowScreen), NormalizeVector(deltaMousePos))/(norm(arrowScreen)*2);
                         SetPosition(entity,Add(GetPosition(entity),(Vector3){0,mouseMovementY,0}));
                     }else{
                         movingY = 0;
@@ -162,7 +166,8 @@ void DrawTransformGizmos(){
 
                 if(movingZ){
                     if(GetMouseButton(SDL_BUTTON_LEFT)){
-                        double mouseMovementZ = norm(VectorProjection(deltaMousePos,Subtract(lineZEndPos,originPos)))/(norm(WorldVectorToScreenVector(VECTOR3_UP))*2)* sign(deltaMousePos.y);
+                        Vector3 arrowScreen = WorldVectorToScreenVector(RotateVector(VECTOR3_UP,rotation));
+                        double mouseMovementZ = norm(deltaMousePos) * dot(NormalizeVector(arrowScreen), NormalizeVector(deltaMousePos))/(norm(arrowScreen)*2);
                         SetPosition(entity,Add(GetPosition(entity),(Vector3){0,0,mouseMovementZ}));
                     }else{
                         movingZ = 0;

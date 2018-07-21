@@ -310,10 +310,12 @@ unsigned GetLength(List list){
 // --------------- Vector Functions ---------------
 
 Vector3 NormalizeVector(Vector3 v){
-	float length = 1/sqrt((v.x*v.x)+(v.y*v.y)+(v.z*v.z));
-	v.x *=length;
-	v.y *=length;
-	v.z *=length;
+	float l = sqrt((v.x*v.x)+(v.y*v.y)+(v.z*v.z));
+	if(l == 0) return VECTOR3_ZERO;
+
+	v.x *=1/l;
+	v.y *=1/l;
+	v.z *=1/l;
 	return v;
 }
 

@@ -372,6 +372,7 @@ GLuint TextToTexture(char *text, Vector3 color, TTF_Font* font, int *w, int* h){
 //Lua interface functions
 
 static int l_LoadFontTTF(lua_State *L){
+    if(!ThisSystem || !ThisSystem->enabled) return 0;
 
     const char* fontPath = luaL_checkstring (L, 1);
     const char* fontName = luaL_checkstring (L, 2);

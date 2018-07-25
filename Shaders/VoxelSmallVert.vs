@@ -1,5 +1,5 @@
 #version 150
-// in_Position was bound to attribute index 0 and in_Color was bound to attribute index 1
+
 in vec3 in_Position;
 in vec3 in_Color;
 in vec3 in_Normal;

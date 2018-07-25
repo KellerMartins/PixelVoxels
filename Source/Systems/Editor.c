@@ -112,7 +112,6 @@ void EditorUpdate(){
     }
 
     glClear(GL_DEPTH_BUFFER_BIT);
-    glBindFramebuffer(GL_FRAMEBUFFER, Rendering.frameBuffer);
     glViewport(0,0,Screen.gameWidth,Screen.gameHeight);
 
     //Draw UI windows and gizmos

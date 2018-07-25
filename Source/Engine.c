@@ -67,6 +67,7 @@ int InitEngine(){
 void EngineUpdate(){
 	UpdateTime();
 
+	//Clear and bind rendertexture framebuffer
 	ClearRender(Rendering.clearScreenColor);
 	InputUpdate();
 

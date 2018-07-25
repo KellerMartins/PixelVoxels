@@ -21,9 +21,8 @@ void InternalLoadMultiVoxelModelObject(VoxelModel **modelPointer, char modelPath
 void VoxelModelConstructor(void** data){
     if(!data) return;
     *data = calloc(1,sizeof(VoxelModel));
-    VoxelModel *obj = *data;
-
-    *obj = (VoxelModel){0,0,0,0,0,0,0,0,NULL,NULL,NULL,NULL,NULL,0,0,0};
+    VoxelModel *obj = (VoxelModel*)*data;
+    glGenBuffers(3, obj->vbo); 
 }
 void VoxelModelDestructor(void** data){
     if(!data) return;
@@ -31,9 +30,7 @@ void VoxelModelDestructor(void** data){
 
     free(obj->model);
     free(obj->lighting);
-    free(obj->vertices);
-    free(obj->vColors);
-    free(obj->normal);
+    glDeleteBuffers(3, obj->vbo);
 
     free(*data);
     *data = NULL;
@@ -48,28 +45,42 @@ void* VoxelModelCopy(void* data){
     newVoxelModel->dimension[1] = ((VoxelModel*)data)->dimension[1];
     newVoxelModel->dimension[2] = ((VoxelModel*)data)->dimension[2];
 
+    glGenBuffers(3, newVoxelModel->vbo); 
+
     if(((VoxelModel*)data)->model){
+
+        //Copy model and lighting data
         int sizeModel = newVoxelModel->dimension[0] * newVoxelModel->dimension[1] * newVoxelModel->dimension[2] * sizeof(unsigned char);
         newVoxelModel->model = malloc(sizeModel);
         newVoxelModel->lighting = malloc(sizeModel);
-        
-        int sizeVertices = newVoxelModel->numberOfVertices*3*sizeof(GLfloat);
-        newVoxelModel->vertices = malloc(sizeVertices);
-        newVoxelModel->vColors = malloc(sizeVertices);
-        newVoxelModel->normal = malloc(sizeVertices);
-        
+
         memcpy(newVoxelModel->model,((VoxelModel*)data)->model,sizeModel);
         memcpy(newVoxelModel->lighting,((VoxelModel*)data)->lighting,sizeModel);
 
-        memcpy(newVoxelModel->vertices,((VoxelModel*)data)->vertices,sizeVertices);
-        memcpy(newVoxelModel->vColors,((VoxelModel*)data)->vColors,sizeVertices);
-        memcpy(newVoxelModel->normal,((VoxelModel*)data)->normal,sizeVertices);
-    }else{
+
+        //Copy VBO data
+        int fullSize = newVoxelModel->dimension[0] * newVoxelModel->dimension[1] * newVoxelModel->dimension[2] * 3 * sizeof(GLfloat);
+        int dataSize = newVoxelModel->dimension[0] * newVoxelModel->dimension[1] * newVoxelModel->dimension[2] * 3 * sizeof(GLfloat);
+
+        glBindBuffer(GL_COPY_READ_BUFFER, ((VoxelModel*)data)->vbo[0]);
+        glBindBuffer(GL_COPY_WRITE_BUFFER, newVoxelModel->vbo[0]);
+        glBufferData(GL_COPY_WRITE_BUFFER, fullSize, NULL, GL_DYNAMIC_DRAW);
+        glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, dataSize);
+        
+        glBindBuffer(GL_COPY_READ_BUFFER, ((VoxelModel*)data)->vbo[1]);
+        glBindBuffer(GL_COPY_WRITE_BUFFER, newVoxelModel->vbo[1]);
+        glBufferData(GL_COPY_WRITE_BUFFER, fullSize, NULL, GL_DYNAMIC_DRAW);
+        glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, dataSize);
+        
+        glBindBuffer(GL_COPY_READ_BUFFER, ((VoxelModel*)data)->vbo[2]);
+        glBindBuffer(GL_COPY_WRITE_BUFFER, newVoxelModel->vbo[2]);
+        glBufferData(GL_COPY_WRITE_BUFFER, fullSize, NULL, GL_DYNAMIC_DRAW);
+        glCopyBufferSubData(GL_COPY_READ_BUFFER, GL_COPY_WRITE_BUFFER, 0, 0, dataSize);
+        
+        }else{
         newVoxelModel->model = NULL;
         newVoxelModel->lighting = NULL;
-        newVoxelModel->vertices = NULL;
-        newVoxelModel->vColors = NULL;
-        newVoxelModel->normal = NULL;
+        newVoxelModel->numberOfVertices = 0;
     }
 
 	return newVoxelModel;
@@ -130,7 +141,8 @@ cJSON* VoxelModelEncode(void** data, cJSON* currentData){
 }
 
 void* VoxelModelDecode(cJSON **data){
-    VoxelModel *v = calloc(1,sizeof(VoxelModel));
+    VoxelModel *v;
+    VoxelModelConstructor((void**)(&v));
 
     cJSON *objName = cJSON_GetObjectItem(*data, "objectName");
     if(objName){
@@ -543,9 +555,19 @@ void InternalLoadMultiVoxelModelObject(VoxelModel **modelPointer, char modelPath
                 obj->model = calloc(obj->dimension[0] * obj->dimension[1] * obj->dimension[2],sizeof(unsigned char));
                 obj->lighting = calloc(obj->dimension[0] * obj->dimension[1] * obj->dimension[2],sizeof(unsigned char));
 
-                obj->vertices = NULL;
-                obj->vColors = NULL;
-                obj->normal = NULL;
+                //Request VBO buffers
+                glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[0]);
+                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+                glBufferData(GL_ARRAY_BUFFER, obj->dimension[0] * obj->dimension[1] * obj->dimension[2] * 3 * sizeof(GLfloat), NULL, GL_DYNAMIC_DRAW);
+
+                glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[1]);
+                glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+                glBufferData(GL_ARRAY_BUFFER, obj->dimension[0] * obj->dimension[1] * obj->dimension[2] * 3 * sizeof(GLfloat), NULL, GL_DYNAMIC_DRAW);
+
+                glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[2]);
+                glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+                glBufferData(GL_ARRAY_BUFFER, obj->dimension[0] * obj->dimension[1] * obj->dimension[2] * 3 * sizeof(GLfloat), NULL, GL_DYNAMIC_DRAW);
+
                 obj->numberOfVertices = 0;
                 
                 //Inserting voxels into the VoxelObject structure
@@ -712,6 +734,20 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
         //Allocating memory and initializing structures
         obj->model = calloc(obj->dimension[0] * obj->dimension[1] * obj->dimension[2],sizeof(unsigned char));
         obj->lighting = calloc(obj->dimension[0] * obj->dimension[1] * obj->dimension[2],sizeof(unsigned char));
+
+        //Request VBO buffers
+        glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[0]);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        glBufferData(GL_ARRAY_BUFFER, obj->dimension[0] * obj->dimension[1] * obj->dimension[2] * 3 * sizeof(GLfloat), NULL, GL_DYNAMIC_DRAW);
+
+        glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[1]);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        glBufferData(GL_ARRAY_BUFFER, obj->dimension[0] * obj->dimension[1] * obj->dimension[2] * 3 * sizeof(GLfloat), NULL, GL_DYNAMIC_DRAW);
+
+        glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[2]);
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        glBufferData(GL_ARRAY_BUFFER, obj->dimension[0] * obj->dimension[1] * obj->dimension[2] * 3 * sizeof(GLfloat), NULL, GL_DYNAMIC_DRAW);
+
         
         //Inserting voxels into the VoxelObject structure
         for (i = 0; i < numVoxels; i++)
@@ -739,9 +775,6 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
 
     //Final settings
     obj->numberOfVertices = 0;
-    obj->vertices = NULL;
-    obj->vColors = NULL;
-    obj->normal = NULL;
     obj->voxelCount = numVoxels;
     obj->voxelsRemaining = numVoxels;
 
@@ -763,7 +796,10 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
     PrintLog(Info,">DONE!\n\n");
 }
 
-//Calculate the surface voxels to be shown and put into a GLfloat vertex array inside the component to be rendered
+//Calculate the surface voxels to be shown and put into the VBO inside the component to be rendered
+int avaliableVertices[128*128*128];
+Vector3 requestedVertices[128*128*128];
+Vector3 requestedNormals[128*128*128];
 void CalculateRendered(EntityID entity){
     VoxelModel *obj = GetVoxelModelPointer(entity);
 
@@ -772,10 +808,14 @@ void CalculateRendered(EntityID entity){
         return;
     }
 
-    List avaliableVoxels = InitList(sizeof(int));
-    List requestedVoxels = InitList(sizeof(Vector3));
+    
+    glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[0]);
+    Vector3* vertices = glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE);
+    glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[2]);
+    Vector3* normal = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
 
-    List requestedNormals = InitList(sizeof(Vector3)); 
+    int avaliableCount = 0;
+    int requestedCount = 0;
 
     int x,y,z,i,index,dir,occ;
     int xLimitS = clamp(obj->modificationStartX-1 ,0,obj->dimension[0]-1);
@@ -785,21 +825,25 @@ void CalculateRendered(EntityID entity){
     int zLimitS = clamp(obj->modificationStartZ-1 ,0,obj->dimension[2]-1);
     int zLimitE = clamp(obj->modificationEndZ+1   ,0,obj->dimension[2]-1);
 
-    for(i=0;i<obj->numberOfVertices*3;i+=3){
-        Vector3 voxelPos = {roundf(obj->vertices[i]),roundf(obj->vertices[i+1]),roundf(obj->vertices[i+2])};
-        if(voxelPos.x<0 || voxelPos.y<0 || voxelPos.z<0){
-            InsertListEnd(&avaliableVoxels,(void*)&i);
+    for(i=0;i<obj->numberOfVertices;i++){
+        if(vertices[i].x<0 || vertices[i].y<0 || vertices[i].z<0){
+            avaliableVertices[avaliableCount++] = i;
             continue;
         }
-        if((voxelPos.x<xLimitS || voxelPos.x>xLimitE || voxelPos.y<yLimitS || voxelPos.y>yLimitE || voxelPos.z<zLimitS || voxelPos.z>zLimitE))
+        if((vertices[i].x<xLimitS || vertices[i].x>xLimitE || vertices[i].y<yLimitS || vertices[i].y>yLimitE || vertices[i].z<zLimitS || vertices[i].z>zLimitE))
             continue;
         else
-            InsertListEnd(&avaliableVoxels,(void*)&i);           
+            avaliableVertices[avaliableCount++] = i;        
     }
     
+    //obj->numberOfVertices = 0;
     for(z = zLimitE; z>=zLimitS ;z--){
         for(y = yLimitS; y<=yLimitE; y++){
             for(x = xLimitS; x<=xLimitE; x++){
+                //vertices[x + z * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]] = (Vector3){x,y,z};
+                //normal[x + z * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]] = VECTOR3_UP;
+                //obj->numberOfVertices++;
+                
                 occ = 0;
 
                 index = (x + z * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);
@@ -835,7 +879,7 @@ void CalculateRendered(EntityID entity){
                     if(occ!=6){
                         Vector3 vPos = {x,y,z};
                         Vector3 vNormal = VECTOR3_ZERO;
-                        InsertListStart(&requestedVoxels,(void*)&vPos);
+                        requestedVertices[requestedCount] = vPos;
 
                         if(x-1 < 0){
                             vNormal.x -= 1;
@@ -893,89 +937,65 @@ void CalculateRendered(EntityID entity){
 
                         if(vNormal.x == 0 && vNormal.y == 0 && vNormal.z == 0) vNormal = VECTOR3_UP;
 
-                        InsertListStart(&requestedNormals,(void*)&vNormal);
+                        requestedNormals[requestedCount] = vNormal;
+
+                        requestedCount++;                        
                     }
                 }
             }
         }
     }
     
-    //First array creation
+    //If there is no vertices into the VBOs, just insert them
     if(obj->numberOfVertices == 0){
-        obj->vertices = malloc(GetLength(requestedVoxels) * 3 * sizeof(GLfloat));
-        obj->normal = malloc(GetLength(requestedNormals) * 3 * sizeof(GLfloat));
-
-        obj->numberOfVertices = GetLength(requestedVoxels);
-
-        ListCellPointer currentV = requestedVoxels.first;
-        ListCellPointer currentN = requestedNormals.first;
-        i = 0;
-        while(currentV){
-            memcpy(&obj->vertices[i],GetElement(*currentV),sizeof(Vector3));
-            memcpy(&obj->normal[i],GetElement(*currentN),sizeof(Vector3));
-            i+=3;
-            currentV = GetNextCell(currentV);
-            currentN = GetNextCell(currentN);
-        }
-
-        FreeList(&requestedVoxels);
-        FreeList(&requestedNormals);
+        obj->numberOfVertices = requestedCount;
+        memcpy(vertices,requestedVertices,requestedCount * sizeof(Vector3));
+        memcpy(normal,requestedNormals,requestedCount * sizeof(Vector3));
+        
     }else{
         
-        ListCellPointer currentAv = avaliableVoxels.first;
-        ListCellPointer currentReqV = requestedVoxels.first;
-        ListCellPointer currentReqN = requestedNormals.first;
-        while(currentAv && currentReqV){
-            int indx = *((int*)GetElement(*currentAv));
-            memcpy(&obj->vertices[indx],GetElement(*currentReqV),sizeof(Vector3));
-            memcpy(&obj->normal[indx],GetElement(*currentReqN),sizeof(Vector3));
+        int av = 0;
+        int req = 0;
+        while(av<avaliableCount && req<requestedCount){
+            int indx = avaliableVertices[av];
+            vertices[indx] = requestedVertices[req];
+            normal[indx] = requestedNormals[req];
 
-            RemoveListStart(&avaliableVoxels);
-            RemoveListStart(&requestedVoxels);
-
-            currentAv = avaliableVoxels.first;
-            currentReqV = requestedVoxels.first;
-            currentReqN = requestedVoxels.first;
+            av++;
+            req++;
         }
-        if(!currentAv && currentReqV){
-            //Have more voxels to be added than removed, realloc to insert
-            int numReqRemaining = GetLength(requestedVoxels);
-            obj->vertices = realloc(obj->vertices, (obj->numberOfVertices + numReqRemaining) * 3 * sizeof(GLfloat));
-            obj->normal = realloc(obj->normal, (obj->numberOfVertices + numReqRemaining) * 3 * sizeof(GLfloat));
-            
-            int indx = (obj->numberOfVertices*3);
-            while(currentReqV){ 
-                memcpy(&obj->vertices[indx],GetElement(*currentReqV),sizeof(Vector3));
-                memcpy(&obj->normal[indx],GetElement(*currentReqN),sizeof(Vector3));
+        if(requestedCount > avaliableCount){
+            //Have more voxels to be added than removed, keep inserting after numberOfVertices items
+            int voxelsRemaining = requestedCount-avaliableCount;
+            /*int indx = obj->numberOfVertices;
+            while(req<requestedCount){ 
+                vertices[indx] = requestedVertices[req];
+                normal[indx] = requestedNormals[req];
 
-                RemoveListStart(&requestedVoxels);
-                RemoveListStart(&requestedNormals);
-                currentReqV = requestedVoxels.first;
-                currentReqN = requestedNormals.first;
+                indx++;
+                req++;
+            }*/
+            memcpy(&vertices[obj->numberOfVertices], &requestedVertices[req], voxelsRemaining*sizeof(Vector3));
 
-                indx+=3;
-            }
+            obj->numberOfVertices += voxelsRemaining;
 
-            obj->numberOfVertices += numReqRemaining;
-
-        }else if (!currentReqV){
+        }else if (avaliableCount > requestedCount){
             //Have more removed than added, mark the empty positions as invalid
-            while(currentAv){
-                int indx = *((int*)GetElement(*currentAv));
+            while(av<avaliableCount){
+                int indx = avaliableVertices[av];
 
-                obj->vertices[indx] = -1;
-                obj->vertices[indx+1] = -1;
-                obj->vertices[indx+2] = -1;
+                vertices[indx] = (Vector3){-1,-1,-1};
+                normal[indx] = VECTOR3_ZERO;
 
-                obj->normal[indx] = 0;
-                obj->normal[indx+1] = 0;
-                obj->normal[indx+2] = 0;
-
-                RemoveListStart(&avaliableVoxels);
-                currentAv = avaliableVoxels.first;
+                av++;
             }
         }
     }
+    
+    glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[0]);
+    glUnmapBuffer(GL_ARRAY_BUFFER);
+    glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[2]);
+    glUnmapBuffer(GL_ARRAY_BUFFER);
 }
 
 //Calculate the basic lighting and self shadowing and put into a GLint color array inside the component
@@ -1064,19 +1084,20 @@ void CalculateLighting(EntityID entity){
     const float sunlight = 1.42;
     const float shadow = 0.79;
 
-    free(obj->vColors);
-    obj->vColors = malloc(obj->numberOfVertices * 3 * sizeof(GLfloat));
+    glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[0]);
+    Vector3* vertices = glMapBuffer(GL_ARRAY_BUFFER, GL_READ_ONLY);
+    glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[1]);
+    Vector3* colors = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
+    
 
     int i;
-    for(i = 0; i <obj->numberOfVertices*3; i+=3){
-        x = roundf(obj->vertices[i]);
-        y = roundf(obj->vertices[i+1]);
-        z = roundf(obj->vertices[i+2]);
+    for(i=0; i<obj->numberOfVertices; i++){
+        x = roundf(vertices[i].x);
+        y = roundf(vertices[i].y);
+        z = roundf(vertices[i].z);
 
         if(x<0 || y<0 || z<0){
-            obj->vColors[i] = 0;
-            obj->vColors[i+1] = 0;
-            obj->vColors[i+2] = 0;
+            colors[i] = VECTOR3_ZERO;
             continue;
         }
 
@@ -1098,10 +1119,15 @@ void CalculateLighting(EntityID entity){
         double illuminFrac = lightVal * edgeVal * heightVal * 1.0/256.0;
 
         //Transform the color from a Int16 to each RGB component
-        obj->vColors[i] = clamp(color.r * illuminFrac,0,1);
-        obj->vColors[i+1] = clamp(color.g * illuminFrac,0,1);
-        obj->vColors[i+2] = clamp(color.b * illuminFrac,0,1);
+        colors[i].x = clamp(color.r * illuminFrac,0,1);
+        colors[i].y = clamp(color.g * illuminFrac,0,1);
+        colors[i].z = clamp(color.b * illuminFrac,0,1);
     }
+
+    glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[0]);
+    glUnmapBuffer(GL_ARRAY_BUFFER);
+    glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[1]);
+    glUnmapBuffer(GL_ARRAY_BUFFER);
 
 }
 
@@ -1193,7 +1219,9 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
                 if(!voxelData){
 
                     //Create the new object
-                    VoxelModel *newModel = malloc(sizeof(VoxelModel));
+                    VoxelModel *newModel;
+                    VoxelModelConstructor((void**)(&newModel));
+                    
                     fread(&newModel->dimension[0],sizeof(int),1,file);
                     fread(&newModel->dimension[1],sizeof(int),1,file);
                     fread(&newModel->dimension[2],sizeof(int),1,file);
@@ -1232,8 +1260,19 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
                 objPointer->model = calloc(objPointer->dimension[0] * objPointer->dimension[1] * objPointer->dimension[2],sizeof(unsigned char));
                 objPointer->lighting = calloc(objPointer->dimension[0] * objPointer->dimension[1] * objPointer->dimension[2],sizeof(unsigned char));
 
-                objPointer->vertices = NULL;
-                objPointer->vColors = NULL;
+                //Request VBO buffers
+                glBindBuffer(GL_ARRAY_BUFFER, objPointer->vbo[0]);
+                glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+                glBufferData(GL_ARRAY_BUFFER, objPointer->dimension[0] * objPointer->dimension[1] * objPointer->dimension[2] * 3 * sizeof(GLfloat), NULL, GL_DYNAMIC_DRAW);
+
+                glBindBuffer(GL_ARRAY_BUFFER, objPointer->vbo[1]);
+                glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+                glBufferData(GL_ARRAY_BUFFER, objPointer->dimension[0] * objPointer->dimension[1] * objPointer->dimension[2] * 3 * sizeof(GLfloat), NULL, GL_DYNAMIC_DRAW);
+
+                glBindBuffer(GL_ARRAY_BUFFER, objPointer->vbo[2]);
+                glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+                glBufferData(GL_ARRAY_BUFFER, objPointer->dimension[0] * objPointer->dimension[1] * objPointer->dimension[2] * 3 * sizeof(GLfloat), NULL, GL_DYNAMIC_DRAW);
+
                 objPointer->numberOfVertices = 0;
                 
                 //Inserting voxels into the VoxelObject structure
@@ -1526,33 +1565,14 @@ void GenerateModelStructure(int nodeID, EntityID parentID,char* modelPath, char*
             
 
             //Pass the data to the entity
-            VoxelModel* obj = GetVoxelModelPointer(subModel);
             VoxelModel *curModel = GetCellAt(modelsList,childNode->data[3])->element;
-
-            obj->dimension[0] = curModel->dimension[0];
-            obj->dimension[1] = curModel->dimension[1];
-            obj->dimension[2] = curModel->dimension[2];
-            *obj = *curModel;
-
-            obj->model = calloc(obj->dimension[0]*obj->dimension[1]*obj->dimension[2], sizeof(unsigned char));
-            obj->lighting = calloc(obj->dimension[0]*obj->dimension[1]*obj->dimension[2], sizeof(unsigned char));
-            obj->vertices = calloc(curModel->numberOfVertices * 3, sizeof(GLfloat));
-            obj->vColors = calloc(curModel->numberOfVertices * 3, sizeof(GLfloat));
-            obj->numberOfVertices = curModel->numberOfVertices;
-
-            memcpy(obj->model, curModel->model, obj->dimension[0]*obj->dimension[1]*obj->dimension[2] * sizeof(unsigned char) );
-            memcpy(obj->lighting, curModel->lighting, obj->dimension[0]*obj->dimension[1]*obj->dimension[2] * sizeof(unsigned char) );
-            memcpy(obj->vertices,curModel->vertices,obj->numberOfVertices * 3 * sizeof(GLfloat) );
-            memcpy(obj->vColors,curModel->vColors,obj->numberOfVertices * 3 * sizeof(GLfloat) );
-
+            VoxelModelDestructor(&ECS.Components[ThisComponentID()][subModel].data);
+            ECS.Components[ThisComponentID()][subModel].data = VoxelModelCopy(curModel);
+            
             SetPosition(subModel,pos);
             SetRotation(subModel,rot);
-            obj->enabled = enab;
-            obj->smallScale = 0;
-
-            strncpy(obj->modelPath,modelPath,512);
-            strncpy(obj->modelName,modelName,256);
-            strncpy(obj->objectName,current->name,65);
+            SetVoxelModelEnabled(subModel, enab);
+            strncpy(GetVoxelModelPointer(subModel)->objectName,current->name,65);
         }
         else{
             //printf("GRP\n");

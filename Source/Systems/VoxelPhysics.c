@@ -11,6 +11,7 @@ extern engineTime Time;
 extern engineECS ECS;
 
 int VoxelModelVsVoxelModelCollision(EntityID entityA, EntityID entityB,Vector3 *collisionPoint);
+void ExplodeAtPoint(EntityID entity,Vector3 point,int radius);
 
 static double gravity = 9.8;
 
@@ -64,7 +65,7 @@ void VoxelPhysicsUpdate(){
             if(!EntityContainsMask(i,needed)) continue;
             
             //VoxelModel *objB = GetVoxelModelPointer(i);
-            Vector3 collisionPoint;
+            Vector3 collisionPoint = VECTOR3_ZERO;
             //Vector3 collisionNormal = VECTOR3_ZERO;
             if(VoxelModelVsVoxelModelCollision(entity, i,&collisionPoint)){
                 Vector3 VelA = Subtract(GetVelocity(entity) , ScalarMult(Subtract(GetVelocity(entity),GetVelocity(i)), Lerp(GetBounciness(entity),0.3,1)*2*GetMass(i)/(GetMass(entity) + GetMass(i)) ) );
@@ -75,6 +76,9 @@ void VoxelPhysicsUpdate(){
                 SetVelocity(entity,VelA);
                 SetVelocity(i,VelB);
                 collided = 1;
+
+                ExplodeAtPoint(entity,collisionPoint,10);   
+                ExplodeAtPoint(i,collisionPoint,10);   
             }
         }
         
@@ -88,7 +92,7 @@ void VoxelPhysicsUpdate(){
             posDelta = ScalarMult(Add(ScalarMult(GetVelocity(entity),moveDelta) , ScalarMult(accel,0.5 * moveDelta * moveDelta)),WORLD_SCALE);  
             SetVelocity(entity,Add(GetVelocity(entity),ScalarMult(accel,moveDelta)));
         }else{
-            posDelta = ScalarMult(ScalarMult(GetVelocity(entity),moveDelta),WORLD_SCALE);   
+            posDelta = ScalarMult(ScalarMult(GetVelocity(entity),moveDelta),WORLD_SCALE);
         }
 
         Vector3 pos = Add(GetPosition(entity),posDelta);
@@ -139,11 +143,15 @@ int VoxelModelVsVoxelModelCollision(EntityID entityA, EntityID entityB,Vector3 *
     //ObjB Transposed rotation matrix
     Matrix3x3 mB = Transpose(GetRotationMatrix(entityB));
 
-    for(i = 0; i <objA->numberOfVertices*3  ; i+=3){
 
-        x = roundf(objA->vertices[i]);
-        y = roundf(objA->vertices[i+1]);
-        z = roundf(objA->vertices[i+2]);
+    glBindBuffer(GL_ARRAY_BUFFER, objA->vbo[0]);
+    Vector3* vertices = glMapBuffer(GL_ARRAY_BUFFER, GL_READ_ONLY);
+
+    for(i=0; i<objA->numberOfVertices; i++){
+
+        x = roundf(vertices[i].x);
+        y = roundf(vertices[i].y);
+        z = roundf(vertices[i].z);
 
         //Ignore invalid voxels
         if(x<0 || y<0 || z<0) continue;
@@ -185,6 +193,8 @@ int VoxelModelVsVoxelModelCollision(EntityID entityA, EntityID entityB,Vector3 *
                     collisionPoint->y += y;
                     collisionPoint->z += z;
 
+                    glBindBuffer(GL_ARRAY_BUFFER, objA->vbo[0]);
+                    glUnmapBuffer(GL_ARRAY_BUFFER);
                     return 1;
                 }
             }
@@ -195,13 +205,73 @@ int VoxelModelVsVoxelModelCollision(EntityID entityA, EntityID entityB,Vector3 *
                     collisionPoint->x += x;
                     collisionPoint->y += y;
                     collisionPoint->z += z;
+
+                    glBindBuffer(GL_ARRAY_BUFFER, objA->vbo[0]);
+                    glUnmapBuffer(GL_ARRAY_BUFFER);
                     return 1;
                 }
             }
         }
     }
+
+    glBindBuffer(GL_ARRAY_BUFFER, objA->vbo[0]);
+    glUnmapBuffer(GL_ARRAY_BUFFER);
     return 0;
 }
+
+//Test function
+void ExplodeAtPoint(EntityID entity,Vector3 point,int radius){
+    VoxelModel *obj = GetVoxelModelPointer(entity);
+    
+    Vector3 rotation;
+    GetGlobalTransform(entity, NULL, &rotation, NULL);
+    Vector3 p = RotatePoint(point, rotation, obj->center);
+    p = (Vector3){round(p.x), round(p.y), round(p.z)};
+
+    int startx,endx,starty,endy,startz,endz;
+    int ix,iy,iz,index;
+        startx = p.x-radius <0? 0:p.x-radius;
+        starty = p.y-radius <0? 0:p.y-radius;
+        startz = p.z-radius <0? 0:p.z-radius;
+
+        endx = p.x+radius>obj->dimension[0]? obj->dimension[0] : p.x+radius;
+        endy = p.y+radius>obj->dimension[1]? obj->dimension[1] : p.y+radius;
+        endz = p.z+radius>obj->dimension[2]? obj->dimension[2] : p.z+radius;
+
+        for(ix = startx;ix<endx;ix++){
+            for(iy = starty;iy<endy;iy++){
+                for(iz = startz;iz<endz;iz++){
+                    int randRadius = radius+(rand() % 3);
+                    if( ((ix-p.x)*(ix-p.x))+((iy-p.y)*(iy-p.y))+((iz-p.z)*(iz-p.z)) <= (randRadius*randRadius)){
+                        index = ix + iz * obj->dimension[0] + iy * obj->dimension[0] * obj->dimension[2];
+
+                        if(obj->model[index] != 0){
+                            obj->model[index] = 0;
+                            obj->voxelsRemaining--;
+                        }
+                    }
+                }
+            }   
+        }
+        startz = startz-1 >= 0? startz-1:0;
+        endz = endz+1<obj->dimension[2]? endz+1:obj->dimension[2]-1;
+
+        startx = startx-1 >= 0? startx-1:0;
+        endx = endx+1<obj->dimension[0]? endx+1:obj->dimension[0]-1;
+
+        starty = starty-1 >= 0? starty-1:0;
+        endy = endy+1<obj->dimension[1]? endy+1:obj->dimension[1]-1;
+
+        obj->modificationStartZ = obj->modificationStartZ <0? startz:obj->modificationStartZ<startz?obj->modificationStartZ:startz;
+        obj->modificationEndZ = obj->modificationEndZ <0? endz-1:obj->modificationEndZ>endz-1?obj->modificationEndZ:endz-1;
+
+        obj->modificationStartX = obj->modificationStartX <0? startx:obj->modificationStartX<startx?obj->modificationStartX:startx;
+        obj->modificationEndX = obj->modificationEndX <0? endx-1:obj->modificationEndX>endx-1?obj->modificationEndX:endx-1;
+
+        obj->modificationStartY = obj->modificationStartY <0? starty:obj->modificationStartY<starty?obj->modificationStartY:starty;
+        obj->modificationEndY = obj->modificationEndY <0? endy-1:obj->modificationEndY>endy-1?obj->modificationEndY:endy-1;
+}
+
 
 //Lua interface functions
 

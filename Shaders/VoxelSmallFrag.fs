@@ -15,9 +15,10 @@ layout (std140) uniform PointLight {
     PLight lights[MAX_POINT_LIGHTS];
 };
 
+in  vec3 ex_Position;
 in  vec3 ex_Color;
 in  vec3 ex_Normal;
-in  vec3 ex_Position;
+
 in float depth;
 in  vec3 pointLightDir[MAX_POINT_LIGHTS];
 in  vec2 v_uv;
@@ -42,6 +43,5 @@ void main(void) {
         pointLighting += max(0,step(0.325,max(0,dot(ex_Normal,pointLightDir))*(pointLightDist))) *lights[i].intensity* lights[i].color.rgb;
     }
 
-    gl_FragColor = vec4((ambientAndSun + pointLighting) * ex_Color,1.0);
-    gl_FragColor.a = depth;
+    gl_FragColor = vec4((ambientAndSun + pointLighting) * ex_Color,depth);
 }

@@ -48,11 +48,9 @@ void VoxelRendererUpdate(){
 
     //Configure OpenGL parameters to render point sprites
 
-    glBindFramebuffer(GL_FRAMEBUFFER, Rendering.frameBuffer);
     glViewport(0,0,Screen.gameWidth,Screen.gameHeight);
 
     glEnable(GL_DEPTH_TEST);
-    glAlphaFunc (GL_NOTEQUAL, 0.0f);
 
 
     //Define the projection matrix
@@ -68,19 +66,58 @@ void VoxelRendererUpdate(){
                                     {0                , 0                 , -2.0f/(far-near) , -(far + near)/(far - near)     },
                                     {0                , 0                 , 0                ,   1                            }};
 
-    //Setup buffers
-    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[0]);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(0);
+   
 
-    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[1]);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(1);
+    //Get uniform locations
+    static GLint projLocB = -1;
+    static GLint projLocS = -1;
+    if(projLocB < 0)
+        projLocB = glGetUniformLocation(Rendering.Shaders[1], "projection");
+    if(projLocS < 0)
+        projLocS = glGetUniformLocation(Rendering.Shaders[2], "projection");
 
-    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[2]);
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(2);
+    static GLint rotLocB = -1;
+    static GLint rotLocS = -1;
+    if(rotLocB < 0)
+        rotLocB = glGetUniformLocation(Rendering.Shaders[1], "rotation");
+    if(rotLocS < 0)
+        rotLocS = glGetUniformLocation(Rendering.Shaders[2], "rotation");
 
+    static GLint objPosLocB = -1;
+    static GLint objPosLocS = -1;
+    if(objPosLocB < 0)
+        objPosLocB = glGetUniformLocation(Rendering.Shaders[1], "objPos");
+    if(objPosLocS < 0)
+        objPosLocS = glGetUniformLocation(Rendering.Shaders[2], "objPos");
+
+    static GLint centerPosLocB = -1;
+    static GLint centerPosLocS = -1;
+    if(centerPosLocB < 0)
+        centerPosLocB = glGetUniformLocation(Rendering.Shaders[1], "centerPos");
+    if(centerPosLocS < 0)
+        centerPosLocS = glGetUniformLocation(Rendering.Shaders[2], "centerPos");
+
+    static GLint camPosLocB = -1;
+    static GLint camPosLocS = -1;
+    if(camPosLocB < 0)
+        camPosLocB = glGetUniformLocation(Rendering.Shaders[1], "camPos");
+    if(camPosLocS < 0)
+        camPosLocS = glGetUniformLocation(Rendering.Shaders[2], "camPos");
+
+    static GLint lightBlockB = -1;
+    static GLint lightBlockS = -1;
+    if(lightBlockB < 0)
+        lightBlockB = glGetUniformBlockIndex(Rendering.Shaders[1], "PointLight");
+    if(lightBlockS < 0)
+        lightBlockS = glGetUniformBlockIndex(Rendering.Shaders[2], "PointLight");
+
+    static GLint spriteScaleLoc = -1;
+    if(spriteScaleLoc < 0)
+        spriteScaleLoc = glGetUniformLocation(Rendering.Shaders[1], "spriteScale");
+
+    static GLint texLoc = -1;
+    if(texLoc < 0)
+        texLoc = glGetUniformLocation(Rendering.Shaders[1], "tex");
 
     EntityID entity;
 	for(entity = 0; entity <= ECS.maxUsedIndex; entity++){
@@ -107,49 +144,61 @@ void VoxelRendererUpdate(){
             glBindTexture(GL_TEXTURE_2D, CubeTex[0]);
 
             glPointSize(cubeTexDimension);
-            glEnable(GL_POINT_SPRITE);
         }
 
+        //Setup buffers
+        glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[0]);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(0);
 
-        glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[0]);
-        glBufferData(GL_ARRAY_BUFFER, obj->numberOfVertices * 3 * sizeof(GLfloat), obj->vertices, GL_STREAM_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[1]);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(1);
 
-        glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[1]);
-        glBufferData(GL_ARRAY_BUFFER, obj->numberOfVertices * 3 * sizeof(GLfloat), obj->vColors, GL_STREAM_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[2]);
+        glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(2);
 
-        glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[2]);
-        glBufferData(GL_ARRAY_BUFFER, obj->numberOfVertices * 3 * sizeof(GLfloat), obj->normal, GL_STREAM_DRAW);
 
-        int usedProgram = 0;
+        GLint lightBlock, projLoc, rotLoc, objPosLoc, centerPosLoc, camPosLoc;
         if(obj->smallScale){
             glUseProgram(Rendering.Shaders[2]);
-            usedProgram = 2;
+
+            lightBlock = lightBlockS;
+            projLoc = projLocS;
+            rotLoc = rotLocS;
+            objPosLoc = objPosLocS;
+            centerPosLoc = centerPosLocS;
+            camPosLoc = camPosLocS;
+            
+            glUniformBlockBinding(Rendering.Shaders[2], lightBlock, 0);
         }else{
             glUseProgram(Rendering.Shaders[1]);
-            usedProgram = 1;
+            
+            lightBlock = lightBlockB;
+            projLoc = projLocB;
+            rotLoc = rotLocB;
+            objPosLoc = objPosLocB;
+            centerPosLoc = centerPosLocB;
+            camPosLoc = camPosLocB;
 
-            glUniform1i(glGetUniformLocation(Rendering.Shaders[1], "tex"), 0);
-            glUniform1i(glGetUniformLocation(Rendering.Shaders[1], "spriteScale"), cubeTexDimension/5.0f);
+            glUniformBlockBinding(Rendering.Shaders[1], lightBlock, 0);
+            glUniform1i(texLoc, 0);
+            glUniform1i(spriteScaleLoc, cubeTexDimension/5.0f);
         }
+ 
+        glBindBufferBase(GL_UNIFORM_BUFFER, lightBlock, GetPointLightsBuffer());
 
-        GLuint blockIndex = glGetUniformBlockIndex(Rendering.Shaders[usedProgram], "PointLight");
-        glUniformBlockBinding(Rendering.Shaders[usedProgram], blockIndex, 0);
-        glBindBufferBase(GL_UNIFORM_BUFFER, glGetUniformBlockIndex(Rendering.Shaders[usedProgram], "PointLight"), GetPointLightsBuffer());
-
-        glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[usedProgram], "projection"), 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix[0]);
-        glUniformMatrix3fv(glGetUniformLocation(Rendering.Shaders[usedProgram], "rotation"), 1, GL_FALSE, (const GLfloat*)&Transpose(rotation).m[0]);
-        glUniform3f(glGetUniformLocation(Rendering.Shaders[usedProgram], "objPos"), position.x, position.y, position.z);
-        glUniform3f(glGetUniformLocation(Rendering.Shaders[usedProgram], "centerPos"), obj->center.x, obj->center.y, obj->center.z);
-        glUniform3f(glGetUniformLocation(Rendering.Shaders[usedProgram], "camPos"), Rendering.cameraPosition.x, Rendering.cameraPosition.y, Rendering.cameraPosition.z);
+        glUniformMatrix4fv(projLoc, 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix[0]);
+        glUniformMatrix3fv(rotLoc, 1, GL_FALSE, (const GLfloat*)&Transpose(rotation).m[0]);
+        glUniform3f(objPosLoc, position.x, position.y, position.z);
+        glUniform3f(centerPosLoc, obj->center.x, obj->center.y, obj->center.z);
+        glUniform3f(camPosLoc, Rendering.cameraPosition.x, Rendering.cameraPosition.y, Rendering.cameraPosition.z);
         
 
         glDrawArrays(GL_POINTS, 0, obj->numberOfVertices);
 
         glUseProgram(0);
-
-        if(!obj->smallScale){
-            glDisable(GL_POINT_SPRITE);
-        }
     }
 
     glDisable(GL_DEPTH_TEST);

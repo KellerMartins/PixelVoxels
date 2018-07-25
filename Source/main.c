@@ -30,7 +30,7 @@ void* f(void* p){
 
 int main(int argc, char *argv[]){
 
-	OpenLogFile("gameLog.txt");
+	//OpenLogFile("gameLog.txt");
 	InitECS(110);
 
 	//Register ECS Components
@@ -73,7 +73,7 @@ int main(int argc, char *argv[]){
 		PrintLog(Error,"Main: Error loading font!");
 	}
 
-	LoadScene("Assets", "Sea.scene");
+	LoadScene("Assets", "newScene.scene");
 
 	PrintLog(Info,"GameLoop Initialized\n");
 	//Game Loop
@@ -81,31 +81,31 @@ int main(int argc, char *argv[]){
 	{
 		
 		EngineUpdate();
-		
-		// if (GetKey(SDL_SCANCODE_UP))
-		// {
-		// 	MoveCamera(0,-150,0);
-		// }
-		// else if (GetKey(SDL_SCANCODE_DOWN))
-		// {
-		// 	MoveCamera(0,150,0);
-		// }
-		// if (GetKey(SDL_SCANCODE_RIGHT))
-		// {
-		// 	MoveCamera(150,0,0);
-		// }
-		// else if (GetKey(SDL_SCANCODE_LEFT))
-		// {
-		// 	MoveCamera(-150,0,0);
-		// }
-		// if (GetKey(SDL_SCANCODE_RSHIFT))
-		// {
-		// 	MoveCamera(0,0,50);
-		// }
-		// else if (GetKey(SDL_SCANCODE_RCTRL))
-		// {
-		// 	MoveCamera(0,0,-50);
-		// }
+		/*
+		if (GetKey(SDL_SCANCODE_UP))
+		{
+			MoveCamera(0,-150,0);
+		}
+		else if (GetKey(SDL_SCANCODE_DOWN))
+		{
+			MoveCamera(0,150,0);
+		}
+		if (GetKey(SDL_SCANCODE_RIGHT))
+		{
+			MoveCamera(150,0,0);
+		}
+		else if (GetKey(SDL_SCANCODE_LEFT))
+		{
+			MoveCamera(-150,0,0);
+		}
+		if (GetKey(SDL_SCANCODE_RSHIFT))
+		{
+			MoveCamera(0,0,50);
+		}
+		else if (GetKey(SDL_SCANCODE_RCTRL))
+		{
+			MoveCamera(0,0,-50);
+		}*/
 		if (GetKey(SDL_SCANCODE_ESCAPE))
 		{
 			ExitGame();
@@ -120,7 +120,7 @@ int main(int argc, char *argv[]){
 		{
 			ReloadShaders();
 		}
-
+		
 		RenderToScreen();
 
 		static char fpsInfo[20];
@@ -134,7 +134,7 @@ int main(int argc, char *argv[]){
 		RenderTextDebug(fpsInfo, fontColor, 110, TTF_FontHeight(font)*2 + 10, font);
 		RenderTextDebug(msInfo, fontColor, 110, TTF_FontHeight(font) + 10, font);
 		RenderTextDebug(dtInfo, fontColor, 110, 10, font);
-		
+
 		EngineUpdateEnd();
 		ProcessFPS();
 	}

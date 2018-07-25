@@ -1,0 +1,131 @@
+{
+	"entities":	[{
+			"Transform":	{
+				"position":	[22.806064605712891, -12.141356468200684, -220646.6875],
+				"rotation":	[0, 0, 0]
+			},
+			"VoxelModel":	{
+				"modelPath":	"Assets/Game/Models/",
+				"modelName":	"plasmaPistolSmall.vox",
+				"smallScale":	true,
+				"center":	[0, 0, 0]
+			},
+			"RigidBody":	{
+				"mass":	1,
+				"bounciness":	0.699999988079071,
+				"velocity":	[0, 0, -657.67987060546875],
+				"acceleration":	[0, 0, 0],
+				"useGravity":	true,
+				"isStatic":	false
+			}
+		}, {
+			"Transform":	{
+				"position":	[14.6338472366333, 94.6068115234375, 79.971138000488281],
+				"rotation":	[0, 0, 0]
+			},
+			"VoxelModel":	{
+				"modelPath":	"Assets/Game/Models/",
+				"modelName":	"bullet.vox",
+				"smallScale":	false,
+				"center":	[0, 0, 0]
+			},
+			"RigidBody":	{
+				"mass":	1,
+				"bounciness":	0.5,
+				"velocity":	[0, 0, 0],
+				"acceleration":	[0, 0, 0],
+				"useGravity":	true,
+				"isStatic":	false
+			}
+		}, {
+			"Transform":	{
+				"position":	[60.969623565673828, 61.687290191650391, 17.134490966796875],
+				"rotation":	[0, 0, 0]
+			},
+			"VoxelModel":	{
+				"modelPath":	"Assets/Game/Models/",
+				"modelName":	"bullet.vox",
+				"smallScale":	false,
+				"center":	[0, 0, 0]
+			},
+			"RigidBody":	{
+				"mass":	1,
+				"bounciness":	0.699999988079071,
+				"velocity":	[-1.4012984643248171e-045, 0, 1.4012984643248171e-045],
+				"acceleration":	[0, 0, 0],
+				"useGravity":	true,
+				"isStatic":	false
+			}
+		}, {
+			"prefabPath":	"Assets",
+			"prefabName":	"newPrefab.prefab",
+			"Transform":	{
+				"position":	[-31.777360916137695, -39.496978759765625, 80.086677551269531],
+				"rotation":	[12, -12, 12.000000953674316]
+			}
+		}, {
+			"Transform":	{
+				"position":	[1.3022137880325317, 0, 3.7431008815765381],
+				"rotation":	[0, 0, 0]
+			},
+			"VoxelModel":	{
+				"modelPath":	"Assets/Game/Models/",
+				"modelName":	"dune.vox",
+				"smallScale":	false,
+				"center":	[0, 0, 0]
+			},
+			"RigidBody":	{
+				"mass":	1,
+				"bounciness":	0.20000000298023224,
+				"velocity":	[0, 0, 0],
+				"acceleration":	[0, 0, 0],
+				"useGravity":	true,
+				"isStatic":	true
+			}
+		}, {
+			"prefabPath":	"Assets",
+			"prefabName":	"newPrefab.prefab",
+			"Transform":	{
+				"position":	[-71.777381896972656, -39.496978759765625, 79.565849304199219],
+				"rotation":	[14.000000953674316, -14.000000953674316, 14.000000953674316]
+			}
+		}, {
+			"Transform":	{
+				"position":	[6.4972352981567383, 0, 105.34308624267578],
+				"rotation":	[0, 0, 0]
+			},
+			"VoxelModel":	{
+				"modelPath":	"Assets/Game/Models/",
+				"modelName":	"dune.vox",
+				"smallScale":	false,
+				"center":	[0, 0, 0]
+			},
+			"RigidBody":	{
+				"mass":	1,
+				"bounciness":	0.20000000298023224,
+				"velocity":	[0, 0, 0],
+				"acceleration":	[0, 0, 0],
+				"useGravity":	true,
+				"isStatic":	true
+			}
+		}, {
+			"Transform":	{
+				"position":	[53.335411071777344, -62.082759857177734, 4.9538822174072266],
+				"rotation":	[0, 0, 0]
+			},
+			"VoxelModel":	{
+				"modelPath":	"Assets/Game/Models/",
+				"modelName":	"dune.vox",
+				"smallScale":	false,
+				"center":	[0, 0, 0]
+			},
+			"RigidBody":	{
+				"mass":	1,
+				"bounciness":	0.20000000298023224,
+				"velocity":	[0, 0, 0],
+				"acceleration":	[0, 0, 0],
+				"useGravity":	true,
+				"isStatic":	true
+			}
+		}]
+}

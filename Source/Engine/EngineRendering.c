@@ -11,6 +11,11 @@ extern engineScreen Screen;
 
 engineRendering Rendering;
 
+//TODO: customize print format
+void GLAPIENTRY GLDebugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam){
+    PrintLog(Error, "GL CALLBACK: %s type = 0x%x, severity = 0x%x, message = %s\n", (type == GL_DEBUG_TYPE_ERROR ? "** GL ERROR **" : "" ), type, severity, message );
+}
+
 int InitRenderer(){
     //Initialize renderer
 	Core.renderer = SDL_CreateRenderer(Core.window, -1, SDL_RENDERER_ACCELERATED);
@@ -87,30 +92,24 @@ int InitRenderer(){
 
     glBindFramebuffer(GL_FRAMEBUFFER,0);
 
-    // VAO Generation and binding
-    glGenVertexArrays(1, &Rendering.vao);
-    glBindVertexArray(Rendering.vao);
+    
 
-    // VBO generation and binding
-	// VBOs for 3D rendering
-    glGenBuffers(3, Rendering.vbo3D);
+    //Enable debug output
+    //glEnable( GL_DEBUG_OUTPUT );
+    //glDebugMessageCallback( GLDebugCallback, 0 );
 
-    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[0]); //Vertex
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+    //VAO Generation and binding
+    glGenVertexArrays(1, &Rendering.vao2D);
+    glBindVertexArray(Rendering.vao2D);
 
-    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[1]); //Color
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[2]); //Normal
-    glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
+    //VBO generation and binding
 	//VBOS for 2D rendering
 	glGenBuffers(2, Rendering.vbo2D);
 
-    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[0]); //Vertex
+    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[0]); //Vertex
     glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
-    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo3D[1]); //UV
+    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[1]); //UV
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
 	
     //Compile shaders
@@ -168,7 +167,6 @@ void ClearRender(SDL_Color col){
     glClearColor(col.r/255.0, col.g/255.0, col.b/255.0,0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 void RenderToScreen(){
@@ -227,7 +225,6 @@ void RenderToScreen(){
 
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-    glDisable( GL_TEXTURE_2D );
     glUseProgram(0);
 }
 
@@ -261,8 +258,6 @@ void RenderTextDebug(char *text, SDL_Color color, int x, int y, TTF_Font* font)
     ProjectionMatrix[3][0] = -(right + left)/(right - left);
     ProjectionMatrix[3][1] = -(top + bottom)/(top - bottom);
     ProjectionMatrix[3][2] = -(far + near)/(far - near);
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);

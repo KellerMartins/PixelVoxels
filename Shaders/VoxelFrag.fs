@@ -15,8 +15,9 @@ layout (std140) uniform PointLight {
     PLight lights[MAX_POINT_LIGHTS];
 };
 
-in  vec3 ex_Color;
 in  vec3 ex_Position;
+in  vec3 ex_Color;
+
 in float depth;
 in vec3 pointLightCol;
 in float pointLightDist;
@@ -59,10 +60,11 @@ void main(void) {
         discard;
 
     vec3 sunDir = normalize(vec3(-0.75,-0.2,1.5));
-    vec3 normal = normalize(texture2D(tex, gl_PointCoord).rgb * vec3(-1,-1,1));
+    vec4 sprite = texture(tex, gl_PointCoord);
+    vec3 normal = normalize(sprite.rgb * vec3(-1,-1,1));
 
-    float alpha = texture2D(tex, gl_PointCoord).a;
-    if(alpha < 0.5)
+    
+    if(sprite.a < 0.5)
         discard;
 
     vec3 ambientAndSun = vec3(0.04,0,0.1) + max(0,dot(sunDir,normal)) * vec3(1,1,1);
@@ -80,6 +82,5 @@ void main(void) {
         pointLighting += (step(0.4,pointLightLighting)-step(0.5,pointLightLighting)) *lights[i].intensity* hueShift(lights[i].color.rgb,lights[i].shift) * 0.1;
     }
 
-    gl_FragColor = vec4((ambientAndSun + pointLighting) * ex_Color,1.0);
-    gl_FragColor.a = depth;
+    gl_FragColor = vec4((ambientAndSun + pointLighting) * ex_Color,depth);
 }

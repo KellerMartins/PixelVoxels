@@ -597,6 +597,8 @@ void InternalLoadMultiVoxelModelObject(VoxelModel **modelPointer, char modelPath
 
                 obj->enabled = !isHidden;
 
+                CalculateLighting(obj);
+
                 //Pass to the next model
                 free(voxelData);
 
@@ -791,6 +793,8 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
 
     obj->enabled = 1;
 
+    CalculateLighting(obj);
+
     fclose(file);
 
     PrintLog(Info,">DONE!\n\n");
@@ -800,6 +804,7 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
 int avaliableVertices[128*128*128];
 Vector3 requestedVertices[128*128*128];
 Vector3 requestedNormals[128*128*128];
+Vector3 requestedColors[128*128*128];
 void CalculateRendered(EntityID entity){
     VoxelModel *obj = GetVoxelModelPointer(entity);
 
@@ -811,6 +816,8 @@ void CalculateRendered(EntityID entity){
     
     glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[0]);
     Vector3* vertices = glMapBuffer(GL_ARRAY_BUFFER, GL_READ_WRITE);
+    glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[1]);
+    Vector3* colors = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
     glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[2]);
     Vector3* normal = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
 
@@ -879,8 +886,29 @@ void CalculateRendered(EntityID entity){
                     if(occ!=6){
                         Vector3 vPos = {x,y,z};
                         Vector3 vNormal = VECTOR3_ZERO;
-                        requestedVertices[requestedCount] = vPos;
 
+                        const float edge = 0.80;
+                        const float base = 0.75;
+                        const float crease = 0.70;
+                        const float sunlight = 1.32;
+
+                        float heightVal = 1.0 + ((z+ GetPosition(entity).z+Rendering.cameraPosition.z)*0.5)/128.0;
+                        heightVal = clamp(heightVal,0,1.4);
+
+                        //Add some lightness on the edges
+                        int edgeIndx = obj->lighting[index]>>3;
+                        float edgeVal = (edgeIndx<5? edge:edgeIndx == 5? base:crease);
+
+                        //Multiply illuminations and convert from (0,256) to (0,1) range
+                        float illuminFrac = sunlight * edgeVal * heightVal * 1.0/256.0;
+
+                        Pixel vColor = Rendering.voxelColors[obj->model[index]];
+                        requestedVertices[requestedCount] = vPos;
+                        requestedColors[requestedCount] = (Vector3){illuminFrac * vColor.r,
+                                                                    illuminFrac * vColor.g,
+                                                                    illuminFrac * vColor.b};
+
+                        //Calculate normal vector as the average direction without neighbors
                         if(x-1 < 0){
                             vNormal.x -= 1;
                         }else{
@@ -951,6 +979,7 @@ void CalculateRendered(EntityID entity){
         obj->numberOfVertices = requestedCount;
         memcpy(vertices,requestedVertices,requestedCount * sizeof(Vector3));
         memcpy(normal,requestedNormals,requestedCount * sizeof(Vector3));
+        memcpy(colors,requestedColors,requestedCount * sizeof(Vector3));
         
     }else{
         
@@ -960,6 +989,7 @@ void CalculateRendered(EntityID entity){
             int indx = avaliableVertices[av];
             vertices[indx] = requestedVertices[req];
             normal[indx] = requestedNormals[req];
+            colors[indx] = requestedColors[req];
 
             av++;
             req++;
@@ -976,6 +1006,8 @@ void CalculateRendered(EntityID entity){
                 req++;
             }*/
             memcpy(&vertices[obj->numberOfVertices], &requestedVertices[req], voxelsRemaining*sizeof(Vector3));
+            memcpy(&normal[obj->numberOfVertices], &requestedNormals[req], voxelsRemaining*sizeof(Vector3));
+            memcpy(&colors[obj->numberOfVertices], &requestedColors[req], voxelsRemaining*sizeof(Vector3));
 
             obj->numberOfVertices += voxelsRemaining;
 
@@ -986,6 +1018,7 @@ void CalculateRendered(EntityID entity){
 
                 vertices[indx] = (Vector3){-1,-1,-1};
                 normal[indx] = VECTOR3_ZERO;
+                colors[indx] = VECTOR3_ZERO;
 
                 av++;
             }
@@ -994,16 +1027,14 @@ void CalculateRendered(EntityID entity){
     
     glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[0]);
     glUnmapBuffer(GL_ARRAY_BUFFER);
+    glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[1]);
+    glUnmapBuffer(GL_ARRAY_BUFFER);
     glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[2]);
     glUnmapBuffer(GL_ARRAY_BUFFER);
 }
 
-//Calculate the basic lighting and self shadowing and put into a GLint color array inside the component
-void CalculateLighting(EntityID entity){
-    VoxelModel *obj = GetVoxelModelPointer(entity);
-    if(!obj->model){
-        return;
-    }
+//Calculate the basic lighting and self shadowing
+void CalculateLighting(VoxelModel *obj){
 
     int y,x,z,index,dir;
     int occlusion,lightAir,lightBlock;
@@ -1077,58 +1108,6 @@ void CalculateLighting(EntityID entity){
             }
         }
     }
-
-    const float edge = 0.80;
-    const float base = 0.75;
-    const float crease = 0.70;
-    const float sunlight = 1.42;
-    const float shadow = 0.79;
-
-    glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[0]);
-    Vector3* vertices = glMapBuffer(GL_ARRAY_BUFFER, GL_READ_ONLY);
-    glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[1]);
-    Vector3* colors = glMapBuffer(GL_ARRAY_BUFFER, GL_WRITE_ONLY);
-    
-
-    int i;
-    for(i=0; i<obj->numberOfVertices; i++){
-        x = roundf(vertices[i].x);
-        y = roundf(vertices[i].y);
-        z = roundf(vertices[i].z);
-
-        if(x<0 || y<0 || z<0){
-            colors[i] = VECTOR3_ZERO;
-            continue;
-        }
-
-        float heightVal = clamp(((1.0+(((z+ GetPosition(entity).z+Rendering.cameraPosition.z)*0.5))/128)),0,1.4);
-
-        unsigned colorIndex = (x) + (z) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
-        Pixel color = Rendering.voxelColors[obj->model[colorIndex]];
-        
-        //Get voxel lighting level and multiply by the dynamic shadow (not used for now)
-        int lightIndx = (obj->lighting[colorIndex] & 6)>>1;
-        lightIndx *= obj->lighting[colorIndex] & 1;
-
-        //Add some lightness on the edges
-        int edgeIndx = obj->lighting[colorIndex]>>3;
-        float lightVal = lightIndx == 1? 1:(lightIndx >= 2? sunlight:shadow);
-        float edgeVal = (edgeIndx<5? edge:edgeIndx == 5? base:crease);
-
-        //Multiply illuminations and convert from (0,256) to (0,1) range
-        double illuminFrac = lightVal * edgeVal * heightVal * 1.0/256.0;
-
-        //Transform the color from a Int16 to each RGB component
-        colors[i].x = clamp(color.r * illuminFrac,0,1);
-        colors[i].y = clamp(color.g * illuminFrac,0,1);
-        colors[i].z = clamp(color.b * illuminFrac,0,1);
-    }
-
-    glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[0]);
-    glUnmapBuffer(GL_ARRAY_BUFFER);
-    glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[1]);
-    glUnmapBuffer(GL_ARRAY_BUFFER);
-
 }
 
 //Multi Object helper structures
@@ -1304,6 +1283,8 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
                 objPointer->modificationEndZ = objPointer->dimension[2]-1;
 
                 objPointer->enabled = 1;
+
+                CalculateLighting(objPointer);
 
                 //Pass to the next model
                 free(voxelData);

@@ -55,7 +55,7 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[]);
 int IsMultiVoxelModelFile(char modelPath[], char modelName[]);
 
 void CalculateRendered(EntityID entity);
-void CalculateLighting(EntityID entity);
+void CalculateLighting(VoxelModel *obj);
 
 void VoxelModelRegisterLuaFunctions();
 

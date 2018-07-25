@@ -26,7 +26,6 @@ void VoxelModificationUpdate(){
         if(obj->model && obj->modificationStartZ >=0){
             
             CalculateRendered(entity);
-            CalculateLighting(entity);
 
             obj->modificationStartX = -1;
             obj->modificationEndX = -1;

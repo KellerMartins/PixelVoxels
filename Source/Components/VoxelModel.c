@@ -892,7 +892,7 @@ void CalculateRendered(EntityID entity){
                         const float crease = 0.70;
                         const float sunlight = 1.32;
 
-                        float heightVal = 1.0 + ((z+ GetPosition(entity).z+Rendering.cameraPosition.z)*0.5)/128.0;
+                        float heightVal = 1.0 + (z*0.5)/128.0;
                         heightVal = clamp(heightVal,0,1.4);
 
                         //Add some lightness on the edges

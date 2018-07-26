@@ -15,7 +15,7 @@ typedef struct engineRendering{
 
     GLuint frameBuffer;
     GLuint screenTexture;
-    GLuint depthRenderBuffer;
+    GLuint depthTexture;
     GLuint vao2D, vbo2D[3];
 
     GLuint Shaders[4];

@@ -111,7 +111,6 @@ void EditorUpdate(){
         }
     }
 
-    glClear(GL_DEPTH_BUFFER_BIT);
     glViewport(0,0,Screen.gameWidth,Screen.gameHeight);
 
     //Draw UI windows and gizmos

@@ -8,6 +8,8 @@ extern engineScreen Screen;
 extern engineRendering Rendering;
 
 
+#define NULL_ELEMENT (UIElement){coloredRectangle,0,0,0,0,VECTOR3_ZERO,0,0,0,0}
+#define STRING_CACHE_SIZE 100
 
 //Element types
 typedef enum elementType{coloredRectangle, texturedRectangle, textElement, lineElement}ElementType;
@@ -16,27 +18,43 @@ typedef struct UIElement{
 
     int minRectX;
     int minRectY;
-    int minRectZ;
 
     int maxRectX;
     int maxRectY;
-    int maxRectZ;
 
     Vector3 color;
     GLuint texture;
 
-    char* text;
-    TTF_Font* font;
+    int textW, textH;
 
     float lineThickness;
 
 }UIElement;
-List UIElements;
+UIElement *UIElements = NULL;
+int elementsCount = 0;
+int maxElements = 100;
+
+
+typedef struct StringTexture{
+    TTF_Font *font;
+    char *text;
+    GLuint texture;
+    int textW, textH;
+    int consecutiveFrames;
+}StringTexture;
+
+StringTexture stringCache[STRING_CACHE_SIZE];
+int lastString = 0;
+
+GLuint vbo[2];
+int currentByteVBO = 0;
+int currentElement = 0;
 
 //Basic forms
 GLfloat baseRectangleVertex[8];
 GLfloat baseRectangleUV[8] = {0,0, 0,1, 1,0, 1,1};
 GLfloat baseLineVertex[4];
+const int size = 4*2*sizeof(GLfloat);
 
 //OpenGL data
 GLfloat ProjectionMatrix[4][4] = {{0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}};
@@ -45,16 +63,27 @@ GLfloat ProjectionMatrix[4][4] = {{0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}};
 List luaFonts;
 char **luaFontNames = NULL;
 
-
 //Internal functions declarations
-GLuint TextToTexture(char *text, Vector3 color, TTF_Font* font, int *w, int* h);
+GLuint TextToTexture(char *text, TTF_Font* font, int *w, int* h);
 void MorphRectangle(GLfloat vertices[8], int minX, int minY, int maxX,int maxY);
-void MorphLine(GLfloat vertices[8], int minX, int minY, int maxX,int maxY);
+void MorphLine(GLfloat vertices[8], int minX, int minY, int maxX,int maxY,float width);
 
 //Initialization function - runs on engine start
 void UIRendererInit(){
     ThisSystem = (System*)GetElementAt(ECS.SystemList,GetSystemID("UIRenderer"));
-    UIElements = InitList(sizeof(UIElement));
+    UIElements = malloc(maxElements * sizeof(UIElement));
+
+    glGenBuffers(2, vbo);
+    //Vertex VBO
+    glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+    glBufferData(GL_ARRAY_BUFFER, maxElements * size, NULL, GL_STREAM_DRAW);
+
+    //UV VBO
+    glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+    glBufferData(GL_ARRAY_BUFFER, maxElements * size, NULL, GL_STATIC_DRAW);
+    for(int i=0; i<maxElements; i++){
+        glBufferSubData(GL_ARRAY_BUFFER,i*size,size,baseRectangleUV);
+    }
 
     luaFonts = InitList(sizeof(TTF_Font*));
     luaFontNames = malloc(sizeof(char*));
@@ -64,7 +93,6 @@ void UIRendererInit(){
 //UI Render Loop - runs each GameLoop iteration
 void UIRendererUpdate(){
 
-    glBindFramebuffer(GL_FRAMEBUFFER, Rendering.frameBuffer);
     glViewport(0,0,Screen.windowWidth,Screen.windowHeight);
 
     //Define the projection matrix
@@ -85,26 +113,41 @@ void UIRendererUpdate(){
 
     //Disable depth test
     glDisable(GL_DEPTH_TEST);
+    
+    //Get uniform locations
+    static GLint projLoc = -1;
+    if(projLoc < 0)
+        projLoc = glGetUniformLocation(Rendering.Shaders[3], "projection");
+
+    static GLint colorLoc = -1;
+    if(colorLoc < 0)
+        colorLoc = glGetUniformLocation(Rendering.Shaders[3], "color");
+
+    static GLint texLoc = -1;
+    if(texLoc < 0)
+        texLoc = glGetUniformLocation(Rendering.Shaders[3], "texture");
 
     //Enable UI shader
     glUseProgram(Rendering.Shaders[3]);
+    //Pass active texture ID
+    glUniform1i(texLoc, 0);
     //Pass the projection matrix to the shader
-    glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[3], "projection"), 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix[0]);
+    glUniformMatrix4fv(projLoc, 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix[0]);
 
-    //Setup the vertex VBO to rendering
-    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[0]);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(0);
-
-    //Setup the UV VBO and pass the UV coordinates to it
-    glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[1]);
-    glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat), baseRectangleUV, GL_STREAM_DRAW);
+    //Setup VBOs
+    glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(1);
 
-    ListCellPointer cell;
-    ListForEach(cell, UIElements){
-        UIElement element = GetElementAsType(cell, UIElement);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(0);
+
+    currentByteVBO = 0;
+    currentElement = 0;
+    int i;
+    for(i=0; i<elementsCount; i++){
+        UIElement element = UIElements[i];
 
         if(element.type == coloredRectangle || element.type == texturedRectangle){
 
@@ -124,71 +167,65 @@ void UIRendererUpdate(){
                 glBindTexture(GL_TEXTURE_2D, 0);
             }
 
-            //Passing rectangle to the vertex VBO
-            glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[0]);
-            glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat), baseRectangleVertex, GL_STREAM_DRAW);
-
-
-            glUseProgram(Rendering.Shaders[3]);
-
             //Passing uniforms to shader
-            glUniform3f(glGetUniformLocation(Rendering.Shaders[3], "color"), element.color.x, element.color.y, element.color.z);
-            
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+            glUniform3f(colorLoc, element.color.x, element.color.y, element.color.z);
 
+            //Passing rectangle to the vertex VBO
+            void* data = glMapBufferRange(GL_ARRAY_BUFFER,currentByteVBO, size, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
+            memcpy(data,baseRectangleVertex,size);
+            glUnmapBuffer(GL_ARRAY_BUFFER);
             
+            glDrawArrays(GL_TRIANGLE_STRIP, currentElement, 4);
+            currentByteVBO+=size;
+            currentElement+=4;
+
         }else if(element.type == textElement){
-            
-            int textW = 0, textH = 0;
-            GLuint textTexture = TextToTexture(element.text, element.color, element.font, &textW, &textH);
             glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, textTexture);
+            glBindTexture(GL_TEXTURE_2D, element.texture);
 
             MorphRectangle(baseRectangleVertex, 
                            element.minRectX,
                            element.minRectY, 
-                           element.minRectX + (textW)/Screen.gameScale, 
-                           element.minRectY + (textH)/Screen.gameScale);
+                           element.minRectX + (element.textW)/Screen.gameScale, 
+                           element.minRectY + (element.textH)/Screen.gameScale);
             
+            //Passing uniforms to shader
+            glUniform3f(colorLoc, element.color.x, element.color.y, element.color.z);
 
             //Passing rectangle to the vertex VBO
-            glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[0]);
-            glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat), baseRectangleVertex, GL_STREAM_DRAW);
-
-            glUseProgram(Rendering.Shaders[3]);
-
-            //Passing uniforms to shader
-            glUniform1i(glGetUniformLocation(Rendering.Shaders[3], "texture"), 0);
-            glUniform3f(glGetUniformLocation(Rendering.Shaders[3], "color"), element.color.x, element.color.y, element.color.z);
+            void* data = glMapBufferRange(GL_ARRAY_BUFFER,currentByteVBO, size, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
+            memcpy(data,baseRectangleVertex,size);
+            glUnmapBuffer(GL_ARRAY_BUFFER);
             
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
-
-            glDeleteTextures(1, &textTexture);
-            
-            free(element.text);
+            glDrawArrays(GL_TRIANGLE_STRIP, currentElement, 4);
+            currentByteVBO+=size;
+            currentElement+=4;
+    
         }else if(element.type == lineElement){
-            MorphLine(baseLineVertex,
+            
+            MorphLine(baseRectangleVertex,
                       element.minRectX,
                       element.minRectY,
                       element.maxRectX,
-                      element.maxRectY);
-            
-            glLineWidth(element.lineThickness/Screen.gameScale);
+                      element.maxRectY,
+                      element.lineThickness/(2*Screen.gameScale));
+
 
             //Pass no texture to shader
             glBindTexture(GL_TEXTURE_2D, 0);
-
-            //Passing line to the vertex VBO
-            glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[0]);
-            glBufferData(GL_ARRAY_BUFFER, 2 * 2 * sizeof(GLfloat), baseLineVertex, GL_STREAM_DRAW);
-
             //Passing uniforms to shader
-            glUniform3f(glGetUniformLocation(Rendering.Shaders[3], "color"), element.color.x, element.color.y, element.color.z);
+            glUniform3f(colorLoc, element.color.x, element.color.y, element.color.z);
+
+            //Passing rectangle to the vertex VBO
+            void* data = glMapBufferRange(GL_ARRAY_BUFFER,currentByteVBO, size, GL_MAP_WRITE_BIT | GL_MAP_UNSYNCHRONIZED_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
+            memcpy(data,baseRectangleVertex,size);
+            glUnmapBuffer(GL_ARRAY_BUFFER);
             
-            glDrawArrays(GL_LINES, 0, 2);
+            glDrawArrays(GL_TRIANGLE_STRIP, currentElement, 4);
+            currentByteVBO+=size;
+            currentElement+=4;
         }
     }
-
 
     //Reenable depth test and reset opengl vars
     glEnable(GL_DEPTH_TEST);
@@ -199,8 +236,13 @@ void UIRendererUpdate(){
     glDisableVertexAttribArray(1);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+    for(i=0; i<lastString; i++){
+        if(stringCache[i].consecutiveFrames>0) 
+            stringCache[i].consecutiveFrames--;
+    }
+
     //Free the list of elements for the next frame
-    FreeList(&UIElements);
+    elementsCount = 0;
 }
 
 //Finalization - runs at engine finish
@@ -223,14 +265,40 @@ void UIRendererFree(){
     }
     free(luaFontNames);
 
+    //Free cached string texures
+    for(i=0; i<lastString; i++){
+        glDeleteTextures(1, &stringCache[i].texture);
+        free(stringCache[i].text);
+    }
+
     //Free UI elements list
-    FreeList(&UIElements);
+    free(UIElements);
+
+    //Free VBO
+    glDeleteBuffers(2, vbo);
+}
+
+void InsertUIArray(UIElement e){
+    if(elementsCount >= maxElements){
+        maxElements *=2;
+        UIElements = realloc(UIElements, maxElements*sizeof(UIElement));
+        glBindBuffer(GL_ARRAY_BUFFER, vbo[0]);
+        glBufferData(GL_ARRAY_BUFFER, maxElements * size, NULL, GL_STREAM_DRAW);
+
+        glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);
+        glBufferData(GL_ARRAY_BUFFER, maxElements * size, NULL, GL_STATIC_DRAW);
+        for(int i=0; i<maxElements; i++){
+            glBufferSubData(GL_ARRAY_BUFFER,i*size,size,baseRectangleUV);
+        }
+
+    }
+    UIElements[elementsCount++] = e;
 }
 
 void DrawRectangle(Vector3 min, Vector3 max, float r, float g, float b){
     if(!ThisSystem || !ThisSystem->enabled) return;
 
-    UIElement newElement;
+    UIElement newElement = NULL_ELEMENT;
 
     newElement.type = coloredRectangle;
     newElement.minRectX = min.x/Screen.gameScale;
@@ -240,13 +308,13 @@ void DrawRectangle(Vector3 min, Vector3 max, float r, float g, float b){
     newElement.maxRectY = max.y/Screen.gameScale;
     newElement.color = (Vector3){r, g, b};
 
-    InsertListEnd(&UIElements, &newElement);
+    InsertUIArray(newElement);
 }
 
 void DrawRectangleTextured(Vector3 min, Vector3 max, GLuint texture, float r, float g, float b){
     if(!ThisSystem || !ThisSystem->enabled) return;
 
-    UIElement newElement;
+    UIElement newElement = NULL_ELEMENT;
 
     newElement.type = texturedRectangle;
     newElement.texture = texture;
@@ -259,7 +327,7 @@ void DrawRectangleTextured(Vector3 min, Vector3 max, GLuint texture, float r, fl
 
     newElement.color = (Vector3){r, g, b};
 
-    InsertListEnd(&UIElements, &newElement);
+    InsertUIArray(newElement);
 }
 
 
@@ -267,20 +335,50 @@ void DrawTextColored(char *text, Vector3 color, int x, int y, TTF_Font* font){
     if(!ThisSystem || !ThisSystem->enabled) return;
     if(!font || !text || text[0] == '\0') return;
 
-    UIElement newElement;
+    UIElement newElement = NULL_ELEMENT;
 
-    newElement.text = malloc((strlen(text)+1) * sizeof(char));
-    strcpy(newElement.text, text);
+    //Check if this string is in cache and get the least used string
+    int i,leastUsedIndex = 0,leastUsedAmount = stringCache[0].consecutiveFrames;
+    for(i=0; i<lastString; i++){
+        if(stringCache[i].consecutiveFrames < leastUsedAmount){
+            leastUsedIndex = i;
+            leastUsedAmount = stringCache[i].consecutiveFrames;
+        }
+        if(font == stringCache[i].font && StringCompareEqual(text, stringCache[i].text) ){
+            newElement.texture = stringCache[i].texture;
+            newElement.textW = stringCache[i].textW;
+            newElement.textH = stringCache[i].textH;
+            stringCache[i].consecutiveFrames++;
+            break;
+        }
+    }
 
+    //If this string is not in cache, create a new one
+    if(i == lastString){
+        newElement.texture = TextToTexture(text, font, &newElement.textW, &newElement.textH);
+
+        //If the cache is full, replace the least used string texture with the new one
+        if(lastString >= STRING_CACHE_SIZE){
+            i = leastUsedIndex;
+            glDeleteTextures(1, &stringCache[i].texture);
+            free(stringCache[i].text);
+        }else{
+            lastString++;
+        }
+
+        //Create a new StringTexture
+        stringCache[i] = (StringTexture){font,NULL,newElement.texture,newElement.textW, newElement.textH,1};
+        stringCache[i].text = malloc((strlen(text)+1) * sizeof(char));
+        strcpy(stringCache[i].text,text);    
+    }
     newElement.type = textElement;
-    newElement.font = font;
 
     newElement.minRectX = x/Screen.gameScale;
     newElement.minRectY = y/Screen.gameScale;
     
     newElement.color = (Vector3){color.x, color.y, color.z};
 
-    InsertListEnd(&UIElements, &newElement);
+    InsertUIArray(newElement);
 }
 
 void DrawPoint(Vector3 pos, float size, GLuint texture, float r, float g, float b){
@@ -295,8 +393,8 @@ void DrawPoint(Vector3 pos, float size, GLuint texture, float r, float g, float 
 
 void DrawLine(Vector3 min, Vector3 max, float thickness, float r, float g, float b){
     if(!ThisSystem || !ThisSystem->enabled) return;
-
-    UIElement newElement;
+    
+    UIElement newElement = NULL_ELEMENT;
 
     newElement.type = lineElement;
 
@@ -309,7 +407,7 @@ void DrawLine(Vector3 min, Vector3 max, float thickness, float r, float g, float
     newElement.color = (Vector3){r, g, b};
     newElement.lineThickness = thickness;
 
-    InsertListEnd(&UIElements, &newElement);
+    InsertUIArray(newElement);
 }
 
 void MorphRectangle(GLfloat vertices[8], int minX, int minY, int maxX,int maxY){
@@ -331,15 +429,42 @@ void MorphRectangle(GLfloat vertices[8], int minX, int minY, int maxX,int maxY){
 }
 
 
-void MorphLine(GLfloat vertices[8], int minX, int minY, int maxX,int maxY){
-    vertices[0] = minX;
-    vertices[1] = minY;
+void MorphLine(GLfloat vertices[8], int minX, int minY, int maxX,int maxY,float width){
+    if(maxY<minY){
+        int tmpX = maxX;
+        int tmpY = maxY;
+        maxX = minX;
+        maxY = minY;
+        minX = tmpX;
+        minY = tmpY;
+    }
+    float length = Distance((Vector3){minX, minY, 0}, (Vector3){maxX, maxY, 0})/2.0;
+    float xmid = (maxX+minX)/2.0;
+    float ymid = (maxY+minY)/2.0;
+    vertices[2] = -length;
+    vertices[3] = -width;
 
-    vertices[2] = maxX;
-    vertices[3] = maxY;
+    vertices[0] = -length;
+    vertices[1] = width;
+
+    vertices[4] = length;
+    vertices[5] = width;
+
+    vertices[6] = length;
+    vertices[7] = -width;
+
+    Vector3 dir = NormalizeVector(Subtract((Vector3){maxX, maxY, 0}, (Vector3){minX, minY, 0}));
+    Matrix3x3 rot = EulerAnglesToMatrix3x3((Vector3){0,0,acos(dot(VECTOR3_FORWARD,dir)) * 180.0/PI});
+    //printf("%f\n",acos(dot(VECTOR3_FORWARD,dir)) * 180.0/PI);
+    int i;
+    for(i=0; i<8; i+=2){
+        Vector3 rpoint = RotateVector((Vector3){vertices[i], vertices[i+1], 0}, rot);
+        vertices[i] = xmid + rpoint.x;
+        vertices[i+1] = ymid + rpoint.y;
+    }
 }
 
-GLuint TextToTexture(char *text, Vector3 color, TTF_Font* font, int *w, int* h){	
+GLuint TextToTexture(char *text, TTF_Font* font, int *w, int* h){	
 	if(!font) return 0;
 	if(!text) return 0;
 	if(text[0] == '\0') return 0;

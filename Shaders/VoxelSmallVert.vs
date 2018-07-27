@@ -7,9 +7,9 @@ in vec3 in_Normal;
 struct PLight{
     vec4 position;
     vec4 color;
+    float shift;
     float intensity;
     float range;
-    float align3;
     float align4;
 };
 const int MAX_POINT_LIGHTS = 10;

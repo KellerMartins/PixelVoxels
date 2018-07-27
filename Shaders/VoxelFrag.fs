@@ -67,7 +67,7 @@ void main(void) {
     if(sprite.a < 0.5)
         discard;
 
-    vec3 ambientAndSun = vec3(0.04,0,0.1) + max(0,dot(sunDir,normal)) * vec3(1,1,1);
+    vec3 ambientAndSun = vec3(0,0,0) + max(0,dot(sunDir,normal)) * vec3(1,1,1);
 
     vec3 pointLighting = vec3(0);
     for(int i=0;i<MAX_POINT_LIGHTS;i++){
@@ -82,5 +82,8 @@ void main(void) {
         pointLighting += (step(0.4,pointLightLighting)-step(0.5,pointLightLighting)) *lights[i].intensity* hueShift(lights[i].color.rgb,lights[i].shift) * 0.1;
     }
 
-    gl_FragColor = vec4((ambientAndSun + pointLighting) * ex_Color,depth);
+    //Based on this: http://www.codersnotes.com/notes/untonemapping/
+    gl_FragColor.rgb = 1.0 - pow(1.0-ex_Color,(ambientAndSun + pointLighting));
+    gl_FragColor.a = depth;
+
 }

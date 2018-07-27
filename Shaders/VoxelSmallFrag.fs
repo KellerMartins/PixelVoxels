@@ -5,9 +5,9 @@ precision highp float;
 struct PLight{
     vec4 position;
     vec4 color;
+    float shift;
     float intensity;
     float range;
-    float align3;
     float align4;
 };
 const int MAX_POINT_LIGHTS = 10;
@@ -31,7 +31,7 @@ void main(void) {
 
     vec3 sunDir = normalize(vec3(-0.75,-0.2,1.5));
 
-    vec3 ambientAndSun = vec3(0.14,0.1,0.2) + max(0,dot(sunDir,ex_Normal))* vec3(1,1,1);
+    vec3 ambientAndSun = vec3(0,0,0) + max(0,dot(sunDir,ex_Normal))* vec3(1,1,1);
 
     vec3 pointLighting = vec3(0);
     for(int i=0;i<MAX_POINT_LIGHTS;i++){
@@ -43,5 +43,6 @@ void main(void) {
         pointLighting += max(0,step(0.325,max(0,dot(ex_Normal,pointLightDir))*(pointLightDist))) *lights[i].intensity* lights[i].color.rgb;
     }
 
-    gl_FragColor = vec4((ambientAndSun + pointLighting) * ex_Color,depth);
+    gl_FragColor.rgb = 1.0 - pow(1.0-ex_Color,(ambientAndSun + pointLighting));
+    gl_FragColor.a = depth;
 }

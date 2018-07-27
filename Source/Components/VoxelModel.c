@@ -887,20 +887,12 @@ void CalculateRendered(EntityID entity){
                         Vector3 vPos = {x,y,z};
                         Vector3 vNormal = VECTOR3_ZERO;
 
-                        const float edge = 0.80;
-                        const float base = 0.75;
-                        const float crease = 0.70;
-                        const float sunlight = 1.32;
-
-                        float heightVal = 1.0 + (z*0.5)/128.0;
-                        heightVal = clamp(heightVal,0,1.4);
-
                         //Add some lightness on the edges
                         int edgeIndx = obj->lighting[index]>>3;
-                        float edgeVal = (edgeIndx<5? edge:edgeIndx == 5? base:crease);
+                        float edgeVal = edgeIndx<5? 1.05 : 1.0;
 
                         //Multiply illuminations and convert from (0,256) to (0,1) range
-                        float illuminFrac = sunlight * edgeVal * heightVal * 1.0/256.0;
+                        float illuminFrac = edgeVal * 1.0/256.0;
 
                         Pixel vColor = Rendering.voxelColors[obj->model[index]];
                         requestedVertices[requestedCount] = vPos;

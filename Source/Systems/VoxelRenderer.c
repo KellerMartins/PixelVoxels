@@ -72,7 +72,7 @@ void VoxelRendererUpdate(){
     //Generate shadow view matrix
     Vector3 sunDirection = (Vector3){-1,-0.1,1};
     GLfloat ViewMatrix[4][4]={{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}};
-    ShadowViewMatrix(ViewMatrix, sunDirection);
+    ShadowViewMatrix(ViewMatrix);
 
     //Get uniform locations
     static GLint projLocB = -1;
@@ -140,7 +140,7 @@ void VoxelRendererUpdate(){
         texLoc = glGetUniformLocation(Rendering.Shaders[1], "tex");
     
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, shadowDepthTexture);
+    glBindTexture(GL_TEXTURE_2D, GetShadowDepthTexture());
 
     EntityID entity;
 	for(entity = 0; entity <= ECS.maxUsedIndex; entity++){

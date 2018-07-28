@@ -72,9 +72,14 @@ void main(void) {
     float ndotl = max(0.0,dot(sunDir,normal));
 
     float shadowCalc = ((shadowCoords.z)/2 + 0.5);
-    float distanceFromLight = texture2D(shadowDepth,(shadowCoords.st)/2 + vec2(0.5) ).x;
-    float slope = tan(acos(ndotl));
-    float shadow = max(0.5,1-smoothstep(0.01*slope,0.015*slope,shadowCalc-distanceFromLight));
+    float sub = 0.0;
+    for(int i=-1;i<=1;i++){
+        for(int j=-1;j<=1;j++){
+            sub += shadowCalc - texture2D(shadowDepth,(shadowCoords.st + vec2(0.005*i, 0.005*j))/2 + vec2(0.5) ).x;
+        }
+    }
+    sub /= 9.0;
+    float shadow = max(0.5,1-smoothstep(0.01,0.05,sub));
 
     vec3 ambientAndSun = vec3(0,0,0) + ndotl * vec3(1,1,1)*shadow;
 

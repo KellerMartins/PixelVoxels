@@ -55,7 +55,7 @@ void main(void) {
     ex_Color = in_Color;
     ex_Normal = normalize(in_Normal) * rotation;
 
-    vec3 shadowPos = ((in_Position - centerPos)/2 * rotation + objPos - vec3(0.0,64.0,0))*0.01;
+    vec3 shadowPos = ((in_Position - centerPos)/2 * rotation + objPos)*0.005 + vec3(0.0,0.5,0);
     shadowCoords = shadowView * vec4(shadowPos,1);
 
     for(int i=0;i<MAX_POINT_LIGHTS;i++){

@@ -12,12 +12,18 @@ GLuint shadowDepthTexture;
 unsigned int shadowTextureWidth;
 unsigned int shadowTextureHeight;
 
+Vector3 sunDirection = (Vector3){-0.75,-0.2,1.5};
+
+GLuint GetShadowDepthTexture(){
+    return shadowDepthTexture;
+}
+
 //Runs on engine start
 void ShadowsInit(){
     ThisSystem = (System*)GetElementAt(ECS.SystemList,GetSystemID("Shadows"));
 
-    shadowTextureWidth = 256;
-    shadowTextureHeight = 256;
+    shadowTextureWidth = 512;
+    shadowTextureHeight = 512;
 
     glGenFramebuffers(1, &shadowFramebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, shadowFramebuffer);
@@ -25,8 +31,8 @@ void ShadowsInit(){
     glGenTextures(1, &shadowDepthTexture);
     glBindTexture(GL_TEXTURE_2D, shadowDepthTexture);
     glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, shadowTextureWidth, shadowTextureHeight, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT); 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);  
 
@@ -56,9 +62,9 @@ void ShadowsUpdate(){
     glUseProgram(Rendering.Shaders[4]);
 
 
-    Vector3 sunDirection = (Vector3){-1,-0.1,1};
+    
     GLfloat ViewMatrix[4][4]={{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}};
-    ShadowViewMatrix(ViewMatrix, sunDirection);
+    ShadowViewMatrix(ViewMatrix);
 
 
     //Get uniform locations
@@ -129,7 +135,8 @@ void ShadowsUpdate(){
         glUniformMatrix3fv(rotLoc, 1, GL_FALSE, (const GLfloat*)&Transpose(rotation).m[0]);
         glUniform3f(objPosLoc, position.x, position.y, position.z);
         glUniform3f(centerPosLoc, obj->center.x, obj->center.y, obj->center.z);
-        glUniform3f(camPosLoc, Rendering.cameraPosition.x, Rendering.cameraPosition.y, Rendering.cameraPosition.z);
+        Vector3 cam = Add(ScalarMult((Vector3){1,-1,0},Rendering.cameraPosition.x), ScalarMult((Vector3){1,1,0},Rendering.cameraPosition.y));
+        glUniform3f(camPosLoc, cam.x, cam.y, Rendering.cameraPosition.z);
         
 
         glDrawArrays(GL_POINTS, 0, obj->numberOfVertices);
@@ -147,4 +154,33 @@ void ShadowsUpdate(){
 //Runs at engine finish
 void ShadowsFree(){
     glDeleteBuffers(1, &shadowFramebuffer);
+}
+
+void ShadowViewMatrix(GLfloat viewMatrix[4][4]){
+
+    Vector3 cam = Add(ScalarMult((Vector3){1,-1,0},Rendering.cameraPosition.x/512), ScalarMult((Vector3){1,1,0},Rendering.cameraPosition.y/512));
+    Vector3 pos = (Vector3){0.3,0.3,0};
+    Vector3 target = Add(pos, sunDirection);
+
+    Vector3 forwardVec = NormalizeVector(Subtract(pos, target));
+    Vector3 leftVec = NormalizeVector(cross(VECTOR3_UP,forwardVec));
+    Vector3 upVec = cross(forwardVec,leftVec);
+
+    viewMatrix[0][0] = -leftVec.x;
+    viewMatrix[1][0] = -leftVec.y;
+    viewMatrix[2][0] = -leftVec.z;
+    viewMatrix[0][1] = upVec.x;
+    viewMatrix[1][1] = upVec.y;
+    viewMatrix[2][1] = upVec.z;
+    viewMatrix[0][2] = forwardVec.x;
+    viewMatrix[1][2] = forwardVec.y;
+    viewMatrix[2][2]= forwardVec.z;
+    viewMatrix[0][3] = 0;
+    viewMatrix[1][3] = 0;
+    viewMatrix[2][3] = 0;
+
+    viewMatrix[3][0] = -leftVec.x * pos.x - leftVec.y * pos.y - leftVec.z * pos.z - cam.x*viewMatrix[0][0] - cam.y*viewMatrix[1][0];
+    viewMatrix[3][1] = -upVec.x * pos.x - upVec.y * pos.y - upVec.z * pos.z - cam.x*viewMatrix[0][1] - cam.y*viewMatrix[1][1];
+    viewMatrix[3][2] = -forwardVec.x * pos.x - forwardVec.y * pos.y - forwardVec.z * pos.z - cam.x*viewMatrix[0][2] - cam.y*viewMatrix[1][2];
+    viewMatrix[3][3] = 1.0;
 }

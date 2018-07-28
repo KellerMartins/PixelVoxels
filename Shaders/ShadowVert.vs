@@ -15,6 +15,6 @@ float round(float f){
 }
 
 void main(void) {
-    vec3 pos = ((in_Position - centerPos)/scale * rotation + objPos - vec3(0.0,64.0,0))*0.01;
+    vec3 pos = ((in_Position - centerPos)/scale * rotation + objPos)*0.005 + vec3(0.0,0.5,0);
     gl_Position = view * vec4(pos,1);
 }

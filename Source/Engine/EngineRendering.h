@@ -33,7 +33,6 @@ void ClearRender(SDL_Color col);
 void RenderToScreen();
 void RenderTextureToScreen(GLuint texture);
 void RenderTextDebug(char *text, SDL_Color color, int x, int y, TTF_Font* font);
-void ShadowViewMatrix(GLfloat viewMatrix[4][4], Vector3 sunDirection);
 int CompileAndLinkShader();
 void ReloadShaders();
 void LoadVoxelPalette(char path[]);

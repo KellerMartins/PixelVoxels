@@ -368,35 +368,6 @@ void RenderTextDebug(char *text, SDL_Color color, int x, int y, TTF_Font* font)
     SDL_FreeSurface(sFont);
 }
 
-void ShadowViewMatrix(GLfloat viewMatrix[4][4], Vector3 sunDirection){
-
-    Vector3 pos = (Vector3){0.3,0.3,0};
-    Vector3 target = Add(pos, sunDirection);
-
-    Vector3 forwardVec = NormalizeVector(Subtract(pos, target));
-    Vector3 leftVec = NormalizeVector(cross(VECTOR3_UP,forwardVec));
-    Vector3 upVec = cross(forwardVec,leftVec);
-
-    viewMatrix[0][0] = -leftVec.x;
-    viewMatrix[1][0] = -leftVec.y;
-    viewMatrix[2][0] = -leftVec.z;
-    viewMatrix[0][1] = upVec.x;
-    viewMatrix[1][1] = upVec.y;
-    viewMatrix[2][1] = upVec.z;
-    viewMatrix[0][2] = forwardVec.x;
-    viewMatrix[1][2] = forwardVec.y;
-    viewMatrix[2][2]= forwardVec.z;
-    viewMatrix[0][3] = 0;
-    viewMatrix[1][3] = 0;
-    viewMatrix[2][3] = 0;
-
-    // set translation part
-    viewMatrix[3][0] = -leftVec.x * pos.x - leftVec.y * pos.y - leftVec.z * pos.z;
-    viewMatrix[3][1] = -upVec.x * pos.x - upVec.y * pos.y - upVec.z * pos.z;
-    viewMatrix[3][2] = -forwardVec.x * pos.x - forwardVec.y * pos.y - forwardVec.z * pos.z;
-    viewMatrix[3][3] = 1.0;
-}
-
 const GLchar *LoadShaderSource(char *filename) {
     if(!filename) return NULL;
 

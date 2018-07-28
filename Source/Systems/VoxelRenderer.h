@@ -3,6 +3,7 @@
 #include "../Engine.h"
 #include "../Components/VoxelModel.h"
 #include "PointLighting.h"
+#include "Shadows.h"
 
 void VoxelRendererInit();
 void VoxelRendererUpdate();

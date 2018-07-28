@@ -8,6 +8,8 @@ extern engineScreen Screen;
 extern engineRendering Rendering;
 extern engineECS ECS;
 
+extern GLuint shadowDepthTexture;
+
 static ComponentID VoxelModelID = -1;
 
 int cubeTexDimension = 1;
@@ -49,7 +51,7 @@ void VoxelRendererUpdate(){
     //Configure OpenGL parameters to render point sprites
 
     glViewport(0,0,Screen.gameWidth,Screen.gameHeight);
-
+    glBindFramebuffer(GL_FRAMEBUFFER, Rendering.frameBuffer);
     glEnable(GL_DEPTH_TEST);
 
 
@@ -66,7 +68,11 @@ void VoxelRendererUpdate(){
                                     {0                , 0                 , -2.0f/(far-near) , -(far + near)/(far - near)     },
                                     {0                , 0                 , 0                ,   1                            }};
 
-   
+    
+    //Generate shadow view matrix
+    Vector3 sunDirection = (Vector3){-1,-0.1,1};
+    GLfloat ViewMatrix[4][4]={{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}};
+    ShadowViewMatrix(ViewMatrix, sunDirection);
 
     //Get uniform locations
     static GLint projLocB = -1;
@@ -75,6 +81,20 @@ void VoxelRendererUpdate(){
         projLocB = glGetUniformLocation(Rendering.Shaders[1], "projection");
     if(projLocS < 0)
         projLocS = glGetUniformLocation(Rendering.Shaders[2], "projection");
+
+    static GLint shadowViewLocB = -1;
+    static GLint shadowViewLocS = -1;
+    if(shadowViewLocB < 0)
+        shadowViewLocB = glGetUniformLocation(Rendering.Shaders[1], "shadowView");
+    if(shadowViewLocS < 0)
+        shadowViewLocS = glGetUniformLocation(Rendering.Shaders[2], "shadowView");
+
+    static GLint shadowDepthLocB = -1;
+    static GLint shadowDepthLocS = -1;
+    if(shadowDepthLocB < 0)
+        shadowDepthLocB = glGetUniformLocation(Rendering.Shaders[1], "shadowDepth");
+    if(shadowDepthLocS < 0)
+        shadowDepthLocS = glGetUniformLocation(Rendering.Shaders[2], "shadowDepth");
 
     static GLint rotLocB = -1;
     static GLint rotLocS = -1;
@@ -118,6 +138,9 @@ void VoxelRendererUpdate(){
     static GLint texLoc = -1;
     if(texLoc < 0)
         texLoc = glGetUniformLocation(Rendering.Shaders[1], "tex");
+    
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, shadowDepthTexture);
 
     EntityID entity;
 	for(entity = 0; entity <= ECS.maxUsedIndex; entity++){
@@ -140,7 +163,7 @@ void VoxelRendererUpdate(){
         if(obj->smallScale){    
             glPointSize(2);
         }else{
-            glActiveTexture(GL_TEXTURE0);
+            glActiveTexture(GL_TEXTURE1);
             glBindTexture(GL_TEXTURE_2D, CubeTex[0]);
 
             glPointSize(cubeTexDimension);
@@ -160,7 +183,7 @@ void VoxelRendererUpdate(){
         glEnableVertexAttribArray(2);
 
 
-        GLint lightBlock, projLoc, rotLoc, objPosLoc, centerPosLoc, camPosLoc;
+        GLint lightBlock, projLoc, rotLoc, objPosLoc, centerPosLoc, camPosLoc, shadowViewLoc, shadowDepthLoc;
         if(obj->smallScale){
             glUseProgram(Rendering.Shaders[2]);
 
@@ -170,6 +193,8 @@ void VoxelRendererUpdate(){
             objPosLoc = objPosLocS;
             centerPosLoc = centerPosLocS;
             camPosLoc = camPosLocS;
+            shadowViewLoc = shadowViewLocS;
+            shadowDepthLoc = shadowDepthLocS;
             
             glUniformBlockBinding(Rendering.Shaders[2], lightBlock, 0);
         }else{
@@ -181,9 +206,11 @@ void VoxelRendererUpdate(){
             objPosLoc = objPosLocB;
             centerPosLoc = centerPosLocB;
             camPosLoc = camPosLocB;
+            shadowViewLoc = shadowViewLocB;
+            shadowDepthLoc = shadowDepthLocB;
 
             glUniformBlockBinding(Rendering.Shaders[1], lightBlock, 0);
-            glUniform1i(texLoc, 0);
+            glUniform1i(texLoc, 1);
             glUniform1i(spriteScaleLoc, cubeTexDimension/5.0f);
         }
  
@@ -195,6 +222,8 @@ void VoxelRendererUpdate(){
         glUniform3f(centerPosLoc, obj->center.x, obj->center.y, obj->center.z);
         glUniform3f(camPosLoc, Rendering.cameraPosition.x, Rendering.cameraPosition.y, Rendering.cameraPosition.z);
         
+        glUniform1i(shadowDepthLoc, 0);
+        glUniformMatrix4fv(shadowViewLoc, 1, GL_FALSE, (const GLfloat*)&ViewMatrix[0]);
 
         glDrawArrays(GL_POINTS, 0, obj->numberOfVertices);
 

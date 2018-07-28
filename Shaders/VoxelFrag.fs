@@ -18,6 +18,7 @@ layout (std140) uniform PointLight {
 in  vec3 ex_Position;
 in  vec3 ex_Color;
 
+in vec4 shadowCoords;
 in float depth;
 in vec3 pointLightCol;
 in float pointLightDist;
@@ -26,6 +27,7 @@ in vec2 v_uv;
 
 out vec4 gl_FragColor;
 
+uniform sampler2D shadowDepth;
 uniform sampler2D tex;
 
 vec3 hueShift( vec3 color, float hueAdjust ){
@@ -67,7 +69,14 @@ void main(void) {
     if(sprite.a < 0.5)
         discard;
 
-    vec3 ambientAndSun = vec3(0,0,0) + max(0,dot(sunDir,normal)) * vec3(1,1,1);
+    float ndotl = max(0.0,dot(sunDir,normal));
+
+    float shadowCalc = ((shadowCoords.z)/2 + 0.5);
+    float distanceFromLight = texture2D(shadowDepth,(shadowCoords.st)/2 + vec2(0.5) ).x;
+    float slope = tan(acos(ndotl));
+    float shadow = max(0.5,1-smoothstep(0.01*slope,0.015*slope,shadowCalc-distanceFromLight));
+
+    vec3 ambientAndSun = vec3(0,0,0) + ndotl * vec3(1,1,1)*shadow;
 
     vec3 pointLighting = vec3(0);
     for(int i=0;i<MAX_POINT_LIGHTS;i++){

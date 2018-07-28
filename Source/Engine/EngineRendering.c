@@ -117,17 +117,23 @@ int InitRenderer(){
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
 	
     //Compile shaders
-    if(!CompileAndLinkShader("Shaders/ScreenVert.vs","Shaders/ScreenFrag.fs",0)) PrintLog(Error,"InitRenderer: Failed to compile/link Screen shader! Description above\n\n");
+    if(!CompileAndLinkShader("Shaders/ScreenVert.vs","Shaders/ScreenFrag.fs",0)) PrintLog(Error,"InitRenderer: Failed to compile/link Screen shader! Description above\n");
     else PrintLog(Info,">Compiled/linked Screen shader sucessfully!\n");
 
-    if(!CompileAndLinkShader("Shaders/VoxelVert.vs","Shaders/VoxelFrag.fs",1)) PrintLog(Error,"InitRenderer: Failed to compile/link VoxelVert shader! Description above\n\n");
+    if(!CompileAndLinkShader("Shaders/VoxelVert.vs","Shaders/VoxelFrag.fs",1)) PrintLog(Error,"InitRenderer: Failed to compile/link VoxelVert shader! Description above\n");
     else PrintLog(Info,">Compiled/linked Voxel shader sucessfully!\n");
 
-	if(!CompileAndLinkShader("Shaders/VoxelSmallVert.vs","Shaders/VoxelSmallFrag.fs",2)) PrintLog(Error,"InitRenderer: Failed to compile/link VoxelSmall shader! Description above\n\n");
+	if(!CompileAndLinkShader("Shaders/VoxelSmallVert.vs","Shaders/VoxelSmallFrag.fs",2)) PrintLog(Error,"InitRenderer: Failed to compile/link VoxelSmall shader! Description above\n");
     else PrintLog(Info,">Compiled/linked VoxelSmall shader sucessfully!\n");
 
-	if(!CompileAndLinkShader("Shaders/UIVert.vs","Shaders/UIFrag.fs",3)) PrintLog(Error,"InitRenderer: Failed to compile/link UI shader! Description above\n\n");
+	if(!CompileAndLinkShader("Shaders/UIVert.vs","Shaders/UIFrag.fs",3)) PrintLog(Error,"InitRenderer: Failed to compile/link UI shader! Description above\n");
     else PrintLog(Info,">Compiled/linked UI shader sucessfully!\n");
+
+    if(!CompileAndLinkShader("Shaders/ShadowVert.vs","Shaders/ShadowFrag.fs",4)) PrintLog(Error,"InitRenderer: Failed to compile/link Shadow shader! Description above\n");
+    else PrintLog(Info,">Compiled/linked Shadow shader sucessfully!\n");
+
+    if(!CompileAndLinkShader("Shaders/SimpleVert.vs","Shaders/SimpleFrag.fs",5)) PrintLog(Error,"InitRenderer: Failed to compile/link Simple shader! Description above\n");
+    else PrintLog(Info,">Compiled/linked Simple shader sucessfully!\n");
 
 	//Load voxel palette
 	LoadVoxelPalette("Assets/Game/Textures/magicaPalette.png");
@@ -233,6 +239,58 @@ void RenderToScreen(){
     glEnable(GL_DEPTH_TEST); 
 }
 
+void RenderTextureToScreen(GLuint texture){
+
+    //Define the projection matrix
+	GLfloat ProjectionMatrix[4][4] = {{0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}};
+    float right = Screen.windowWidth;
+    float left = 0;
+    float top = Screen.windowHeight;
+    float bottom = 0;
+    float near = -0.1;
+    float far = 0.1;
+    
+    ProjectionMatrix[0][0] = 2.0f/(right-left);
+    ProjectionMatrix[1][1] = 2.0f/(top-bottom);
+    ProjectionMatrix[2][2] = -2.0f/(far-near);
+    ProjectionMatrix[3][3] = 1;
+    ProjectionMatrix[3][0] = -(right + left)/(right - left);
+    ProjectionMatrix[3][1] = -(top + bottom)/(top - bottom);
+    ProjectionMatrix[3][2] = -(far + near)/(far - near);
+
+    glViewport(0,0,Screen.windowWidth,Screen.windowHeight);
+    
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glDisable(GL_DEPTH_TEST); 
+
+	glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glUseProgram(Rendering.Shaders[5]);
+	glUniform1i(glGetUniformLocation(Rendering.Shaders[5], "texture"), 0);
+	glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[5], "projection"), 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix[0]);
+    
+	GLfloat quadVertex[8] = {0, Screen.windowHeight, 0, 0, Screen.windowWidth, Screen.windowHeight, Screen.windowWidth, 0};
+    GLfloat quadUV[8] = {0,1, 0,0, 1,1, 1,0};
+
+	//Passing rectangle to the vertex VBO
+	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[0]);
+	glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat), quadVertex, GL_STREAM_DRAW);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(0);
+
+	//Passing rectangle uvs the uv VBO
+	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[1]);
+	glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat), quadUV, GL_STREAM_DRAW);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(1);
+
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    glUseProgram(0);
+    glEnable(GL_DEPTH_TEST); 
+}
 
 //Debug text renderer, use UIRenderer for the game
 void RenderTextDebug(char *text, SDL_Color color, int x, int y, TTF_Font* font) 
@@ -308,6 +366,35 @@ void RenderTextDebug(char *text, SDL_Color color, int x, int y, TTF_Font* font)
     
     glDeleteTextures(1, &texture);
     SDL_FreeSurface(sFont);
+}
+
+void ShadowViewMatrix(GLfloat viewMatrix[4][4], Vector3 sunDirection){
+
+    Vector3 pos = (Vector3){0.3,0.3,0};
+    Vector3 target = Add(pos, sunDirection);
+
+    Vector3 forwardVec = NormalizeVector(Subtract(pos, target));
+    Vector3 leftVec = NormalizeVector(cross(VECTOR3_UP,forwardVec));
+    Vector3 upVec = cross(forwardVec,leftVec);
+
+    viewMatrix[0][0] = -leftVec.x;
+    viewMatrix[1][0] = -leftVec.y;
+    viewMatrix[2][0] = -leftVec.z;
+    viewMatrix[0][1] = upVec.x;
+    viewMatrix[1][1] = upVec.y;
+    viewMatrix[2][1] = upVec.z;
+    viewMatrix[0][2] = forwardVec.x;
+    viewMatrix[1][2] = forwardVec.y;
+    viewMatrix[2][2]= forwardVec.z;
+    viewMatrix[0][3] = 0;
+    viewMatrix[1][3] = 0;
+    viewMatrix[2][3] = 0;
+
+    // set translation part
+    viewMatrix[3][0] = -leftVec.x * pos.x - leftVec.y * pos.y - leftVec.z * pos.z;
+    viewMatrix[3][1] = -upVec.x * pos.x - upVec.y * pos.y - upVec.z * pos.z;
+    viewMatrix[3][2] = -forwardVec.x * pos.x - forwardVec.y * pos.y - forwardVec.z * pos.z;
+    viewMatrix[3][3] = 1.0;
 }
 
 const GLchar *LoadShaderSource(char *filename) {
@@ -444,29 +531,41 @@ void ReloadShaders(){
     }
 
     if(!CompileAndLinkShader("Shaders/ScreenVert.vs","Shaders/ScreenFrag.fs",0)){
-        PrintLog(Error,"ReloadShaders: Failed to compile/link Screen shader! Description above\n\n");
+        PrintLog(Error,"ReloadShaders: Failed to compile/link Screen shader! Description above\n");
 	}else{ 
         PrintLog(Info,">Compiled/linked Screen shader sucessfully!\n\n");
 	}
 
     if(!CompileAndLinkShader("Shaders/VoxelVert.vs","Shaders/VoxelFrag.fs",1)){ 
-        PrintLog(Error,"ReloadShaders: Failed to compile/link Voxel shader! Description above\n\n");
+        PrintLog(Error,"ReloadShaders: Failed to compile/link Voxel shader! Description above\n");
 	}else{
         PrintLog(Info,">Compiled/linked Voxel shader sucessfully!\n\n");
 	}
 
 	if(!CompileAndLinkShader("Shaders/VoxelSmallVert.vs","Shaders/VoxelSmallFrag.fs",2)){
-		PrintLog(Error,"ReloadShaders: Failed to compile/link VoxelSmall shader! Description above\n\n");
+		PrintLog(Error,"ReloadShaders: Failed to compile/link VoxelSmall shader! Description above\n");
 	}   
     else{
         PrintLog(Info,">Compiled/linked VoxelSmall shader sucessfully!\n\n");
 	}
 
 	if(!CompileAndLinkShader("Shaders/UIVert.vs","Shaders/UIFrag.fs",3)){
-		PrintLog(Error,"ReloadShaders: Failed to compile/link UI shader! Description above\n\n");
+		PrintLog(Error,"ReloadShaders: Failed to compile/link UI shader! Description above\n");
     }else{
 		PrintLog(Info,">Compiled/linked UI shader sucessfully!\n");
 	}
+
+    if(!CompileAndLinkShader("Shaders/ShadowVert.vs","Shaders/ShadowFrag.fs",4)){
+        PrintLog(Error,"InitRenderer: Failed to compile/link Shadow shader! Description above\n");
+    }else{
+        PrintLog(Info,">Compiled/linked Shadow shader sucessfully!\n");
+    }
+
+    if(!CompileAndLinkShader("Shaders/SimpleVert.vs","Shaders/SimpleFrag.fs",5)){
+        PrintLog(Error,"InitRenderer: Failed to compile/link Simple shader! Description above\n");
+    }else{
+        PrintLog(Info,">Compiled/linked Simple shader sucessfully!\n");
+    }
 }
 
 void LoadVoxelPalette(char path[]){

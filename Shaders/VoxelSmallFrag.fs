@@ -19,11 +19,14 @@ in  vec3 ex_Position;
 in  vec3 ex_Color;
 in  vec3 ex_Normal;
 
+in vec4 shadowCoords;
 in float depth;
 in  vec3 pointLightDir[MAX_POINT_LIGHTS];
 in  vec2 v_uv;
 
 out vec4 gl_FragColor;
+
+uniform sampler2D shadowDepth;
 
 void main(void) {
     if(depth<0)
@@ -31,7 +34,11 @@ void main(void) {
 
     vec3 sunDir = normalize(vec3(-0.75,-0.2,1.5));
 
-    vec3 ambientAndSun = vec3(0,0,0) + max(0,dot(sunDir,ex_Normal))* vec3(1,1,1);
+    float shadowCalc = ((shadowCoords.z)/2 + 0.5);
+    float distanceFromLight = texture2D(shadowDepth,(shadowCoords.st)/2 + vec2(0.5) ).x;
+    float shadow = max(0.5,1-smoothstep(0.08,0.1,shadowCalc-distanceFromLight));
+
+    vec3 ambientAndSun = vec3(0,0,0) + max(0,dot(sunDir,ex_Normal))* vec3(1,1,1) * shadow;
 
     vec3 pointLighting = vec3(0);
     for(int i=0;i<MAX_POINT_LIGHTS;i++){

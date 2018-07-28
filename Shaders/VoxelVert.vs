@@ -24,9 +24,12 @@ uniform vec3 centerPos;
 uniform mat4 projection;
 uniform mat3 rotation;
 
-// We output the ex_Color variable to the next shader in the chain
+uniform mat4 shadowView;
+
 out vec3 ex_Color;
 out vec3 ex_Position;
+
+out vec4 shadowCoords;
 out float depth;
 out vec3 pointLightCol;
 out float pointLightDist;
@@ -52,6 +55,9 @@ void main(void) {
 
     ex_Position = globalPos;
     ex_Color = in_Color;
+
+    vec3 shadowPos = ((in_Position - centerPos) * rotation + objPos - vec3(0.0,64.0,0))*0.01;
+    shadowCoords = shadowView * vec4(shadowPos,1);
 
     for(int i=0;i<MAX_POINT_LIGHTS;i++){
         pointLightDir[i] = normalize(lights[i].position.xyz - globalPos);

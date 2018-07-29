@@ -70,7 +70,6 @@ void VoxelRendererUpdate(){
 
     
     //Generate shadow view matrix
-    Vector3 sunDirection = (Vector3){-1,-0.1,1};
     GLfloat ViewMatrix[4][4]={{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}};
     ShadowViewMatrix(ViewMatrix);
 

@@ -40,7 +40,7 @@ typedef struct StringTexture{
     char *text;
     GLuint texture;
     int textW, textH;
-    int consecutiveFrames;
+    unsigned int usedLastFrame;
 }StringTexture;
 
 StringTexture stringCache[STRING_CACHE_SIZE];
@@ -227,6 +227,7 @@ void UIRendererUpdate(){
         }
     }
 
+    //glFinish();
     //Reenable depth test and reset opengl vars
     glEnable(GL_DEPTH_TEST);
 
@@ -237,8 +238,8 @@ void UIRendererUpdate(){
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     for(i=0; i<lastString; i++){
-        if(stringCache[i].consecutiveFrames>0) 
-            stringCache[i].consecutiveFrames--;
+        if(stringCache[i].usedLastFrame)
+            stringCache[i].usedLastFrame--;
     }
 
     //Free the list of elements for the next frame
@@ -338,27 +339,30 @@ void DrawTextColored(char *text, Vector3 color, int x, int y, TTF_Font* font){
     UIElement newElement = NULL_ELEMENT;
 
     //Check if this string is in cache and get the least used string
-    int i,leastUsedIndex = 0,leastUsedAmount = stringCache[0].consecutiveFrames;
+    int i,leastUsedIndex = 0,foundLeastUsed = 0;
     for(i=0; i<lastString; i++){
-        if(stringCache[i].consecutiveFrames < leastUsedAmount){
+        if(stringCache[i].usedLastFrame == 0 && !foundLeastUsed){
             leastUsedIndex = i;
-            leastUsedAmount = stringCache[i].consecutiveFrames;
+            foundLeastUsed = 1;
         }
         if(font == stringCache[i].font && StringCompareEqual(text, stringCache[i].text) ){
             newElement.texture = stringCache[i].texture;
             newElement.textW = stringCache[i].textW;
             newElement.textH = stringCache[i].textH;
-            stringCache[i].consecutiveFrames++;
+            stringCache[i].usedLastFrame++;
             break;
         }
     }
 
     //If this string is not in cache, create a new one
     if(i == lastString){
-        newElement.texture = TextToTexture(text, font, &newElement.textW, &newElement.textH);
 
         //If the cache is full, replace the least used string texture with the new one
         if(lastString >= STRING_CACHE_SIZE){
+            if(!foundLeastUsed){
+                PrintLog(Error, "DrawTextColored: Can't render text, string cache is full!\n");
+                return;
+            }
             i = leastUsedIndex;
             glDeleteTextures(1, &stringCache[i].texture);
             free(stringCache[i].text);
@@ -366,8 +370,15 @@ void DrawTextColored(char *text, Vector3 color, int x, int y, TTF_Font* font){
             lastString++;
         }
 
+        newElement.texture = TextToTexture(text, font, &newElement.textW, &newElement.textH);
+
         //Create a new StringTexture
-        stringCache[i] = (StringTexture){font,NULL,newElement.texture,newElement.textW, newElement.textH,1};
+        stringCache[i].font = font;
+        stringCache[i].texture = newElement.texture;
+        stringCache[i].textW = newElement.textW;
+        stringCache[i].textH = newElement.textH;
+        stringCache[i].usedLastFrame = 2;
+
         stringCache[i].text = malloc((strlen(text)+1) * sizeof(char));
         strcpy(stringCache[i].text,text);    
     }

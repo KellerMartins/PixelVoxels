@@ -19,6 +19,8 @@
 #define VECTOR3_DOWN (Vector3){0.0f,0.0f,-1.0f}
 #define VECTOR3_LEFT (Vector3){0.0f,1.0f,0.0f}
 
+#define INT_INFINITY  0x3f3f3f3f
+
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \

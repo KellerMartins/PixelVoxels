@@ -22,8 +22,8 @@ GLuint GetShadowDepthTexture(){
 void ShadowsInit(){
     ThisSystem = (System*)GetElementAt(ECS.SystemList,GetSystemID("Shadows"));
 
-    shadowTextureWidth = 512;
-    shadowTextureHeight = 512;
+    shadowTextureWidth = 1024;
+    shadowTextureHeight = 1024;
 
     glGenFramebuffers(1, &shadowFramebuffer);
     glBindFramebuffer(GL_FRAMEBUFFER, shadowFramebuffer);
@@ -119,10 +119,10 @@ void ShadowsUpdate(){
         GetGlobalTransform(entity, &position, NULL,&rotation);
 
         if(obj->smallScale){    
-            glPointSize(1);
+            glPointSize(2);
             glUniform1i(scaleLoc, 2);
         }else{
-            glPointSize(2);
+            glPointSize(4);
             glUniform1i(scaleLoc, 1);
         }
 
@@ -158,7 +158,7 @@ void ShadowsFree(){
 
 void ShadowViewMatrix(GLfloat viewMatrix[4][4]){
 
-    Vector3 cam = Add(ScalarMult((Vector3){1,-1,0},Rendering.cameraPosition.x/512), ScalarMult((Vector3){1,1,0},Rendering.cameraPosition.y/512));
+    Vector3 cam = Add(ScalarMult((Vector3){1,-1,0},Rendering.cameraPosition.x/shadowTextureWidth), ScalarMult((Vector3){1,1,0},Rendering.cameraPosition.y/shadowTextureHeight));
     Vector3 pos = (Vector3){0.3,0.3,0};
     Vector3 target = Add(pos, sunDirection);
 

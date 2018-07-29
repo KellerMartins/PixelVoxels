@@ -28,6 +28,7 @@ uniform mat4 shadowView;
 
 out vec3 ex_Color;
 out vec3 ex_Position;
+out vec3 ex_Normal;
 
 out vec4 shadowCoords;
 out float depth;
@@ -55,8 +56,9 @@ void main(void) {
 
     ex_Position = globalPos;
     ex_Color = in_Color;
+    ex_Normal = in_Normal * rotation;
 
-    vec3 shadowPos = ((in_Position - centerPos) * rotation + objPos)*0.005 + vec3(0.0,0.5,0);
+    vec3 shadowPos = ((in_Position - centerPos) * rotation + objPos)*0.005*vec3(1,1,0.5);
     shadowCoords = shadowView * vec4(shadowPos,1);
 
     for(int i=0;i<MAX_POINT_LIGHTS;i++){

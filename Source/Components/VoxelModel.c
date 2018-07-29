@@ -29,7 +29,6 @@ void VoxelModelDestructor(void** data){
     VoxelModel *obj = *data;
 
     free(obj->model);
-    free(obj->lighting);
     glDeleteBuffers(3, obj->vbo);
 
     free(*data);
@@ -52,11 +51,7 @@ void* VoxelModelCopy(void* data){
         //Copy model and lighting data
         int sizeModel = newVoxelModel->dimension[0] * newVoxelModel->dimension[1] * newVoxelModel->dimension[2] * sizeof(unsigned char);
         newVoxelModel->model = malloc(sizeModel);
-        newVoxelModel->lighting = malloc(sizeModel);
-
         memcpy(newVoxelModel->model,((VoxelModel*)data)->model,sizeModel);
-        memcpy(newVoxelModel->lighting,((VoxelModel*)data)->lighting,sizeModel);
-
 
         //Copy VBO data
         int fullSize = newVoxelModel->dimension[0] * newVoxelModel->dimension[1] * newVoxelModel->dimension[2] * 3 * sizeof(GLfloat);
@@ -79,7 +74,6 @@ void* VoxelModelCopy(void* data){
         
         }else{
         newVoxelModel->model = NULL;
-        newVoxelModel->lighting = NULL;
         newVoxelModel->numberOfVertices = 0;
     }
 
@@ -553,7 +547,6 @@ void InternalLoadMultiVoxelModelObject(VoxelModel **modelPointer, char modelPath
 
                 //Allocating memory and initializing structures
                 obj->model = calloc(obj->dimension[0] * obj->dimension[1] * obj->dimension[2],sizeof(unsigned char));
-                obj->lighting = calloc(obj->dimension[0] * obj->dimension[1] * obj->dimension[2],sizeof(unsigned char));
 
                 //Request VBO buffers
                 glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[0]);
@@ -581,11 +574,6 @@ void InternalLoadMultiVoxelModelObject(VoxelModel **modelPointer, char modelPath
                     obj->model[voxel] = voxelData[i].color;
                 }
 
-                //Initialize lighting array
-                for(i = 0;i<obj->dimension[0]*obj->dimension[1]*obj->dimension[2]; i++){
-                    obj->lighting[i] = 1;
-                }
-
                 obj->modificationStartX = 0;
                 obj->modificationEndX = obj->dimension[0]-1;
 
@@ -596,8 +584,6 @@ void InternalLoadMultiVoxelModelObject(VoxelModel **modelPointer, char modelPath
                 obj->modificationEndZ = obj->dimension[2]-1;
 
                 obj->enabled = !isHidden;
-
-                CalculateLighting(obj);
 
                 //Pass to the next model
                 free(voxelData);
@@ -735,7 +721,6 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
 
         //Allocating memory and initializing structures
         obj->model = calloc(obj->dimension[0] * obj->dimension[1] * obj->dimension[2],sizeof(unsigned char));
-        obj->lighting = calloc(obj->dimension[0] * obj->dimension[1] * obj->dimension[2],sizeof(unsigned char));
 
         //Request VBO buffers
         glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[0]);
@@ -763,10 +748,6 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
             obj->model[voxel] = voxelData[i].color;
         }
 
-        //Initialize lighting array
-        for(i = 0;i<obj->dimension[0]*obj->dimension[1]*obj->dimension[2]; i++){
-            obj->lighting[i] = 1;
-        }
         free(chunkId);
     }else{
         PrintLog(Error,"InternalLoadVoxelModel: Magic word is not 'VOX ', but '%s'\n",magic);
@@ -792,8 +773,6 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
     obj->modificationEndZ = obj->dimension[2]-1;
 
     obj->enabled = 1;
-
-    CalculateLighting(obj);
 
     fclose(file);
 
@@ -887,18 +866,11 @@ void CalculateRendered(EntityID entity){
                         Vector3 vPos = {x,y,z};
                         Vector3 vNormal = VECTOR3_ZERO;
 
-                        //Add some lightness on the edges
-                        int edgeIndx = obj->lighting[index]>>3;
-                        float edgeVal = edgeIndx<5? 1.05 : 1.0;
-
-                        //Multiply illuminations and convert from (0,256) to (0,1) range
-                        float illuminFrac = edgeVal * 1.0/256.0;
-
                         Pixel vColor = Rendering.voxelColors[obj->model[index]];
                         requestedVertices[requestedCount] = vPos;
-                        requestedColors[requestedCount] = (Vector3){illuminFrac * vColor.r,
-                                                                    illuminFrac * vColor.g,
-                                                                    illuminFrac * vColor.b};
+                        requestedColors[requestedCount] = (Vector3){vColor.r/256.0,
+                                                                    vColor.g/256.0,
+                                                                    vColor.b/256.0};
 
                         //Calculate normal vector as the average direction without neighbors
                         if(x-1 < 0){
@@ -989,14 +961,7 @@ void CalculateRendered(EntityID entity){
         if(requestedCount > avaliableCount){
             //Have more voxels to be added than removed, keep inserting after numberOfVertices items
             int voxelsRemaining = requestedCount-avaliableCount;
-            /*int indx = obj->numberOfVertices;
-            while(req<requestedCount){ 
-                vertices[indx] = requestedVertices[req];
-                normal[indx] = requestedNormals[req];
 
-                indx++;
-                req++;
-            }*/
             memcpy(&vertices[obj->numberOfVertices], &requestedVertices[req], voxelsRemaining*sizeof(Vector3));
             memcpy(&normal[obj->numberOfVertices], &requestedNormals[req], voxelsRemaining*sizeof(Vector3));
             memcpy(&colors[obj->numberOfVertices], &requestedColors[req], voxelsRemaining*sizeof(Vector3));
@@ -1023,83 +988,6 @@ void CalculateRendered(EntityID entity){
     glUnmapBuffer(GL_ARRAY_BUFFER);
     glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[2]);
     glUnmapBuffer(GL_ARRAY_BUFFER);
-}
-
-//Calculate the basic lighting and self shadowing
-void CalculateLighting(VoxelModel *obj){
-
-    int y,x,z,index,dir;
-    int occlusion,lightAir,lightBlock;
-
-    int zstart = obj->dimension[2]-1;
-    int lightFinal;
-    for(y=obj->modificationStartY; y<=obj->modificationEndY; y++){
-        for(x=obj->modificationStartX; x<=obj->modificationEndX; x++){
-
-            //Sets light at the top of the object, that is "transported" at each z iteration
-            lightAir = 1;
-            lightBlock = 1;
-
-            for(z=zstart; z>=0; z--){
-                occlusion = 0;
-                index = (x + z * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);
-                
-                if(obj->model[index]!=0){
-                    if(z<obj->dimension[2]-1){ //Up
-                        dir = (x + (z+1) * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);
-                        occlusion += obj->model[dir]==0? 0:1;
-                        //Lights the block if the top is empty (with light or shadow), else, keep the color
-                        lightBlock = obj->model[dir]==0? lightAir*2:1;
-                    }else{
-                        lightBlock = 2;
-                        occlusion = 3;
-                    }
-                    if(z>0){ //Down
-                        dir = (x + (z-1) * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);
-                        occlusion += obj->model[dir]==0?  0:1;
-                    }else{
-                        occlusion = 3;
-                    }
-                    if(x>0){ //Left
-                        dir = ((x-1) + z * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);
-                        occlusion += obj->model[dir]==0? 0:1;
-                    }else{
-                        occlusion = 2;
-                    }
-                    if(x<obj->dimension[0]-1){ //Right
-                        dir = ((x+1) + z * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);
-                        occlusion += obj->model[dir]==0?  0:1;
-                    }else{
-                        occlusion = 3;
-                    }
-                    if(y<obj->dimension[1]-1){ //Front
-                        dir = (x + z * obj->dimension[0] + (y+1) * obj->dimension[0] * obj->dimension[2]);
-                        occlusion += obj->model[dir]==0?  0:1;
-                    }else{
-                        occlusion = 3;
-                    }
-                    if(y>0){ //Back
-                        dir = (x + z * obj->dimension[0] + (y-1) * obj->dimension[0] * obj->dimension[2]);
-                        occlusion += obj->model[dir]==0?  0:1;
-                    }else{
-                        occlusion = 3;
-                    }
-                    lightFinal = lightBlock;
-                }else{
-                    if(z+1<obj->dimension[2]){
-                        dir = (x + (z+1) * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);
-                        if(obj->model[dir]!=0){
-                            lightAir = 0;
-                        }
-                    }
-                    lightFinal = lightAir;
-                }
-
-                //lighting 8bits  [1-Empty] [3-Occlusion][2-Direct Light(2), Ambient(1) and self shadow(0)] [1-Shadow from caster]
-                obj->lighting[index] = (unsigned char)( (((occlusion & 255)<<3)|((lightFinal & 3)<<1)) | (obj->lighting[index] & 1) );
-            }
-        }
-    }
 }
 
 //Multi Object helper structures
@@ -1229,7 +1117,6 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
 
                 //Allocating memory and initializing structures
                 objPointer->model = calloc(objPointer->dimension[0] * objPointer->dimension[1] * objPointer->dimension[2],sizeof(unsigned char));
-                objPointer->lighting = calloc(objPointer->dimension[0] * objPointer->dimension[1] * objPointer->dimension[2],sizeof(unsigned char));
 
                 //Request VBO buffers
                 glBindBuffer(GL_ARRAY_BUFFER, objPointer->vbo[0]);
@@ -1258,10 +1145,6 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
                     objPointer->model[voxel] = voxelData[i].color;
                 }
 
-                //Initialize lighting array
-                for(i = 0;i<objPointer->dimension[0]*objPointer->dimension[1]*objPointer->dimension[2]; i++){
-                    objPointer->lighting[i] = 1;
-                }
 
                 objPointer->center = (Vector3){objPointer->dimension[0]/2,objPointer->dimension[1]/2,objPointer->dimension[2]/2};
 
@@ -1275,8 +1158,6 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
                 objPointer->modificationEndZ = objPointer->dimension[2]-1;
 
                 objPointer->enabled = 1;
-
-                CalculateLighting(objPointer);
 
                 //Pass to the next model
                 free(voxelData);
@@ -1490,8 +1371,8 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
     }
     ListCellPointer modelsCell;
     ListForEach(modelsCell,modelsList){
-        free(GetElementAsType(modelsCell,VoxelModel).model);
-        free(GetElementAsType(modelsCell,VoxelModel).lighting);
+        VoxelModel* model = GetElement(*modelsCell); 
+        VoxelModelDestructor((void**)&model);
     }
     FreeList(&modelsList);
 

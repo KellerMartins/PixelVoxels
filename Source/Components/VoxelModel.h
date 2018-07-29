@@ -19,7 +19,6 @@ typedef struct VoxelModel{
 	char modificationEndZ;
 
     unsigned char *model;
-    unsigned char *lighting;
 	GLuint vbo[3];
 	int numberOfVertices;
 
@@ -55,7 +54,6 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[]);
 int IsMultiVoxelModelFile(char modelPath[], char modelName[]);
 
 void CalculateRendered(EntityID entity);
-void CalculateLighting(VoxelModel *obj);
 
 void VoxelModelRegisterLuaFunctions();
 

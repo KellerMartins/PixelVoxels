@@ -17,6 +17,7 @@ layout (std140) uniform PointLight {
 
 in  vec3 ex_Position;
 in  vec3 ex_Color;
+in  vec3 ex_Normal;
 
 in vec4 shadowCoords;
 in float depth;
@@ -72,14 +73,22 @@ void main(void) {
     float ndotl = max(0.0,dot(sunDir,normal));
 
     float shadowCalc = ((shadowCoords.z)/2 + 0.5);
-    float sub = 0.0;
-    for(int i=-1;i<=1;i++){
-        for(int j=-1;j<=1;j++){
-            sub += shadowCalc - texture2D(shadowDepth,(shadowCoords.st + vec2(0.005*i, 0.005*j))/2 + vec2(0.5) ).x;
-        }
-    }
+    vec2 coords = shadowCoords.st/2 + vec2(0.5);
+
+    const float spread = 0.0025;
+    float sub = shadowCalc*9;
+    sub -= texture2D(shadowDepth, coords).x;
+    sub -= texture2D(shadowDepth, coords + vec2( spread, -spread)).x;
+    sub -= texture2D(shadowDepth, coords + vec2( spread,     0.0)).x;
+    sub -= texture2D(shadowDepth, coords + vec2( spread,  spread)).x;
+    sub -= texture2D(shadowDepth, coords + vec2(    0.0,  spread)).x;
+    sub -= texture2D(shadowDepth, coords + vec2(    0.0, -spread)).x;
+    sub -= texture2D(shadowDepth, coords + vec2(-spread,  spread)).x;
+    sub -= texture2D(shadowDepth, coords + vec2(-spread,     0.0)).x;
+    sub -= texture2D(shadowDepth, coords + vec2(-spread, -spread)).x;
     sub /= 9.0;
-    float shadow = max(0.5,1-smoothstep(0.01,0.05,sub));
+
+    float shadow = max(0.5,1-smoothstep(0.015,0.05,sub));
 
     vec3 ambientAndSun = vec3(0,0,0) + ndotl * vec3(1,1,1)*shadow;
 
@@ -95,9 +104,10 @@ void main(void) {
         pointLighting += (step(0.5,pointLightLighting)-step(0.6,pointLightLighting)) *lights[i].intensity* hueShift(lights[i].color.rgb,lights[i].shift/4.0)*0.5;
         pointLighting += (step(0.4,pointLightLighting)-step(0.5,pointLightLighting)) *lights[i].intensity* hueShift(lights[i].color.rgb,lights[i].shift) * 0.1;
     }
+    float details = dot(normal, normalize(vec3(-1,-1,1)))>0.75? 1.2:1.0 * length(ex_Normal)>1? 1.1:1.0;
 
     //Based on this: http://www.codersnotes.com/notes/untonemapping/
-    gl_FragColor.rgb = 1.0 - pow(1.0-ex_Color,(ambientAndSun + pointLighting));
+    gl_FragColor.rgb = 1.0 - pow(1.0-ex_Color,(ambientAndSun + pointLighting) * details);
     gl_FragColor.a = depth;
 
 }

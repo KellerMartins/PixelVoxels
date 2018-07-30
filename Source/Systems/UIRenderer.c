@@ -49,6 +49,7 @@ int lastString = 0;
 GLuint vbo[2];
 int currentByteVBO = 0;
 int currentElement = 0;
+GLsync lastFrameSync = NULL;
 
 //Basic forms
 GLfloat baseRectangleVertex[8];
@@ -93,6 +94,11 @@ void UIRendererInit(){
 //UI Render Loop - runs each GameLoop iteration
 void UIRendererUpdate(){
 
+    //Force wait for the last frame UI rendering to be done before starting this frame
+    if(lastFrameSync){
+        while(glClientWaitSync(lastFrameSync,GL_SYNC_FLUSH_COMMANDS_BIT,0) == GL_TIMEOUT_EXPIRED);
+    }
+    lastFrameSync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE,0); 
     glViewport(0,0,Screen.windowWidth,Screen.windowHeight);
 
     //Define the projection matrix
@@ -227,7 +233,6 @@ void UIRendererUpdate(){
         }
     }
 
-    //glFinish();
     //Reenable depth test and reset opengl vars
     glEnable(GL_DEPTH_TEST);
 

@@ -51,7 +51,7 @@ void main(void) {
                           (pz + objPos.z)-(py+px + objPos.y+objPos.x)/2 , 1);
 
     gl_Position = projection * pixelPos;
-    
+
     vec3 globalPos = vec3(px + objPos.x,py + objPos.y,pz + objPos.z);
 
     ex_Position = globalPos;
@@ -65,8 +65,10 @@ void main(void) {
         pointLightDir[i] = normalize(lights[i].position.xyz - globalPos);
     }
 
-    if(in_Position.x<0 || globalPos.z>256)
-        depth = -1.0;
-    else
-        depth = (pz + objPos.z)/256.0;
+    depth = (pz + objPos.z)/256.0;
+
+    //Discart vertex
+    if(in_Position.x<0 || ex_Position.z>256 || (length(ex_Normal) == 1 && dot(normalize(vec3(1,1,-1)), normalize(ex_Normal)) > 0.0)){
+        gl_Position = vec4(-1000, -1000, -1000, 1);
+    }
 }

@@ -803,7 +803,6 @@ void CalculateRendered(EntityID entity){
     int avaliableCount = 0;
     int requestedCount = 0;
 
-    int x,y,z,i,index,dir,occ;
     int xLimitS = clamp(obj->modificationStartX-1 ,0,obj->dimension[0]-1);
     int xLimitE = clamp(obj->modificationEndX+1   ,0,obj->dimension[0]-1);
     int yLimitS = clamp(obj->modificationStartY-1 ,0,obj->dimension[1]-1);
@@ -811,6 +810,8 @@ void CalculateRendered(EntityID entity){
     int zLimitS = clamp(obj->modificationStartZ-1 ,0,obj->dimension[2]-1);
     int zLimitE = clamp(obj->modificationEndZ+1   ,0,obj->dimension[2]-1);
 
+
+    int i;
     for(i=0;i<obj->numberOfVertices;i++){
         if(vertices[i].x<0 || vertices[i].y<0 || vertices[i].z<0){
             avaliableVertices[avaliableCount++] = i;
@@ -822,113 +823,97 @@ void CalculateRendered(EntityID entity){
             avaliableVertices[avaliableCount++] = i;        
     }
     
-    //obj->numberOfVertices = 0;
-    for(z = zLimitE; z>=zLimitS ;z--){
+    int x,y,z;
         for(y = yLimitS; y<=yLimitE; y++){
+        for(z = zLimitS; z<=zLimitE; z++){
             for(x = xLimitS; x<=xLimitE; x++){
-                //vertices[x + z * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]] = (Vector3){x,y,z};
-                //normal[x + z * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]] = VECTOR3_UP;
-                //obj->numberOfVertices++;
                 
-                occ = 0;
+                int occ = 0;
 
-                index = (x + z * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);
+                int index = (x + z * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);
+                int neighIndex;
                 
                 if(obj->model[index]!=0){
-                    
-                    if(x!=0 && x<obj->dimension[0]-1 && y!=0 && y<obj->dimension[1]-1 && z!=0 && z<obj->dimension[2]-1){
-                        dir = (x + (z+1) * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);//0 0 1
-                        if(obj->model[dir]!=0){
-                            occ++; 
-                        }
-                        dir = (x + (z-1) * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);//0 0 -1
-                        if(obj->model[dir]!=0){
-                            occ++;
-                        }
-                        dir = (x + z * obj->dimension[0] + (y+1) * obj->dimension[0] * obj->dimension[2]);//0 1 0
-                        if(obj->model[dir]!=0){
-                            occ++;
-                        }
-                        dir = (x + z * obj->dimension[0] + (y-1) * obj->dimension[0] * obj->dimension[2]);//0 -1 0 
-                        if(obj->model[dir]!=0){
-                            occ++;
-                        }
-                        dir = ( (x+1) + z * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);//1 0 0
-                        if(obj->model[dir]!=0){
-                            occ++;
-                        }
-                        dir = ( (x-1) + z * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);//1 0 0 
-                        if(obj->model[dir]!=0){
-                            occ++;
-                        }
-                    }
-                    if(occ!=6){
-                        Vector3 vPos = {x,y,z};
                         Vector3 vNormal = VECTOR3_ZERO;
-
-                        Pixel vColor = Rendering.voxelColors[obj->model[index]];
-                        requestedVertices[requestedCount] = vPos;
-                        requestedColors[requestedCount] = (Vector3){vColor.r/256.0,
-                                                                    vColor.g/256.0,
-                                                                    vColor.b/256.0};
 
                         //Calculate normal vector as the average direction without neighbors
                         if(x-1 < 0){
                             vNormal.x -= 1;
                         }else{
-                            index = (x-1) + (z) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
-                            if(obj->model[index]==0){
+                        neighIndex = (x-1) + (z) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
+                        if(obj->model[neighIndex]==0){
                                 vNormal.x -= 1;
+                        }else{
+                            occ++;
                             }
                         }
 
                         if(x+1 >= obj->dimension[0]){
                             vNormal.x += 1;
                         }else{
-                            index = (x+1) + (z) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
-                            if(obj->model[index]==0){
+                        neighIndex = (x+1) + (z) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
+                        if(obj->model[neighIndex]==0){
                                 vNormal.x += 1;
+                        }else{
+                            occ++;
                             }
                         }
 
                         if(z-1 < 0){
                             vNormal.z -= 1;
                         }else{
-                            index = (x) + (z-1) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
-                            if(obj->model[index]==0){
+                        neighIndex = (x) + (z-1) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
+                        if(obj->model[neighIndex]==0){
                                 vNormal.z -= 1;
+                        }else{
+                            occ++;
                             }
                         }
 
                         if(z+1 >= obj->dimension[2]){
                             vNormal.z += 1;
                         }else{
-                            index = (x) + (z+1) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
-                            if(obj->model[index]==0){
+                        neighIndex = (x) + (z+1) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
+                        if(obj->model[neighIndex]==0){
                                 vNormal.z += 1;
+                        }else{
+                            occ++;
                             }
                         }
 
                         if(y-1 < 0){
                             vNormal.y -= 1;
                         }else{
-                            index = (x) + (z) * obj->dimension[0] + (y-1) * obj->dimension[0] * obj->dimension[2];
-                            if(obj->model[index]==0){
+                        neighIndex = (x) + (z) * obj->dimension[0] + (y-1) * obj->dimension[0] * obj->dimension[2];
+                        if(obj->model[neighIndex]==0){
                                 vNormal.y -= 1;
+                        }else{
+                            occ++;
                             }
                         }
 
                         if(y+1 >= obj->dimension[1]){
                             vNormal.y += 1;
                         }else{
-                            index = (x) + (z) * obj->dimension[0] + (y+1) * obj->dimension[0] * obj->dimension[2];
-                            if(obj->model[index]==0){
+                        neighIndex = (x) + (z) * obj->dimension[0] + (y+1) * obj->dimension[0] * obj->dimension[2];
+                        if(obj->model[neighIndex]==0){
                                 vNormal.y += 1;
+                        }else{
+                            occ++;
                             }
                         }
 
-                        if(vNormal.x == 0 && vNormal.y == 0 && vNormal.z == 0) vNormal = VECTOR3_UP;
+                    if(occ!=6){
+                        requestedVertices[requestedCount] = (Vector3){x,y,z};
+                        Pixel vColor = Rendering.voxelColors[obj->model[index]];
+                        requestedColors[requestedCount] = (Vector3){vColor.r/256.0,
+                                                                    vColor.g/256.0,
+                                                                    vColor.b/256.0};
 
+                        //Voxels occluded by 5 neighbors are identified by its normals with length 1 in shader. 
+                        //Others are rescaled to diferenciate
+                        if(occ!=5) vNormal = ScalarMult(vNormal,1.5);
+                        if(vNormal.x == 0 && vNormal.y == 0 && vNormal.z == 0) vNormal = (Vector3){0,0,0.5};
                         requestedNormals[requestedCount] = vNormal;
 
                         requestedCount++;                        

@@ -59,18 +59,13 @@ vec3 hueShift( vec3 color, float hueAdjust ){
 }
 
 void main(void) {
-    if(depth<0)
-        discard;
 
     vec3 sunDir = normalize(vec3(-0.75,-0.2,1.5));
     vec4 sprite = texture(tex, gl_PointCoord);
     vec3 normal = normalize(sprite.rgb * vec3(-1,-1,1));
 
-    
     if(sprite.a < 0.5)
         discard;
-
-    float ndotl = max(0.0,dot(sunDir,normal));
 
     float shadowCalc = ((shadowCoords.z)/2 + 0.5);
     vec2 coords = shadowCoords.st/2 + vec2(0.5);
@@ -90,7 +85,7 @@ void main(void) {
 
     float shadow = max(0.5,1-smoothstep(0.015,0.05,sub));
 
-    vec3 ambientAndSun = vec3(0,0,0) + ndotl * vec3(1,1,1)*shadow;
+    vec3 ambientAndSun = vec3(0,0,0) + max(0.0,dot(sunDir,normal)) * vec3(1,1,1)*shadow;
 
     vec3 pointLighting = vec3(0);
     for(int i=0;i<MAX_POINT_LIGHTS;i++){

@@ -131,6 +131,9 @@ void ShadowsUpdate(){
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(0);
 
+        glBindBuffer(GL_ARRAY_BUFFER, obj->vbo[2]);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(1);
         
         glUniformMatrix3fv(rotLoc, 1, GL_FALSE, (const GLfloat*)&Transpose(rotation).m[0]);
         glUniform3f(objPosLoc, position.x, position.y, position.z);
@@ -145,6 +148,7 @@ void ShadowsUpdate(){
     glUseProgram(0);
     glDisable(GL_DEPTH_TEST);
     glDisableVertexAttribArray(0);
+    glDisableVertexAttribArray(1);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     if(GetKey(SDL_SCANCODE_V))

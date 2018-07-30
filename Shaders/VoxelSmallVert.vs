@@ -31,7 +31,7 @@ out vec3 ex_Normal;
 
 out vec4 shadowCoords;
 out float depth;
-out vec3 pointLightDir[MAX_POINT_LIGHTS];
+out vec3 pointLighting;
 
 float round(float f){
     return fract(f)>=0.5? ceil(f):floor(f);
@@ -48,22 +48,33 @@ void main(void) {
                           (pz + objPos.z)-(py+px + objPos.y+objPos.x)/2, 1);
 
     gl_Position = projection * pixelPos;
-    
     vec3 globalPos = vec3(px + objPos.x,py + objPos.y,pz + objPos.z);
 
     ex_Position = globalPos;
     ex_Color = in_Color;
     ex_Normal = normalize(in_Normal) * rotation;
 
+    depth = (pz + objPos.z)/256.0;
+
+    //Calculate shadow projected coords
     vec3 shadowPos = ((in_Position - centerPos)/2 * rotation + objPos)*0.005*vec3(1,1,0.5);
     shadowCoords = shadowView * vec4(shadowPos,1);
+    
 
+    //Calculate point lighting
+    pointLighting = vec3(0.0);
     for(int i=0;i<MAX_POINT_LIGHTS;i++){
-        pointLightDir[i] = normalize(lights[i].position.xyz - globalPos);
+        if(lights[i].range<=0) continue;
+        
+        vec3 pointLightDir = normalize(lights[i].position.xyz - globalPos);
+        float pointLightDist = lights[i].range / pow( distance(globalPos,lights[i].position.xyz) ,2);
+
+        pointLighting += max(0,step(0.325,max(0,dot(ex_Normal,pointLightDir))*(pointLightDist))) *lights[i].intensity* lights[i].color.rgb;
     }
 
-    if(in_Position.x<0 || globalPos.z>256)
-        depth = -1.0;
-    else
-        depth = (pz + objPos.z)/256.0;
+    //Discard vertexes
+    if(in_Position.x<0 || ex_Position.z>256 || (length(in_Normal) == 1 && dot(normalize(vec3(1,1,-1)), ex_Normal) > 0.5)){
+        gl_Position = vec4(-100, -100, -100, 1);
+    }
+    
 }

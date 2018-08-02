@@ -65,7 +65,7 @@ void VoxelPhysicsUpdate(){
             if(!EntityContainsMask(i,needed)) continue;
             
             //VoxelModel *objB = GetVoxelModelPointer(i);
-            Vector3 collisionPoint = VECTOR3_ZERO;
+            Vector3 collisionPoint;
             //Vector3 collisionNormal = VECTOR3_ZERO;
             if(VoxelModelVsVoxelModelCollision(entity, i,&collisionPoint)){
                 Vector3 VelA = Subtract(GetVelocity(entity) , ScalarMult(Subtract(GetVelocity(entity),GetVelocity(i)), Lerp(GetBounciness(entity),0.3,1)*2*GetMass(i)/(GetMass(entity) + GetMass(i)) ) );
@@ -77,8 +77,8 @@ void VoxelPhysicsUpdate(){
                 SetVelocity(i,VelB);
                 collided = 1;
 
-                ExplodeAtPoint(entity,collisionPoint,10);   
-                ExplodeAtPoint(i,collisionPoint,10);   
+                ExplodeAtPoint(entity,collisionPoint,5);   
+                ExplodeAtPoint(i,collisionPoint,5);   
             }
         }
         
@@ -106,7 +106,7 @@ void VoxelPhysicsFree(){
 
 int VoxelModelVsVoxelModelCollision(EntityID entityA, EntityID entityB,Vector3 *collisionPoint){
 
-    
+    *collisionPoint = VECTOR3_ZERO;    
     VoxelModel *objA = GetVoxelModelPointer(entityA);
     VoxelModel *objB = GetVoxelModelPointer(entityB);
 
@@ -114,20 +114,22 @@ int VoxelModelVsVoxelModelCollision(EntityID entityA, EntityID entityB,Vector3 *
         return 0;
     }
 
-    Vector3 posA = GetPosition(entityA);
-    Vector3 posB = GetPosition(entityB);
+    Vector3 posA;
+    Vector3 posB;
+    Matrix3x3 rotA;
+    Matrix3x3 rotB;
+    GetGlobalTransform(entityA, &posA, NULL, &rotA);
+    GetGlobalTransform(entityB, &posB, NULL, &rotB);
+    rotB = Transpose(rotB);
+
     Vector3 centerA = GetVoxelModelCenter(entityA);
     Vector3 centerB = GetVoxelModelCenter(entityB);
-
-    if(IsVoxelModelSmallScale(entityA)) centerA = (Vector3){centerA.x/2,centerA.y/2,centerA.z/2};
-    if(IsVoxelModelSmallScale(entityB)) centerB = (Vector3){centerB.x/2,centerB.y/2,centerB.z/2};
 
     Vector3 velA = GetVelocity(entityA);
     Vector3 velB = GetVelocity(entityB);
     Vector3 accA = GetAcceleration(entityA);
     Vector3 accB = GetAcceleration(entityB);
 
-    int i,x,y,z,index = 0;
     //Sets an limit of how high the physics time step can be
     double moveDelta = Time.deltaTime>0.02? 0.02:Time.deltaTime;
 
@@ -137,102 +139,94 @@ int VoxelModelVsVoxelModelCollision(EntityID entityA, EntityID entityB,Vector3 *
     Vector3 movementB = {velB.x + accB.x*moveDelta,velB.y + accB.y*moveDelta,velB.z + accB.z*moveDelta};
     movementB = ScalarMult(movementB,moveDelta);
 
-    //ObjA rotation matrix
-    Matrix3x3 mA = GetRotationMatrix(entityA);
-
-    //ObjB Transposed rotation matrix
-    Matrix3x3 mB = Transpose(GetRotationMatrix(entityB));
-
-
     glBindBuffer(GL_ARRAY_BUFFER, objA->vbo[0]);
     Vector3* vertices = glMapBuffer(GL_ARRAY_BUFFER, GL_READ_ONLY);
 
+    float x,y,z;
+    int i,index = 0;
+    int collisions = 0;
     for(i=0; i<objA->numberOfVertices; i++){
 
-        x = roundf(vertices[i].x);
-        y = roundf(vertices[i].y);
-        z = roundf(vertices[i].z);
+        x = vertices[i].x;
+        y = vertices[i].y;
+        z = vertices[i].z;
 
         //Ignore invalid voxels
         if(x<0 || y<0 || z<0) continue;
 
-        if(objA->smallScale){
-            x /= 2;
-            y /= 2;
-            z /= 2;
-        }
-
         //Apply A rotation matrix
         Vector3 p = {x - centerA.x, y - centerA.y, z - centerA.z};
+        if(objA->smallScale){
+            p = ScalarMult(p, 0.5);
+        }
 
-        Vector3 pRotA = RotateVector(p,mA);
-        x = pRotA.x;
-        y = pRotA.y;
-        z = pRotA.z;
+        Vector3 pRotA = RotateVector(p,rotA);
 
         //Apply A position and movement
-        x += posA.x + movementA.x;
-        y += posA.y + movementA.y;
-        z += posA.z + movementA.z;
+        x = pRotA.x + posA.x + movementA.x;
+        y = pRotA.y + posA.y + movementA.y;
+        z = pRotA.z + posA.z + movementA.z;
 
         //Set origin as B position
         Vector3 localPosAinB = { x - posB.x-movementB.x, y - posB.y-movementB.y, z - posB.z-movementB.z};
+        if(objB->smallScale){
+            localPosAinB = ScalarMult(localPosAinB, 2.0);
+        }
 
         //Apply B (Transposed) rotation matrix
         p = (Vector3){localPosAinB.x, localPosAinB.y, localPosAinB.z};
-        localPosAinB = RotateVector(p,mB);
+        localPosAinB = RotateVector(p,rotB);
 
-        localPosAinB = (Vector3){roundf(localPosAinB.x +centerB.x), roundf(localPosAinB.y +centerB.y), roundf(localPosAinB.z +centerB.z)};
+        localPosAinB = (Vector3){roundf(localPosAinB.x + centerB.x), roundf(localPosAinB.y + centerB.y), roundf(localPosAinB.z + centerB.z)};
 
         //If voxel of entityA is inside the entityB volume
-        if(!objB->smallScale){
             if(localPosAinB.x < objB->dimension[0] && localPosAinB.x >= 0 && localPosAinB.z < objB->dimension[2] && localPosAinB.z >= 0 && localPosAinB.y <objB->dimension[1] && localPosAinB.y >= 0){
                 index = localPosAinB.x + localPosAinB.z * objB->dimension[0] + localPosAinB.y * objB->dimension[0] * objB->dimension[2];
                 if(objB->model[index]!=0){
                     collisionPoint->x += x;
                     collisionPoint->y += y;
                     collisionPoint->z += z;
-
-                    glBindBuffer(GL_ARRAY_BUFFER, objA->vbo[0]);
-                    glUnmapBuffer(GL_ARRAY_BUFFER);
-                    return 1;
-                }
-            }
-        }else{
-            if(localPosAinB.x < objB->dimension[0]/2 && localPosAinB.x >= 0 && localPosAinB.z < objB->dimension[2]/2 && localPosAinB.z >= 0 && localPosAinB.y <objB->dimension[1]/2 && localPosAinB.y >= 0){
-                index = localPosAinB.x*2 + localPosAinB.z*2 * objB->dimension[0] + localPosAinB.y*2 * objB->dimension[0] * objB->dimension[2];
-                if(objB->model[index]!=0){
-                    collisionPoint->x += x;
-                    collisionPoint->y += y;
-                    collisionPoint->z += z;
-
-                    glBindBuffer(GL_ARRAY_BUFFER, objA->vbo[0]);
-                    glUnmapBuffer(GL_ARRAY_BUFFER);
-                    return 1;
+                collisions++;
                 }
             }
         }
+
+    if(collisions){
+        collisionPoint->x /= (float)collisions;
+        collisionPoint->y /= (float)collisions;
+        collisionPoint->z /= (float)collisions;
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, objA->vbo[0]);
     glUnmapBuffer(GL_ARRAY_BUFFER);
-    return 0;
+    return collisions>0 ;
 }
 
 //Test function
 void ExplodeAtPoint(EntityID entity,Vector3 point,int radius){
     VoxelModel *obj = GetVoxelModelPointer(entity);
     
-    Vector3 rotation;
-    GetGlobalTransform(entity, NULL, &rotation, NULL);
-    Vector3 p = RotatePoint(point, rotation, obj->center);
+    Matrix3x3 rotation;
+    Vector3 position;
+    GetGlobalTransform(entity, &position, NULL, &rotation);
+    Vector3 c = obj->center;
+    float scale = obj->smallScale? 2:1;
+    
+    Vector3 p = Add(RotateVector(ScalarMult(Subtract(point, position), scale), Transpose(rotation)), c);
     p = (Vector3){round(p.x), round(p.y), round(p.z)};
+
+    //Vector3 pW = Add(RotateVector(ScalarMult(Subtract(p, c), 1.0/scale), rotation), position);
+    //Vector3 pS = PositionToGameScreenCoords(pW);
+    //pS.x = clamp(pS.x, 0, Screen.windowWidth);
+    //pS.y = clamp(pS.y, 0, Screen.windowHeight);
+    //DrawPoint(pS, 5, 0, 1, 1, 0);
 
     int startx,endx,starty,endy,startz,endz;
     int ix,iy,iz,index;
-        startx = p.x-radius <0? 0:p.x-radius;
-        starty = p.y-radius <0? 0:p.y-radius;
-        startz = p.z-radius <0? 0:p.z-radius;
+
+    startx = p.x-radius<0? 0:p.x-radius;
+    starty = p.y-radius<0? 0:p.y-radius;
+    startz = p.z-radius<0? 0:p.z-radius;
 
         endx = p.x+radius>obj->dimension[0]? obj->dimension[0] : p.x+radius;
         endy = p.y+radius>obj->dimension[1]? obj->dimension[1] : p.y+radius;

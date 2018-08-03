@@ -57,8 +57,8 @@ void main(void) {
     depth = (pz + objPos.z)/256.0;
 
     //Calculate shadow projected coords
-    vec3 shadowPos = ((in_Position - centerPos)/2 * rotation + objPos)*0.005*vec3(1,1,0.5);
-    shadowCoords = shadowView * vec4(shadowPos,1);
+    vec3 shadowPos = ((in_Position - centerPos)/2 * rotation + objPos);
+    shadowCoords = shadowView * vec4(shadowPos,1)+vec4(0,0,0.2,0);
     
 
     //Calculate point lighting
@@ -73,7 +73,7 @@ void main(void) {
     }
 
     //Discard vertexes
-    if(in_Position.x<0 || ex_Position.z>256 || (length(in_Normal) == 1 && dot(normalize(vec3(1,1,-1)), ex_Normal) > 0.5)){
+    if(in_Position.x<0 || ex_Position.z<0 || ex_Position.z>256 || (length(in_Normal) == 1 && dot(normalize(vec3(1,1,-1)), ex_Normal) > 0.5)){
         gl_Position = vec4(-100, -100, -100, 1);
     }
     

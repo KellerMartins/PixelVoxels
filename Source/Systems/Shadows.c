@@ -76,6 +76,10 @@ void ShadowsUpdate(){
     if(viewLoc < 0)
         viewLoc = glGetUniformLocation(Rendering.Shaders[4], "view");
 
+    static GLint sunDirLoc = -1;
+    if(sunDirLoc < 0)
+        sunDirLoc = glGetUniformLocation(Rendering.Shaders[4], "sunDir");
+
     static GLint rotLoc = -1;
     if(rotLoc < 0)
         rotLoc = glGetUniformLocation(Rendering.Shaders[4], "rotation");
@@ -138,6 +142,7 @@ void ShadowsUpdate(){
         glUniformMatrix3fv(rotLoc, 1, GL_FALSE, (const GLfloat*)&Transpose(rotation).m[0]);
         glUniform3f(objPosLoc, position.x, position.y, position.z);
         glUniform3f(centerPosLoc, obj->center.x, obj->center.y, obj->center.z);
+        glUniform3f(sunDirLoc, -sunDirection.x, -sunDirection.y, -sunDirection.z);
         Vector3 cam = Add(ScalarMult((Vector3){1,-1,0},Rendering.cameraPosition.x), ScalarMult((Vector3){1,1,0},Rendering.cameraPosition.y));
         glUniform3f(camPosLoc, cam.x, cam.y, Rendering.cameraPosition.z);
         
@@ -162,13 +167,26 @@ void ShadowsFree(){
 
 void ShadowViewMatrix(GLfloat viewMatrix[4][4]){
 
-    Vector3 cam = Add(ScalarMult((Vector3){1,-1,0},Rendering.cameraPosition.x/shadowTextureWidth), ScalarMult((Vector3){1,1,0},Rendering.cameraPosition.y/shadowTextureHeight));
+    Vector3 cam = Add(ScalarMult((Vector3){1,-1,0},Rendering.cameraPosition.x/840), ScalarMult((Vector3){1,1,0},Rendering.cameraPosition.y/840));
+    cam = Add(cam,(Vector3){sunDirection.x,sunDirection.y,0});
+
+    float right = 210;
+    float left = -210;
+    float top = 210;
+    float bottom = -210;
+    float near = 210;
+    float far = -210;
+
     Vector3 pos = (Vector3){0.3,0.3,0};
     Vector3 target = Add(pos, sunDirection);
 
     Vector3 forwardVec = NormalizeVector(Subtract(pos, target));
     Vector3 leftVec = NormalizeVector(cross(VECTOR3_UP,forwardVec));
     Vector3 upVec = cross(forwardVec,leftVec);
+
+    float orthX = -(right + left)/(right - left);
+    float orthY = -(top + bottom)/(top - bottom);
+    float orthZ = -(far + near)/(far - near);
 
     viewMatrix[0][0] = -leftVec.x;
     viewMatrix[1][0] = -leftVec.y;
@@ -187,4 +205,23 @@ void ShadowViewMatrix(GLfloat viewMatrix[4][4]){
     viewMatrix[3][1] = -upVec.x * pos.x - upVec.y * pos.y - upVec.z * pos.z - cam.x*viewMatrix[0][1] - cam.y*viewMatrix[1][1];
     viewMatrix[3][2] = -forwardVec.x * pos.x - forwardVec.y * pos.y - forwardVec.z * pos.z - cam.x*viewMatrix[0][2] - cam.y*viewMatrix[1][2];
     viewMatrix[3][3] = 1.0;
+
+
+    //Multiply by the orthographic matrix
+
+    viewMatrix[0][3] += viewMatrix[0][0]*orthX + viewMatrix[0][1]*orthY + viewMatrix[0][2]*orthZ;
+    viewMatrix[1][3] += viewMatrix[1][0]*orthX + viewMatrix[1][1]*orthY + viewMatrix[1][2]*orthZ;
+    viewMatrix[2][3] += viewMatrix[2][0]*orthX + viewMatrix[2][1]*orthY + viewMatrix[2][2]*orthZ;
+
+    viewMatrix[0][0] *= 2.0f/(right-left);
+    viewMatrix[1][0] *= 2.0f/(top-bottom);
+    viewMatrix[2][0] *= -2.0f/(far-near);
+
+    viewMatrix[0][1] *= 2.0f/(right-left);
+    viewMatrix[1][1] *= 2.0f/(top-bottom);
+    viewMatrix[2][1] *= -2.0f/(far-near);
+
+    viewMatrix[0][2] *= 2.0f/(right-left);
+    viewMatrix[1][2] *= 2.0f/(top-bottom);
+    viewMatrix[2][2] *= -2.0f/(far-near);
 }

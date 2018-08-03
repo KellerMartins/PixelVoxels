@@ -58,8 +58,8 @@ void main(void) {
     ex_Color = in_Color;
     ex_Normal = in_Normal * rotation;
 
-    vec3 shadowPos = ((in_Position - centerPos) * rotation + objPos)*0.005*vec3(1,1,0.5);
-    shadowCoords = shadowView * vec4(shadowPos,1);
+    vec3 shadowPos = ((in_Position - centerPos) * rotation + objPos);
+    shadowCoords = shadowView * vec4(shadowPos,1)+vec4(0,0,0.2,0);
 
     for(int i=0;i<MAX_POINT_LIGHTS;i++){
         pointLightDir[i] = normalize(lights[i].position.xyz - globalPos);
@@ -68,7 +68,7 @@ void main(void) {
     depth = (pz + objPos.z)/256.0;
 
     //Discart vertex
-    if(in_Position.x<0 || ex_Position.z>256 || (length(ex_Normal) == 1 && dot(normalize(vec3(1,1,-1)), normalize(ex_Normal)) > 0.0)){
+    if(in_Position.x<0 || ex_Position.z<0 || ex_Position.z>256 || (length(ex_Normal) == 1 && dot(normalize(vec3(1,1,-1)), normalize(ex_Normal)) > 0.0)){
         gl_Position = vec4(-1000, -1000, -1000, 1);
     }
 }

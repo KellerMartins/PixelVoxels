@@ -83,7 +83,7 @@ void main(void) {
     sub -= texture2D(shadowDepth, coords + vec2(-spread, -spread)).x;
     sub /= 9.0;
 
-    float shadow = max(0.5,1-smoothstep(0.015,0.05,sub));
+    float shadow = max(0.5,1-smoothstep(0.015,0.04,sub));
 
     vec3 ambientAndSun = vec3(0,0,0) + max(0.0,dot(sunDir,normal)) * vec3(1,1,1)*shadow;
 

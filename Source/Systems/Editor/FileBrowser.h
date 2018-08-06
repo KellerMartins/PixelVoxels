@@ -14,9 +14,9 @@ typedef struct {
     List files;   //List of tinydir_file
     List paths;   //List of char*
     int indexPath;
-    char filePath[_TINYDIR_PATH_MAX];
-    char fileName[_TINYDIR_FILENAME_MAX];
-    char fileExtension[_TINYDIR_FILENAME_MAX];
+    char filePath[PATH_MAX];
+    char fileName[FILENAME_MAX];
+    char fileExtension[FILENAME_MAX];
     void (*onConfirmFunction)();
     int opened; //File browser open status (0 = not opened, 1 = opened (load mode), 2 = opened (save mode), -1 failed to open)
     int itemsScroll;     //Line of items scrolled

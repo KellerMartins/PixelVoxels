@@ -70,7 +70,7 @@ void OpenFileBrowser(int mode, char *initialPath,void (*onOpen)()){
         InsertListEnd(&fileBrowser.paths,&firstPath);
         fileBrowser.indexPath = 0;
     }
-    memset(fileBrowser.fileName,'\0',_TINYDIR_FILENAME_MAX*sizeof(char));
+    memset(fileBrowser.fileName,'\0',FILENAME_MAX*sizeof(char));
 
     tinydir_dir dir;
     if(tinydir_open(&dir, fileBrowser.filePath) < 0){
@@ -102,9 +102,9 @@ void OpenFileBrowser(int mode, char *initialPath,void (*onOpen)()){
 
 void FileBrowserExtension(char *ext){
     if(ext){
-        strncpy(fileBrowser.fileExtension,ext,_TINYDIR_FILENAME_MAX);
+        strncpy(fileBrowser.fileExtension,ext,FILENAME_MAX);
     }else{
-        strncpy(fileBrowser.fileExtension,"",_TINYDIR_FILENAME_MAX);
+        strncpy(fileBrowser.fileExtension,"",FILENAME_MAX);
     }
 }
 
@@ -209,7 +209,7 @@ void DrawFileBrowser(){
                 }else if(mode == 1){
                     //Check if file already exists
                     
-                    char nameBuff[_TINYDIR_FILENAME_MAX];
+                    char nameBuff[FILENAME_MAX];
                     strcpy(nameBuff,fileBrowser.fileName);
                     strcat(nameBuff,".");
                     strcat(nameBuff,fileBrowser.fileExtension);
@@ -249,7 +249,7 @@ void DrawFileBrowser(){
                 int curLen = strlen(fileBrowser.fileName);
                 curLen = curLen>=27? 27:curLen;
                 GetTextInput(fileBrowser.fileName, 27, curLen);
-                memset(fileBrowser.fileName+curLen,'\0',_TINYDIR_FILENAME_MAX-curLen);
+                memset(fileBrowser.fileName+curLen,'\0',FILENAME_MAX-curLen);
             }
         }else{
             DrawRectangle(filenameBgMin,filenameBgMax,fieldColor.x, fieldColor.y, fieldColor.z);
@@ -258,7 +258,7 @@ void DrawFileBrowser(){
         if(SDL_IsTextInputActive()){
             //Get the cursor position by creating a string containing the characters until the cursor
             //and getting his size when rendered with the used font
-            char buff[_TINYDIR_FILENAME_MAX];
+            char buff[FILENAME_MAX];
             strncpy(buff,fileBrowser.fileName,Input.textInputCursorPos);
             memset(buff+Input.textInputCursorPos,'\0',1);
             int cursorPos,h;
@@ -320,11 +320,11 @@ void DrawFileBrowser(){
 
             //Folder icon/button
             if(PointButton((Vector3){x,y,0},10,3, (Vector3){0.75,0.75,0.75}, (Vector3){1,1,1}, (Vector3){scrollbarOverColor.x, scrollbarOverColor.y, scrollbarOverColor.z}) == 1){
-                char *path = calloc(_TINYDIR_PATH_MAX,sizeof(char));
-                strncpy(path,file.path,_TINYDIR_PATH_MAX);
+                char *path = calloc(PATH_MAX,sizeof(char));
+                strncpy(path,file.path,PATH_MAX);
                 PrintLog(Info,"(%s)\n", path);
                 OpenFileBrowser(mode,path,fileBrowser.onConfirmFunction);
-                memcpy(fileBrowser.filePath,path,_TINYDIR_PATH_MAX*sizeof(char));
+                memcpy(fileBrowser.filePath,path,PATH_MAX*sizeof(char));
 
                 //If there is any folder as next folder, remove from the list before adding the new folder
                 while(fileBrowser.indexPath+1 < GetLength(fileBrowser.paths)){
@@ -376,11 +376,11 @@ void DrawFileBrowser(){
                     int extLen = strlen(file.extension) + 1; //Extension name length + dot
                     int filenameLen = strlen(file.name);
 
-                    memcpy(fileBrowser.fileName,file.name,_TINYDIR_FILENAME_MAX*sizeof(char));
+                    memcpy(fileBrowser.fileName,file.name,FILENAME_MAX*sizeof(char));
                     fileBrowser.fileName[filenameLen - extLen] = '\0';
 
                 }else{
-                    memcpy(fileBrowser.fileName,file.name,_TINYDIR_FILENAME_MAX*sizeof(char));
+                    memcpy(fileBrowser.fileName,file.name,FILENAME_MAX*sizeof(char));
                 }
             }
 

@@ -59,6 +59,124 @@ void ProcessFPS() {
 	framesPerSecond = 1000.f / framesPerSecond;
 }
 
+// --------------- Trie data structure ---------------
+
+Trie InitTrie(){
+	Trie t;
+	t.elementSize = 0;
+
+	int i;
+	for(i=0; i<TRIE_ALPHABET_SIZE; i++){
+		t.branch[i] = NULL;
+	}
+
+	return t;
+}
+
+void FreeTrieInternal(Trie *trie){
+	if(!trie) return;
+	if(trie->branch['\0']){
+		free(trie->branch['\0']);
+		trie->branch['\0'] = NULL;
+	}
+	for(int i=0; i<TRIE_ALPHABET_SIZE; i++){
+		FreeTrieInternal(trie->branch[i]);
+		trie->branch[i] = NULL;
+	}
+	free(trie);
+}
+
+void FreeTrie(Trie *trie){
+	if(!trie) return;
+	for(int i=0; i<TRIE_ALPHABET_SIZE; i++){
+		FreeTrieInternal(trie->branch[i]);
+		trie->branch[i] = NULL;
+	}
+}
+
+void InsertTrieSize(Trie *trie, const char* key, void *value, int size){
+	if(!trie) return;
+	int i = 0;
+
+	Trie* cell = trie;
+	while(cell->branch[(int)key[i]] && key[i] != '\0'){
+		cell = cell->branch[(int)key[i++]];
+	}
+
+	//If this key is not contained in the trie
+	if(!cell->branch[(int)key[i]]){
+		//Insert the branches that are missing
+		while(key[i] != '\0'){
+			Trie* newCell = calloc(1,sizeof(Trie));
+			cell->branch[(int)key[i++]] = newCell;
+			cell = newCell;
+		}
+		//Insert data in the trie cell pointed by the last character
+		cell->elementSize = size;
+		cell->branch['\0'] = malloc(size);
+		memcpy(cell->branch['\0'], value, size);
+	}
+
+	//If this key is already in the trie, replace the data
+	else if(key[i] == '\0'){
+		free(cell->branch['\0']);
+		cell->elementSize = size;
+		cell->branch['\0'] = malloc(size);
+		memcpy(cell->branch['\0'], value, size);
+	}
+
+}
+
+Trie *TrieGetDataCell(Trie *trie, const char* key){
+	int i = 0;
+	Trie* cell = trie;
+	while(cell->branch[(int)key[i]] && key[i] != '\0'){
+		cell = cell->branch[(int)key[i++]];
+	}
+
+	return (key[i] == '\0')? cell:NULL;
+}
+
+int TrieContainsKey(Trie trie, const char* key){
+	return TrieGetDataCell(&trie, key)? 1:0;
+}
+
+void* GetTrieElement(Trie trie, const char* key){
+	Trie* cell = TrieGetDataCell(&trie, key);
+	return cell? cell->branch['\0']:NULL;
+}
+
+void* GetTrieElementWithSize(Trie trie, const char* key, int *sizeOut){
+	Trie* cell = TrieGetDataCell(&trie, key);
+	*sizeOut = cell? cell->elementSize:0;
+	return cell? cell->branch['\0']:NULL;
+}
+
+void* GetTrieElementAsPointer(Trie trie, const char* key,  void* defaultValue){
+	int size = 0;
+	void** data = GetTrieElementWithSize(trie, key, &size);
+	if(!data || size != sizeof(void*)) return defaultValue;
+	else return *data;
+}
+
+//Macro to generate GetTrieElementAs_type functions for different types
+//This was made to avoid copying and pasting the same function many times
+//Remember to call the header generation macro on utils.h when adding more types
+#define TRIE_GET_ELEMENT_TYPE_FUNCTION_TEMPLATE_MACRO(type) \
+type GetTrieElementAs_ ## type (Trie trie, const char* key,  type defaultValue){\
+	int size = 0;\
+	type * data = GetTrieElementWithSize(trie, key, &size);\
+	if(!data || size != sizeof(type)) return defaultValue;\
+	else return *data;\
+}\
+
+TRIE_GET_ELEMENT_TYPE_FUNCTION_TEMPLATE_MACRO(Vector3)
+TRIE_GET_ELEMENT_TYPE_FUNCTION_TEMPLATE_MACRO(double)
+TRIE_GET_ELEMENT_TYPE_FUNCTION_TEMPLATE_MACRO(float)
+TRIE_GET_ELEMENT_TYPE_FUNCTION_TEMPLATE_MACRO(char)
+TRIE_GET_ELEMENT_TYPE_FUNCTION_TEMPLATE_MACRO(int)
+
+
 // --------------- Generic List Functions ---------------
 
 List InitList(unsigned size){
@@ -562,6 +680,16 @@ Vector3 JSON_GetObjectVector3(cJSON *object,char *string, Vector3 defaultValue){
 
     item = cJSON_GetArrayItem(arr,2);
     if(item) v.z = item->valuedouble;
+
+	return v;
+}
+
+cJSON *JSON_CreateVector3(Vector3 value){
+
+	cJSON *v = cJSON_CreateArray();
+    cJSON_AddItemToArray(v, cJSON_CreateNumber(value.x));
+    cJSON_AddItemToArray(v, cJSON_CreateNumber(value.y));
+    cJSON_AddItemToArray(v, cJSON_CreateNumber(value.z));
 
 	return v;
 }

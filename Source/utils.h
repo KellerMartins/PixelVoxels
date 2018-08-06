@@ -21,6 +21,13 @@
 
 #define INT_INFINITY  0x3f3f3f3f
 
+#ifndef PATH_MAX
+#define PATH_MAX 260
+#endif
+#ifndef FILENAME_MAX
+#define FILENAME_MAX 256
+#endif
+
 #define max(a,b) \
    ({ __typeof__ (a) _a = (a); \
        __typeof__ (b) _b = (b); \
@@ -79,6 +86,38 @@ typedef struct Pixel{
 	unsigned char a;
 	
 }Pixel;
+
+//Trie structures and interface
+
+#define TRIE_ALPHABET_SIZE 127
+typedef struct TrieCell{
+    unsigned elementSize;
+    //In a leaf, the '\0' points to the data stored, while in a trunk it points to NULL
+    //In both leaf and trunk, all the other characters points to other Tries
+    void* branch[TRIE_ALPHABET_SIZE];
+}Trie;
+
+Trie InitTrie();
+void FreeTrie(Trie *trie);
+
+void InsertTrieSize(Trie *trie, const char* key, void *value, int size);
+#define InsertTrie(triePointer, key, variable) InsertTrieSize(triePointer, key, &variable, sizeof(variable))
+
+int TrieContainsKey(Trie trie, const char* key);
+void* GetTrieElement(Trie trie, const char* key);
+void* GetTrieElementWithSize(Trie trie, const char* key, int *sizeOut);
+void* GetTrieElementAsPointer(Trie trie, const char* key,  void* defaultValue);
+
+//Macro to generate headers for the GetTrieElementAs_type functions
+//Remember to call the function template macro on utils.c when adding more types
+#define TRIE_GET_ELEMENT_TYPE_FUNCTION_HEADER_MACRO(type) \
+type GetTrieElementAs_ ## type (Trie trie, const char* key,  type defaultValue);
+
+TRIE_GET_ELEMENT_TYPE_FUNCTION_HEADER_MACRO(Vector3)
+TRIE_GET_ELEMENT_TYPE_FUNCTION_HEADER_MACRO(double)
+TRIE_GET_ELEMENT_TYPE_FUNCTION_HEADER_MACRO(float)
+TRIE_GET_ELEMENT_TYPE_FUNCTION_HEADER_MACRO(char)
+TRIE_GET_ELEMENT_TYPE_FUNCTION_HEADER_MACRO(int)
 
 //Generic list implementation
 //In this implementation, every new element added is copied to the list, not just referenced
@@ -169,6 +208,7 @@ float fModulus(float a, float b);
 cJSON *OpenJSON(char path[], char name[]);
 double JSON_GetObjectDouble(cJSON *object,char *string, double defaultValue);
 Vector3 JSON_GetObjectVector3(cJSON *object,char *string, Vector3 defaultValue);
+cJSON *JSON_CreateVector3(Vector3 value);
 
 void Vector3ToTable(lua_State *L, Vector3 vector);
 

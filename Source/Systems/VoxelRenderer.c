@@ -14,7 +14,7 @@ extern GLuint shadowDepthTexture;
 static ComponentID VoxelModelID = -1;
 
 int cubeTexDimension = 1;
-GLuint CubeTex[1] = {0};
+GLuint CubeTex[2];
 
 void VoxelRendererInit(){
     ThisSystem = (System*)GetElementAt(ECS.SystemList,GetSystemID("VoxelRenderer"));
@@ -22,7 +22,7 @@ void VoxelRendererInit(){
     VoxelModelID = GetComponentID("VoxelModel");
 
     //Load surface into a OpenGL texture
-    glGenTextures(1, CubeTex);
+    glGenTextures(2, CubeTex);
 
     //Normal
     SDL_Surface *cubeimg = IMG_Load("Assets/Game/Textures/cube.png");
@@ -31,6 +31,21 @@ void VoxelRendererInit(){
     
     int Mode = GL_RGB;
     
+    if(cubeimg->format->BytesPerPixel == 4) {
+        Mode = GL_RGBA;
+    }
+    cubeTexDimension = min(cubeimg->w, cubeimg->h);
+    glTexImage2D(GL_TEXTURE_2D, 0, Mode, cubeimg->w, cubeimg->h, 0, Mode, GL_UNSIGNED_BYTE, cubeimg->pixels);
+    
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    SDL_FreeSurface(cubeimg);
+
+    //Position
+    cubeimg = IMG_Load("Assets/Game/Textures/cubePos.png");
+    if(!cubeimg){ PrintLog(Error,"VoxelRendererInit: Failed to load position map texture!\n"); return; }
+    glBindTexture(GL_TEXTURE_2D, CubeTex[1]);
+
     if(cubeimg->format->BytesPerPixel == 4) {
         Mode = GL_RGBA;
     }
@@ -77,85 +92,10 @@ void VoxelRendererUpdate(){
     Vector3 sunDir = GetTrieElementAs_Vector3(Scene.data, "sunDirection", (Vector3){0.75,0.2,-1.5});
     Vector3 sunColor = GetTrieElementAs_Vector3(Scene.data, "sunColor", (Vector3){1,1,1});
 
-    //Get uniform locations
-    static GLint projLocB = -1;
-    static GLint projLocS = -1;
-    if(projLocB < 0)
-        projLocB = glGetUniformLocation(Rendering.Shaders[1], "projection");
-    if(projLocS < 0)
-        projLocS = glGetUniformLocation(Rendering.Shaders[2], "projection");
-
-    static GLint shadowViewLocB = -1;
-    static GLint shadowViewLocS = -1;
-    if(shadowViewLocB < 0)
-        shadowViewLocB = glGetUniformLocation(Rendering.Shaders[1], "shadowView");
-    if(shadowViewLocS < 0)
-        shadowViewLocS = glGetUniformLocation(Rendering.Shaders[2], "shadowView");
-
-    static GLint shadowDepthLocB = -1;
-    static GLint shadowDepthLocS = -1;
-    if(shadowDepthLocB < 0)
-        shadowDepthLocB = glGetUniformLocation(Rendering.Shaders[1], "shadowDepth");
-    if(shadowDepthLocS < 0)
-        shadowDepthLocS = glGetUniformLocation(Rendering.Shaders[2], "shadowDepth");
-
-    static GLint rotLocB = -1;
-    static GLint rotLocS = -1;
-    if(rotLocB < 0)
-        rotLocB = glGetUniformLocation(Rendering.Shaders[1], "rotation");
-    if(rotLocS < 0)
-        rotLocS = glGetUniformLocation(Rendering.Shaders[2], "rotation");
-
-    static GLint objPosLocB = -1;
-    static GLint objPosLocS = -1;
-    if(objPosLocB < 0)
-        objPosLocB = glGetUniformLocation(Rendering.Shaders[1], "objPos");
-    if(objPosLocS < 0)
-        objPosLocS = glGetUniformLocation(Rendering.Shaders[2], "objPos");
-
-    static GLint centerPosLocB = -1;
-    static GLint centerPosLocS = -1;
-    if(centerPosLocB < 0)
-        centerPosLocB = glGetUniformLocation(Rendering.Shaders[1], "centerPos");
-    if(centerPosLocS < 0)
-        centerPosLocS = glGetUniformLocation(Rendering.Shaders[2], "centerPos");
-
-    static GLint camPosLocB = -1;
-    static GLint camPosLocS = -1;
-    if(camPosLocB < 0)
-        camPosLocB = glGetUniformLocation(Rendering.Shaders[1], "camPos");
-    if(camPosLocS < 0)
-        camPosLocS = glGetUniformLocation(Rendering.Shaders[2], "camPos");
-
-    static GLint sunDirLocB = -1;
-    static GLint sunDirLocS = -1;
-    if(sunDirLocB < 0)
-        sunDirLocB = glGetUniformLocation(Rendering.Shaders[1], "sunDir");
-    if(sunDirLocS < 0)
-        sunDirLocS = glGetUniformLocation(Rendering.Shaders[2], "sunDir");
-
-    static GLint sunColorLocB = -1;
-    static GLint sunColorLocS = -1;
-    if(sunColorLocB < 0)
-        sunColorLocB = glGetUniformLocation(Rendering.Shaders[1], "sunColor");
-    if(sunColorLocS < 0)
-        sunColorLocS = glGetUniformLocation(Rendering.Shaders[2], "sunColor");
-
-    static GLint lightBlockB = -1;
-    static GLint lightBlockS = -1;
-    if(lightBlockB < 0)
-        lightBlockB = glGetUniformBlockIndex(Rendering.Shaders[1], "PointLight");
-    if(lightBlockS < 0)
-        lightBlockS = glGetUniformBlockIndex(Rendering.Shaders[2], "PointLight");
-        
-
-    static GLint spriteScaleLoc = -1;
-    if(spriteScaleLoc < 0)
-        spriteScaleLoc = glGetUniformLocation(Rendering.Shaders[1], "spriteScale");
-
-    static GLint texLoc = -1;
-    if(texLoc < 0)
-        texLoc = glGetUniformLocation(Rendering.Shaders[1], "tex");
+    //Big voxels specific locations
+    GLint spriteScaleLoc = glGetUniformLocation(Rendering.Shaders[1], "spriteScale");
+    GLint texLoc = glGetUniformLocation(Rendering.Shaders[1], "tex");
+    GLint texPosLoc = glGetUniformLocation(Rendering.Shaders[1], "texPos");
     
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, GetShadowDepthTexture());
@@ -184,6 +124,9 @@ void VoxelRendererUpdate(){
             glActiveTexture(GL_TEXTURE1);
             glBindTexture(GL_TEXTURE_2D, CubeTex[0]);
 
+            glActiveTexture(GL_TEXTURE2);
+            glBindTexture(GL_TEXTURE_2D, CubeTex[1]);
+
             glPointSize(cubeTexDimension);
         }
 
@@ -200,43 +143,34 @@ void VoxelRendererUpdate(){
         glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 0, 0);
         glEnableVertexAttribArray(2);
 
-
-        GLint lightBlock, projLoc, rotLoc, objPosLoc, centerPosLoc, camPosLoc, shadowViewLoc, shadowDepthLoc, sunDirLoc, sunColorLoc;
+        int usedProgram = 0;
         if(obj->smallScale){
+            usedProgram = 2;
             glUseProgram(Rendering.Shaders[2]);
 
-            lightBlock = lightBlockS;
-            projLoc = projLocS;
-            rotLoc = rotLocS;
-            objPosLoc = objPosLocS;
-            centerPosLoc = centerPosLocS;
-            camPosLoc = camPosLocS;
-            shadowViewLoc = shadowViewLocS;
-            shadowDepthLoc = shadowDepthLocS;
-            sunDirLoc = sunDirLocS;
-            sunColorLoc = sunColorLocS;
             
-            glUniformBlockBinding(Rendering.Shaders[2], lightBlock, 0);
         }else{
+            usedProgram = 1;
             glUseProgram(Rendering.Shaders[1]);
-            
-            lightBlock = lightBlockB;
-            projLoc = projLocB;
-            rotLoc = rotLocB;
-            objPosLoc = objPosLocB;
-            centerPosLoc = centerPosLocB;
-            camPosLoc = camPosLocB;
-            shadowViewLoc = shadowViewLocB;
-            shadowDepthLoc = shadowDepthLocB;
-            sunDirLoc = sunDirLocB;
-            sunColorLoc = sunColorLocB;
 
-            glUniformBlockBinding(Rendering.Shaders[1], lightBlock, 0);
             glUniform1i(texLoc, 1);
+            glUniform1i(texPosLoc, 2);
             glUniform1i(spriteScaleLoc, cubeTexDimension/5.0f);
         }
+
+        GLint lightBlock =  glGetUniformBlockIndex(Rendering.Shaders[usedProgram], "PointLight");;
+        GLint projLoc = glGetUniformLocation(Rendering.Shaders[usedProgram], "projection");
+        GLint rotLoc = glGetUniformLocation(Rendering.Shaders[usedProgram], "rotation");
+        GLint objPosLoc = glGetUniformLocation(Rendering.Shaders[usedProgram], "objPos");
+        GLint centerPosLoc = glGetUniformLocation(Rendering.Shaders[usedProgram], "centerPos");
+        GLint camPosLoc = glGetUniformLocation(Rendering.Shaders[usedProgram], "camPos");
+        GLint shadowViewLoc = glGetUniformLocation(Rendering.Shaders[usedProgram], "shadowView");
+        GLint shadowDepthLoc = glGetUniformLocation(Rendering.Shaders[usedProgram], "shadowDepth");;
+        GLint sunDirLoc = glGetUniformLocation(Rendering.Shaders[usedProgram], "sunDir");
+        GLint sunColorLoc = glGetUniformLocation(Rendering.Shaders[usedProgram], "sunColor");
  
         glBindBufferBase(GL_UNIFORM_BUFFER, lightBlock, GetPointLightsBuffer());
+        glUniformBlockBinding(Rendering.Shaders[usedProgram], lightBlock, 0);
 
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix[0]);
         glUniformMatrix3fv(rotLoc, 1, GL_FALSE, (const GLfloat*)&Transpose(rotation).m[0]);

@@ -20,7 +20,7 @@ in  vec3 ex_Color;
 in  vec3 ex_Normal;
 
 in vec4 shadowCoords;
-in float depth;
+in float outlineHeight;
 in  vec3 pointLighting;
 in  vec2 v_uv;
 
@@ -30,14 +30,35 @@ uniform vec3 sunDir;
 uniform vec3 sunColor;
 uniform sampler2D shadowDepth;
 
+vec3 tonemap(vec3 x)
+{
+    //Reinhard
+    return x / (x + 1.0);
+
+    //Uncharted 2
+    //return ((x*(0.15*x+0.10*0.50)+0.20*0.02)/(x*(0.15*x+0.50)+0.20*0.30))-0.02/0.30;
+}
+
 void main(void) {
 
     float shadowCalc = ((shadowCoords.z)/2 + 0.5);
-    float distanceFromLight = texture2D(shadowDepth,(shadowCoords.st)/2 + vec2(0.5) ).x;
-    float shadow = max(0.5,1-smoothstep(0.08,0.1,shadowCalc-distanceFromLight));
+    
+    vec2 coords = shadowCoords.st/2 + vec2(0.5);
+    const float spread = 0.0035;
+    float sub = shadowCalc*5;
+    sub -= texture2D(shadowDepth, coords).x;
+    sub -= texture2D(shadowDepth, coords + vec2( spread,     0.0)).x;
+    sub -= texture2D(shadowDepth, coords + vec2(    0.0,  spread)).x;
+    sub -= texture2D(shadowDepth, coords + vec2(    0.0, -spread)).x;
+    sub -= texture2D(shadowDepth, coords + vec2(-spread,     0.0)).x;
+    sub /= 5.0;
 
-    vec3 ambientAndSun = vec3(0,0,0) + max(0,dot(normalize(sunDir*-1),ex_Normal))* sunColor * shadow;
+    float shadow = max(0.5,1-smoothstep(0.015,0.1,sub));
 
-    gl_FragColor.rgb = 1.0 - pow(1.0-ex_Color,(ambientAndSun + pointLighting));
-    gl_FragColor.a = depth;
+    vec3 ambientAndSun = vec3(0.025) + max(0,dot(normalize(sunDir*-1),ex_Normal))* sunColor * shadow;
+
+    float k = 0.8;
+    float expos = 1.1;
+    gl_FragColor.rgb = tonemap( (log2(1.0-ex_Color)/-k) * (ambientAndSun + pointLighting) * expos);
+    gl_FragColor.a = outlineHeight;
 }

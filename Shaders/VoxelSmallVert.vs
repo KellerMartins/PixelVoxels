@@ -30,7 +30,7 @@ out vec3 ex_Position;
 out vec3 ex_Normal;
 
 out vec4 shadowCoords;
-out float depth;
+out float outlineHeight;
 out vec3 pointLighting;
 
 float round(float f){
@@ -54,7 +54,7 @@ void main(void) {
     ex_Color = in_Color;
     ex_Normal = normalize(in_Normal) * rotation;
 
-    depth = (pz + objPos.z)/256.0;
+    outlineHeight = (pz + objPos.z)/256.0;
 
     //Calculate shadow projected coords
     vec3 shadowPos = ((in_Position - centerPos)/2 * rotation + objPos);

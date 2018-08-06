@@ -29,18 +29,16 @@ uniform mat4 shadowView;
 out vec3 ex_Color;
 out vec3 ex_Position;
 out vec3 ex_Normal;
+out vec3 ex_LocalPosition;
 
-out vec4 shadowCoords;
-out float depth;
-out vec3 pointLightCol;
-out float pointLightDist;
-out vec3 pointLightDir[MAX_POINT_LIGHTS];
+out float outlineHeight;
 
 float round(float f){
     return fract(f)>=0.5? ceil(f):floor(f);
 }
 
 void main(void) {
+    ex_LocalPosition = in_Position;
     vec3 rotPos = (in_Position - centerPos) * rotation;
     float px = rotPos.x;
     float py = rotPos.y;
@@ -58,14 +56,7 @@ void main(void) {
     ex_Color = in_Color;
     ex_Normal = in_Normal * rotation;
 
-    vec3 shadowPos = ((in_Position - centerPos) * rotation + objPos);
-    shadowCoords = shadowView * vec4(shadowPos,1)+vec4(0,0,0.2,0);
-
-    for(int i=0;i<MAX_POINT_LIGHTS;i++){
-        pointLightDir[i] = normalize(lights[i].position.xyz - globalPos);
-    }
-
-    depth = (pz + objPos.z)/256.0;
+    outlineHeight = (pz + objPos.z)/256.0;
 
     //Discart vertex
     if(in_Position.x<0 || ex_Position.z<0 || ex_Position.z>256 || (length(ex_Normal) == 1 && dot(normalize(vec3(1,1,-1)), normalize(ex_Normal)) > 0.0)){

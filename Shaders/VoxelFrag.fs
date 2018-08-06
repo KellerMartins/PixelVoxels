@@ -72,6 +72,9 @@ vec3 tonemap(vec3 x)
     //Reinhard
     return x / (x + 1.0);
 
+    //ACESFilm
+    //return clamp((x*(2.51*x+0.03))/(x*(2.43*x+0.59)+0.14), 0.0, 1.0);
+
     //Uncharted 2
     //return ((x*(0.15*x+0.10*0.50)+0.20*0.02)/(x*(0.15*x+0.50)+0.20*0.30))-0.02/0.30;
 }
@@ -103,7 +106,7 @@ void main(void) {
     sub -= texture2D(shadowDepth, coords + vec2(-spread, -spread)).x;
     sub /= 9.0;
 
-    float shadow = max(0.5,1-smoothstep(0.015,0.1,sub));
+    float shadow = max(0.4,1-smoothstep(0.015,0.1,sub));
 
     vec3 ambientAndSun = vec3(0.025) + max(0.0,dot(normalize(sunDir*-1),normal)) * sunColor * shadow;
 

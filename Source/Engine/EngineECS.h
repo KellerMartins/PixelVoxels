@@ -118,11 +118,11 @@ EntityID GetEntityParent(EntityID entity);
 List* GetChildsList(EntityID parent);
 int UnsetParent(EntityID child);
 
+cJSON *EncodeEntity(EntityID entity,int encodingToPrefab);
+EntityID DecodeEntity(cJSON **entityObj);
+
 int ExportEntityPrefab(EntityID entity, char path[], char name[]);
-int ExportScene(char path[], char name[]);
 EntityID ImportEntityPrefab(char path[], char name[]);
-int LoadScene(char path[], char name[]);
-int LoadSceneAdditive(char path[], char name[]);
 
 SystemID GetSystemID(char systemName[25]);
 void EnableSystem(SystemID system);

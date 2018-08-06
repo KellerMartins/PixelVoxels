@@ -5,6 +5,7 @@ static System *ThisSystem;
 extern engineECS ECS;
 extern engineRendering Rendering;
 extern engineScreen Screen;
+extern engineScene Scene;
 
 GLuint shadowFramebuffer;
 GLuint shadowDepthTexture;
@@ -12,7 +13,7 @@ GLuint shadowDepthTexture;
 unsigned int shadowTextureWidth;
 unsigned int shadowTextureHeight;
 
-Vector3 sunDirection = (Vector3){-0.75,-0.2,1.5};
+Vector3 sunDirection = (Vector3){0.75,0.2,-1.5};
 
 GLuint GetShadowDepthTexture(){
     return shadowDepthTexture;
@@ -60,8 +61,8 @@ void ShadowsUpdate(){
     glClear(GL_DEPTH_BUFFER_BIT);
 
     glUseProgram(Rendering.Shaders[4]);
-
-
+    
+    sunDirection = GetTrieElementAs_Vector3(Scene.data, "sunDirection", (Vector3){0.75,0.2,-1.5});
     
     GLfloat ViewMatrix[4][4]={{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}};
     ShadowViewMatrix(ViewMatrix);
@@ -142,7 +143,7 @@ void ShadowsUpdate(){
         glUniformMatrix3fv(rotLoc, 1, GL_FALSE, (const GLfloat*)&Transpose(rotation).m[0]);
         glUniform3f(objPosLoc, position.x, position.y, position.z);
         glUniform3f(centerPosLoc, obj->center.x, obj->center.y, obj->center.z);
-        glUniform3f(sunDirLoc, -sunDirection.x, -sunDirection.y, -sunDirection.z);
+        glUniform3f(sunDirLoc, sunDirection.x, sunDirection.y, sunDirection.z);
         Vector3 cam = Add(ScalarMult((Vector3){1,-1,0},Rendering.cameraPosition.x), ScalarMult((Vector3){1,1,0},Rendering.cameraPosition.y));
         glUniform3f(camPosLoc, cam.x, cam.y, Rendering.cameraPosition.z);
         
@@ -168,7 +169,7 @@ void ShadowsFree(){
 void ShadowViewMatrix(GLfloat viewMatrix[4][4]){
 
     Vector3 cam = Add(ScalarMult((Vector3){1,-1,0},Rendering.cameraPosition.x/840), ScalarMult((Vector3){1,1,0},Rendering.cameraPosition.y/840));
-    cam = Add(cam,(Vector3){sunDirection.x,sunDirection.y,0});
+    cam = Subtract(cam,(Vector3){sunDirection.x,sunDirection.y,0});
 
     float right = 210;
     float left = -210;
@@ -178,7 +179,7 @@ void ShadowViewMatrix(GLfloat viewMatrix[4][4]){
     float far = -210;
 
     Vector3 pos = (Vector3){0.3,0.3,0};
-    Vector3 target = Add(pos, sunDirection);
+    Vector3 target = Subtract(pos, sunDirection);
 
     Vector3 forwardVec = NormalizeVector(Subtract(pos, target));
     Vector3 leftVec = NormalizeVector(cross(VECTOR3_UP,forwardVec));

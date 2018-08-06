@@ -17,6 +17,9 @@ extern engineRendering Rendering;
 //From Engine/EngineInput.c
 extern engineInput Input;
 
+//From Engine/EngineScene.c
+extern engineScene Scene;
+
 ////////////////////////////////////////////////////////////////////////////////
 
 unsigned char initializedEngine = 0;
@@ -68,7 +71,7 @@ void EngineUpdate(){
 	UpdateTime();
 
 	//Clear and bind rendertexture framebuffer
-	ClearRender(Rendering.clearScreenColor);
+	ClearRender(GetTrieElementAs_Vector3(Scene.data, "backgroundColor", (Vector3){0, 0.149, 0.294}));
 	InputUpdate();
 
 	//Run systems updates

@@ -5,6 +5,7 @@
 //Engine data
 extern engineScreen Screen;
 extern engineECS ECS;
+extern engineScene Scene;
 
 //Data from EditorUI.c
 extern int iconsSize[];
@@ -24,8 +25,6 @@ extern Vector3 lightWhite;
 
 //Data from Editor.c
 extern Vector3 mousePos;
-extern char scenePath[];
-extern char sceneName[];
 extern List SelectedEntities;
 
 //Data from FileBrowser.c
@@ -157,8 +156,8 @@ void DrawMenuWindow(){
                 if(MouseOverBox(mousePos, bMin, bMax,0)){
                     DrawRectangle(bMin,bMax,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
                     if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
-                        if(scenePath[0] != '\0'){
-                            OpenFileBrowser(0,scenePath,FBLoadScene);
+                        if(Scene.path[0] != '\0'){
+                            OpenFileBrowser(0,Scene.path,FBLoadScene);
                         }else{
                             OpenFileBrowser(0,NULL,FBLoadScene);
                         }
@@ -177,8 +176,8 @@ void DrawMenuWindow(){
                 if(MouseOverBox(mousePos, bMin, bMax,0)){
                     DrawRectangle(bMin,bMax,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
                     if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
-                        if(scenePath[0] != '\0'){
-                            OpenFileBrowser(1,scenePath,FBSaveScene);
+                        if(Scene.path[0] != '\0'){
+                            OpenFileBrowser(1,Scene.path,FBSaveScene);
                         }else{
                             OpenFileBrowser(1,NULL,FBSaveScene);
                         }
@@ -208,21 +207,39 @@ void DrawMenuWindow(){
 
                 DrawTextColored("settings", lightWhite, bMin.x, optionsBgMax.y-20, gizmosFontSmall);
 
-                Vector3 bgCol = VECTOR3_ZERO,sunCol = VECTOR3_ZERO,sunDir = VECTOR3_ZERO;
                 currentField++;
                 int currentHeight = bMax.y-50;
                 DrawTextColored("Sun direction", lightWhite, bMin.x, optionsBgMax.y-60, gizmosFontSmall);
-                XYZSliderField("X","Y","Z", &sunDir, (Vector3){0,1},0,0,0, bMin.x, bMax.x - bMin.x, &currentField, &currentHeight);
+
+                Vector3 sunDir = GetTrieElementAs_Vector3(Scene.data, "sunDirection", (Vector3){0.75,0.2,-1.5});
+                Vector3 sunDirOld = sunDir;
+                XYZSliderField("X","Y","Z", &sunDir, (Vector3){-1,1},0,0,0, bMin.x, bMax.x - bMin.x, &currentField, &currentHeight);
+                if(sunDir.x != sunDirOld.x || sunDir.y != sunDirOld.y || sunDir.z != sunDirOld.z){
+                    InsertTrie(&Scene.data, "sunDirection", sunDir);
+                }
+
 
                 bMin.x += spacing;
                 bMax.x += spacing;
                 currentHeight = optionsBgMax.y-10;
-                RGBField("Sun color", &sunCol, 0,0,0, bMin.x , bMax.x - bMin.x, &currentField, &currentHeight);
+
+                Vector3 sunColor = GetTrieElementAs_Vector3(Scene.data, "sunColor", (Vector3){1,1,1});
+                Vector3 sunColorOld = sunColor;
+                RGBField("Sun color", &sunColor, 0,0,0, bMin.x , bMax.x - bMin.x, &currentField, &currentHeight);
+                if(sunColor.x != sunColorOld.x || sunColor.y != sunColorOld.y || sunColor.z != sunColorOld.z){
+                    InsertTrie(&Scene.data, "sunColor", sunColor);
+                }
 
                 bMin.x += spacing;
                 bMax.x += spacing;
                 currentHeight = optionsBgMax.y-10;
-                RGBField("Background col", &bgCol, 0,0,0, bMin.x , bMax.x - bMin.x, &currentField, &currentHeight);
+
+                Vector3 bgColor = GetTrieElementAs_Vector3(Scene.data, "backgroundColor", (Vector3){0.01,0.01,0.01});
+                Vector3 bgColorOld = bgColor;
+                RGBField("Background col", &bgColor, 0,0,0, bMin.x , bMax.x - bMin.x, &currentField, &currentHeight);
+                if(bgColor.x != bgColorOld.x || bgColor.y != bgColorOld.y || bgColor.z != bgColorOld.z){
+                    InsertTrie(&Scene.data, "backgroundColor", bgColor);
+                }
 
             break;
             case 1:
@@ -270,8 +287,8 @@ void DrawMenuWindow(){
                 if(MouseOverBox(mousePos, bMin, bMax,0)){
                     DrawRectangle(bMin,bMax,buttonOverColor.x, buttonOverColor.y, buttonOverColor.z);
                     if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
-                        if(scenePath[0] != '\0'){
-                            OpenFileBrowser(0,scenePath,FBImportSceneEntities);
+                        if(Scene.path[0] != '\0'){
+                            OpenFileBrowser(0,Scene.path,FBImportSceneEntities);
                         }else{
                             OpenFileBrowser(0,NULL,FBImportSceneEntities);
                         }
@@ -360,20 +377,18 @@ void DrawMenuWindow(){
 }
 
 void FBLoadScene(){
-    strcpy(scenePath,fileBrowser.filePath);
-    strcpy(sceneName,fileBrowser.fileName);
     LoadScene(fileBrowser.filePath,fileBrowser.fileName);
     menuOpened = 0;
 }
 
 void FBImportSceneEntities(){
-    LoadSceneAdditive(fileBrowser.filePath,fileBrowser.fileName);
+    LoadSceneAdditive(fileBrowser.filePath,fileBrowser.fileName, 0);
     menuOpened = 0;
 }
 
 void FBSaveScene(){
-    strcpy(scenePath,fileBrowser.filePath);
-    strcpy(sceneName,fileBrowser.fileName);
+    strcpy(Scene.path,fileBrowser.filePath);
+    strcpy(Scene.filename,fileBrowser.fileName);
     ExportScene(fileBrowser.filePath,fileBrowser.fileName);
     menuOpened = 0;
 }
@@ -402,13 +417,13 @@ void NewSceneDontSaveOption(){
     menuOpened = 0;
 
     //Reset the current scene path and name
-    scenePath[0] = '\0';
-    sceneName[0] = '\0';
+    Scene.path[0] = '\0';
+    Scene.filename[0] = '\0';
 }
 
 void NewSceneSaveOption(){
-    if(scenePath[0] != '\0'){
-        OpenFileBrowser(1,scenePath,NewSceneSaveScene);
+    if(Scene.path[0] != '\0'){
+        OpenFileBrowser(1,Scene.path,NewSceneSaveScene);
     }else{
         OpenFileBrowser(1,NULL,NewSceneSaveScene);
     }
@@ -420,8 +435,8 @@ void NewSceneCancelOption(){
 }
 
 void NewSceneSaveScene(){
-    strcpy(scenePath,fileBrowser.filePath);
-    strcpy(sceneName,fileBrowser.fileName);
+    strcpy(Scene.path,fileBrowser.filePath);
+    strcpy(Scene.filename,fileBrowser.fileName);
     ExportScene(fileBrowser.filePath,fileBrowser.fileName);
 
     //Execute the same steps from the don't save option

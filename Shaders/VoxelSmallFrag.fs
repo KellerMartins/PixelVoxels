@@ -26,17 +26,17 @@ in  vec2 v_uv;
 
 out vec4 gl_FragColor;
 
+uniform vec3 sunDir;
+uniform vec3 sunColor;
 uniform sampler2D shadowDepth;
 
 void main(void) {
-    
-    vec3 sunDir = normalize(vec3(-0.75,-0.2,1.5));
 
     float shadowCalc = ((shadowCoords.z)/2 + 0.5);
     float distanceFromLight = texture2D(shadowDepth,(shadowCoords.st)/2 + vec2(0.5) ).x;
     float shadow = max(0.5,1-smoothstep(0.08,0.1,shadowCalc-distanceFromLight));
 
-    vec3 ambientAndSun = vec3(0,0,0) + max(0,dot(sunDir,ex_Normal))* vec3(1,1,1) * shadow;
+    vec3 ambientAndSun = vec3(0,0,0) + max(0,dot(normalize(sunDir*-1),ex_Normal))* sunColor * shadow;
 
     gl_FragColor.rgb = 1.0 - pow(1.0-ex_Color,(ambientAndSun + pointLighting));
     gl_FragColor.a = depth;

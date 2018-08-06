@@ -28,6 +28,8 @@ in vec2 v_uv;
 
 out vec4 gl_FragColor;
 
+uniform vec3 sunDir;
+uniform vec3 sunColor;
 uniform sampler2D shadowDepth;
 uniform sampler2D tex;
 
@@ -60,7 +62,6 @@ vec3 hueShift( vec3 color, float hueAdjust ){
 
 void main(void) {
 
-    vec3 sunDir = normalize(vec3(-0.75,-0.2,1.5));
     vec4 sprite = texture(tex, gl_PointCoord);
     vec3 normal = normalize(sprite.rgb * vec3(-1,-1,1));
 
@@ -85,7 +86,7 @@ void main(void) {
 
     float shadow = max(0.5,1-smoothstep(0.015,0.04,sub));
 
-    vec3 ambientAndSun = vec3(0,0,0) + max(0.0,dot(sunDir,normal)) * vec3(1,1,1)*shadow;
+    vec3 ambientAndSun = vec3(0,0,0) + max(0.0,dot(normalize(sunDir*-1),normal)) * sunColor * shadow;
 
     vec3 pointLighting = vec3(0);
     for(int i=0;i<MAX_POINT_LIGHTS;i++){

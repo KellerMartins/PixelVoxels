@@ -21,7 +21,6 @@ typedef struct engineRendering{
     GLuint Shaders[6];
 
     Pixel voxelColors[256];
-    SDL_Color clearScreenColor;
 }engineRendering;
 
 int InitRenderer();
@@ -29,7 +28,7 @@ int InitRenderer();
 //Rendering functions
 Vector3 PositionToGameScreenCoords(Vector3 position);
 Vector3 PositionToCameraCoords(Vector3 position);
-void ClearRender(SDL_Color col);
+void ClearRender(Vector3 col);
 void RenderToScreen();
 void RenderTextureToScreen(GLuint texture);
 void RenderTextDebug(char *text, SDL_Color color, int x, int y, TTF_Font* font);

@@ -18,25 +18,27 @@ void main(void) {
     vec3 pixel = texture2D(fbo_texture, uv).rgb;
 
     //Outline
-
-    const float ObjOutline = 0.0;
+    //TODO: make outline darkness be controlled by scene
+    const float ObjOutline = 0.15;
     const float UIOutline = 0.1;
     
-    vec4 neighbor = texture2D(fbo_texture, vec2(uv.x + pWidth,uv.y));
-    float borderMult = neighbor.a<0.9? ObjOutline : UIOutline;
-    pixel = (neighbor.a - curDepth) > 0.01? neighbor.rgb*borderMult:pixel;
+    if(ObjOutline != 1){
+        vec4 neighbor = texture2D(fbo_texture, vec2(uv.x + pWidth,uv.y));
+        float borderMult = neighbor.a<0.9? ObjOutline : UIOutline;
+        pixel = (neighbor.a - curDepth) > 0.01? neighbor.rgb*borderMult:pixel;
 
-    neighbor = texture2D(fbo_texture, vec2(uv.x - pWidth,uv.y));
-    borderMult = neighbor.a<0.9? ObjOutline : UIOutline;
-    pixel = (neighbor.a - curDepth) > 0.01? neighbor.rgb*borderMult:pixel;
+        neighbor = texture2D(fbo_texture, vec2(uv.x - pWidth,uv.y));
+        borderMult = neighbor.a<0.9? ObjOutline : UIOutline;
+        pixel = (neighbor.a - curDepth) > 0.01? neighbor.rgb*borderMult:pixel;
 
-    neighbor = texture2D(fbo_texture, vec2(uv.x,uv.y + pHeight));
-    borderMult = neighbor.a<0.9? ObjOutline : UIOutline;
-    pixel = (neighbor.a - curDepth) > 0.01? neighbor.rgb*borderMult:pixel;
+        neighbor = texture2D(fbo_texture, vec2(uv.x,uv.y + pHeight));
+        borderMult = neighbor.a<0.9? ObjOutline : UIOutline;
+        pixel = (neighbor.a - curDepth) > 0.01? neighbor.rgb*borderMult:pixel;
 
-    neighbor = texture2D(fbo_texture, vec2(uv.x,uv.y - pHeight));
-    borderMult = neighbor.a<0.9? ObjOutline : UIOutline;
-    pixel = (neighbor.a - curDepth) > 0.01? neighbor.rgb*borderMult:pixel;
+        neighbor = texture2D(fbo_texture, vec2(uv.x,uv.y - pHeight));
+        borderMult = neighbor.a<0.9? ObjOutline : UIOutline;
+        pixel = (neighbor.a - curDepth) > 0.01? neighbor.rgb*borderMult:pixel;
+    }
 
     //Vignette
     vec3 dist = vec3((uv.x - 0.5) * 1.25,(uv.y - 0.5f) * 1.25,0);

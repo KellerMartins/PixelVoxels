@@ -9,6 +9,7 @@ extern engineScreen Screen;
 extern engineRendering Rendering;
 extern engineInput Input;
 extern engineTime Time;
+extern engineScene Scene;
 
 //Editor external files data
 
@@ -57,10 +58,6 @@ const int scrollbarMouseWheelSpeed = 25;
 const double scrollbarWidth = 12;
 
 char *textFieldString = NULL;
-
-//Current opened scene
-char scenePath[_TINYDIR_PATH_MAX] = "";
-char sceneName[_TINYDIR_FILENAME_MAX] = "";
 
 //Input data
 Vector3 mousePos = {0,0,0};

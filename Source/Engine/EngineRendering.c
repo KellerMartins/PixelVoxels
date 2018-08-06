@@ -58,7 +58,6 @@ int InitRenderer(){
     glDepthFunc(GL_LEQUAL);
 
 	Rendering.cameraPosition = (Vector3){0,0,0};
-	Rendering.clearScreenColor = (SDL_Color){0,0,0,0};
 
     //Framebuffer
     glGenFramebuffers(1, &Rendering.frameBuffer);
@@ -171,10 +170,10 @@ Vector3 PositionToCameraCoords(Vector3 position){
 	return screenPos;
 }
 
-void ClearRender(SDL_Color col){
+void ClearRender(Vector3 col){
     glBindFramebuffer(GL_FRAMEBUFFER, Rendering.frameBuffer);
 
-    glClearColor(col.r/255.0, col.g/255.0, col.b/255.0,0.0);
+    glClearColor(col.x, col.y, col.z,0.0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 }

@@ -7,6 +7,7 @@ extern engineCore Core;
 extern engineScreen Screen;
 extern engineRendering Rendering;
 extern engineECS ECS;
+extern engineScene Scene;
 
 extern GLuint shadowDepthTexture;
 
@@ -73,6 +74,9 @@ void VoxelRendererUpdate(){
     GLfloat ViewMatrix[4][4]={{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}};
     ShadowViewMatrix(ViewMatrix);
 
+    Vector3 sunDir = GetTrieElementAs_Vector3(Scene.data, "sunDirection", (Vector3){0.75,0.2,-1.5});
+    Vector3 sunColor = GetTrieElementAs_Vector3(Scene.data, "sunColor", (Vector3){1,1,1});
+
     //Get uniform locations
     static GLint projLocB = -1;
     static GLint projLocS = -1;
@@ -123,12 +127,27 @@ void VoxelRendererUpdate(){
     if(camPosLocS < 0)
         camPosLocS = glGetUniformLocation(Rendering.Shaders[2], "camPos");
 
+    static GLint sunDirLocB = -1;
+    static GLint sunDirLocS = -1;
+    if(sunDirLocB < 0)
+        sunDirLocB = glGetUniformLocation(Rendering.Shaders[1], "sunDir");
+    if(sunDirLocS < 0)
+        sunDirLocS = glGetUniformLocation(Rendering.Shaders[2], "sunDir");
+
+    static GLint sunColorLocB = -1;
+    static GLint sunColorLocS = -1;
+    if(sunColorLocB < 0)
+        sunColorLocB = glGetUniformLocation(Rendering.Shaders[1], "sunColor");
+    if(sunColorLocS < 0)
+        sunColorLocS = glGetUniformLocation(Rendering.Shaders[2], "sunColor");
+
     static GLint lightBlockB = -1;
     static GLint lightBlockS = -1;
     if(lightBlockB < 0)
         lightBlockB = glGetUniformBlockIndex(Rendering.Shaders[1], "PointLight");
     if(lightBlockS < 0)
         lightBlockS = glGetUniformBlockIndex(Rendering.Shaders[2], "PointLight");
+        
 
     static GLint spriteScaleLoc = -1;
     if(spriteScaleLoc < 0)
@@ -182,7 +201,7 @@ void VoxelRendererUpdate(){
         glEnableVertexAttribArray(2);
 
 
-        GLint lightBlock, projLoc, rotLoc, objPosLoc, centerPosLoc, camPosLoc, shadowViewLoc, shadowDepthLoc;
+        GLint lightBlock, projLoc, rotLoc, objPosLoc, centerPosLoc, camPosLoc, shadowViewLoc, shadowDepthLoc, sunDirLoc, sunColorLoc;
         if(obj->smallScale){
             glUseProgram(Rendering.Shaders[2]);
 
@@ -194,6 +213,8 @@ void VoxelRendererUpdate(){
             camPosLoc = camPosLocS;
             shadowViewLoc = shadowViewLocS;
             shadowDepthLoc = shadowDepthLocS;
+            sunDirLoc = sunDirLocS;
+            sunColorLoc = sunColorLocS;
             
             glUniformBlockBinding(Rendering.Shaders[2], lightBlock, 0);
         }else{
@@ -207,6 +228,8 @@ void VoxelRendererUpdate(){
             camPosLoc = camPosLocB;
             shadowViewLoc = shadowViewLocB;
             shadowDepthLoc = shadowDepthLocB;
+            sunDirLoc = sunDirLocB;
+            sunColorLoc = sunColorLocB;
 
             glUniformBlockBinding(Rendering.Shaders[1], lightBlock, 0);
             glUniform1i(texLoc, 1);
@@ -220,6 +243,8 @@ void VoxelRendererUpdate(){
         glUniform3f(objPosLoc, position.x, position.y, position.z);
         glUniform3f(centerPosLoc, obj->center.x, obj->center.y, obj->center.z);
         glUniform3f(camPosLoc, Rendering.cameraPosition.x, Rendering.cameraPosition.y, Rendering.cameraPosition.z);
+        glUniform3f(sunDirLoc, sunDir.x, sunDir.y, sunDir.z);
+        glUniform3f(sunColorLoc, sunColor.x, sunColor.y, sunColor.z);
         
         glUniform1i(shadowDepthLoc, 0);
         glUniformMatrix4fv(shadowViewLoc, 1, GL_FALSE, (const GLfloat*)&ViewMatrix[0]);

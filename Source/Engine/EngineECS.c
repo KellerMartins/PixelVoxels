@@ -455,7 +455,7 @@ int UnsetParent(EntityID child){
 
 
 
-//----------------- Import/Export Scenes and Entities functions -----------------
+//----------------- Import/Export Entities functions -----------------
 
 //Warning: the encodingToPrefab flag is only valid for the first caller of this function,
 //as if you are encoding to prefab, you will only encode the full data of the first, and the childs will still
@@ -612,69 +612,6 @@ EntityID ImportEntityPrefab(char path[], char name[]){
 	}
 	return -1;
 }
-
-int ExportScene(char path[], char name[]){
-
-	cJSON *sceneObj = cJSON_CreateObject();
-	cJSON *entitiesArray = cJSON_AddArrayToObject(sceneObj, "entities");
-
-	int i;
-	for(i=0;i<=ECS.maxUsedIndex;i++){
-		if(IsValidEntity(i) && !EntityIsChild(i)){
-			cJSON_AddItemToArray(entitiesArray, EncodeEntity(i,0));
-		}
-	}
-
-	char fullPath[512+256];
-    strncpy(fullPath,path,512);
-    if(path[strlen(path)-1] != '/'){
-        strcat(fullPath,"/");
-    }
-    strcat(fullPath,name);
-	strcat(fullPath,".scene");
-    PrintLog(Info,"Saving scene: (%s)\n",fullPath);
-    FILE* file = fopen(fullPath,"w");
-
-	if(file){
-		char *jsonString = cJSON_Print(sceneObj);
-		fprintf(file,"%s",jsonString);
-		free(jsonString);
-		fclose(file);
-		return 1;
-	}else{
-		PrintLog(Error,"ExportScene: Failed to create/open json file!\n");
-		return 0;
-	}
-	
-	cJSON_Delete(sceneObj);
-}
-
-int LoadScene(char path[], char name[]){
-	int i;
-	for(i=0;i<=ECS.maxUsedIndex;i++){
-		if(IsValidEntity(i)){
-			DestroyEntity(i);
-		}
-	}
-	return LoadSceneAdditive(path,name);
-}
-
-int LoadSceneAdditive(char path[], char name[]){
-	cJSON *sceneObj = OpenJSON(path, name);
-	if(sceneObj){
-		cJSON *entityArray = cJSON_GetObjectItemCaseSensitive(sceneObj, "entities");
-		cJSON *entityObj = NULL;
-		cJSON_ArrayForEach(entityObj, entityArray){	
-			//Entity construction
-			DecodeEntity(&entityObj);
-		}
-
-		cJSON_Delete(sceneObj);
-		return 1;
-	}
-	return 0;
-}
-
 
 
 

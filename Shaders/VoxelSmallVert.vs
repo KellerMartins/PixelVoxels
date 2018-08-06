@@ -67,7 +67,7 @@ void main(void) {
         if(lights[i].range<=0) continue;
         
         vec3 pointLightDir = normalize(lights[i].position.xyz - globalPos);
-        float pointLightDist = lights[i].range / pow( distance(globalPos,lights[i].position.xyz) ,2);
+        float pointLightDist = 0.5*lights[i].range / pow( distance(globalPos,lights[i].position.xyz) ,2);
 
         pointLighting += max(0,step(0.325,max(0,dot(ex_Normal,pointLightDir))*(pointLightDist))) *lights[i].intensity* lights[i].color.rgb;
     }

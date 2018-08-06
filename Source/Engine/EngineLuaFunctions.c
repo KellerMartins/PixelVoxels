@@ -98,7 +98,9 @@ static int l_LoadScene(lua_State *L){
 static int l_LoadSceneAdditive(lua_State *L){
     const char* path = luaL_checkstring (L, 1);
     const char* name = luaL_checkstring (L, 2);
-    lua_pushinteger(L, LoadSceneAdditive((char*)path, (char*)name));
+    luaL_checktype(L, 3, LUA_TBOOLEAN);
+    int loadData = lua_toboolean(L, -1);
+    lua_pushinteger(L, LoadSceneAdditive((char*)path, (char*)name, loadData));
     return 1;
 }
 

@@ -22,6 +22,7 @@ extern engineCore Core;
 extern engineScreen Screen;
 extern engineRendering Rendering;
 extern engineECS ECS;
+extern engineScene Scene;
 
 TTF_Font* font = NULL;
 
@@ -65,8 +66,6 @@ int main(int argc, char *argv[]){
 	VoxelPhysicsRegisterLuaFunctions();
 	UIRendererRegisterLuaFunctions();
 
-
-	Rendering.clearScreenColor = (SDL_Color){0,38,75,0};
 	InitFPS();
 	
 	//Initialize font
@@ -75,7 +74,7 @@ int main(int argc, char *argv[]){
 		PrintLog(Error,"Main: Error loading font!");
 	}
 
-	LoadScene("Assets", "newScene.scene");
+	LoadScene("Assets", "newScene2.scene");
 
 	PrintLog(Info,"GameLoop Initialized\n");
 	//Game Loop

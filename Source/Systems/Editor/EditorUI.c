@@ -217,25 +217,25 @@ void XYZSliderField(char *xTitle,char *yTitle,char *zTitle, Vector3 *data, Vecto
 
     TTF_SizeText(gizmosFontSmall, xTitle, &textW, &textH);
     DrawTextColored(xTitle, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall)/2, gizmosFontSmall);
-    double sliderVal = Slider(data->x, x+textW+2, *curHeight, w-textW-7, 14, 1, lightWhite, brightWhite, brightWhite);
+    double sliderVal = Slider((data->x - range.x)/(range.y - range.x), x+textW+2, *curHeight, w-textW-7, 14, 1, lightWhite, brightWhite, brightWhite);
     if(sliderVal > 0){
-        data->x = sliderVal;
+        data->x = (sliderVal * (range.y - range.x)) + range.x;
     }
     *curHeight -= 20;
 
     TTF_SizeText(gizmosFontSmall, yTitle, &textW, &textH);
     DrawTextColored(yTitle, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall)/2, gizmosFontSmall);
-    sliderVal = Slider(data->y, x+textW+2, *curHeight, w-textW-7, 14, 1, lightWhite, brightWhite, brightWhite);
+    sliderVal = Slider((data->y - range.x)/(range.y - range.x), x+textW+2, *curHeight, w-textW-7, 14, 1, lightWhite, brightWhite, brightWhite);
     if(sliderVal > 0){
-        data->y = sliderVal;
+        data->y = (sliderVal * (range.y - range.x)) + range.x;
     }
     *curHeight -= 20;
 
     TTF_SizeText(gizmosFontSmall, zTitle, &textW, &textH);
     DrawTextColored(zTitle, lightWhite, x, *curHeight - TTF_FontHeight(gizmosFontSmall)/2, gizmosFontSmall);
-    sliderVal = Slider(data->z, x+textW+2, *curHeight, w-textW-7, 14, 1, lightWhite, brightWhite, brightWhite);
+    sliderVal = Slider((data->z - range.x)/(range.y - range.x), x+textW+2, *curHeight, w-textW-7, 14, 1, lightWhite, brightWhite, brightWhite);
     if(sliderVal > 0){
-        data->z = sliderVal;
+        data->z = (sliderVal * (range.y - range.x)) + range.x;
     }
     *curHeight -= 12;
     *curField +=1;

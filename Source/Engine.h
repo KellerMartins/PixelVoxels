@@ -25,6 +25,7 @@
 #include "Engine/EngineECS.h"
 #include "Engine/EngineRendering.h"
 #include "Engine/EngineInput.h"
+#include "Engine/EngineScene.h"
 
 //Engine functions called from main
 int InitEngine();

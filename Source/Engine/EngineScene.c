@@ -87,22 +87,22 @@ int LoadSceneAdditive(char path[], char name[], int loadData){
 					Vector3 vec = {(cJSON_GetArrayItem(value,0))->valuedouble,
 								   (cJSON_GetArrayItem(value,1))->valuedouble,
 						    	   (cJSON_GetArrayItem(value,2))->valuedouble};
-					InsertTrie(&Scene.data, key, vec);	
+					InsertTrie_Vector3(&Scene.data, key, vec);	
 				}
 				
 				else if(cJSON_IsNumber(value)){
 					double num = value->valuedouble;
-					InsertTrie(&Scene.data, key, num);
+					InsertTrie_double(&Scene.data, key, num);
 				}
 				
 				else if(cJSON_IsBool(value)){
 					int b = cJSON_IsTrue(value);
-					InsertTrie(&Scene.data, key, b);
+					InsertTrie_int(&Scene.data, key, b);
 				}
 				
 				else if(cJSON_IsString(value)){
 					char* str = value->valuestring;
-					InsertTrieSize(&Scene.data, key, str, (strlen(str)+1)*sizeof(char));
+					InsertTrieString(&Scene.data, key, str);
 				}
 			}
 		}

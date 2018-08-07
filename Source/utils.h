@@ -89,35 +89,41 @@ typedef struct Pixel{
 
 //Trie structures and interface
 
+//Add all supported types here, as 'Trie_type'
+typedef enum TrieType {Trie_None, Trie_Pointer, Trie_String, Trie_Vector3, Trie_double, Trie_float, Trie_char, Trie_int }TrieType;
+
 #define TRIE_ALPHABET_SIZE 127
 typedef struct TrieCell{
+    TrieType elementType;
     unsigned elementSize;
-    //In a leaf, the '\0' points to the data stored, while in a trunk it points to NULL
-    //In both leaf and trunk, all the other characters points to other Tries
+    //In a leaf and branch, the '\0' points to the data stored, while in a trunk it points to NULL
+    //In both branch and trunk, all the other characters points to other Tries
     void* branch[TRIE_ALPHABET_SIZE];
 }Trie;
 
 Trie InitTrie();
 void FreeTrie(Trie *trie);
 
-void InsertTrieSize(Trie *trie, const char* key, void *value, int size);
-#define InsertTrie(triePointer, key, variable) InsertTrieSize(triePointer, key, &variable, sizeof(variable))
+void InsertTrie(Trie *trie, const char* key, const void *value, int size, TrieType valueType);
+void InsertTrieString(Trie *trie, const char* key, const char* value);
 
 int TrieContainsKey(Trie trie, const char* key);
 void* GetTrieElement(Trie trie, const char* key);
-void* GetTrieElementWithSize(Trie trie, const char* key, int *sizeOut);
-void* GetTrieElementAsPointer(Trie trie, const char* key,  void* defaultValue);
+void* GetTrieElementWithProperties(Trie trie, const char* key, int *sizeOut, TrieType *typeOut);
+void* GetTrieElementAsPointer(Trie trie, const char* key, void* defaultValue);
+char* GetTrieElementAsString(Trie trie, const char* key, char* defaultValue);
 
-//Macro to generate headers for the GetTrieElementAs_type functions
-//Remember to call the function template macro on utils.c when adding more types
-#define TRIE_GET_ELEMENT_TYPE_FUNCTION_HEADER_MACRO(type) \
+//Macro to generate headers for the insertion and retrieval functions
+//Remember to call the function template macro on utils.c and to modify the TrieType enum when adding more types
+#define TRIE_TYPE_FUNCTION_HEADER_MACRO(type) \
+void InsertTrie_ ## type (Trie *trie, const char* key,  type value);\
 type GetTrieElementAs_ ## type (Trie trie, const char* key,  type defaultValue);
 
-TRIE_GET_ELEMENT_TYPE_FUNCTION_HEADER_MACRO(Vector3)
-TRIE_GET_ELEMENT_TYPE_FUNCTION_HEADER_MACRO(double)
-TRIE_GET_ELEMENT_TYPE_FUNCTION_HEADER_MACRO(float)
-TRIE_GET_ELEMENT_TYPE_FUNCTION_HEADER_MACRO(char)
-TRIE_GET_ELEMENT_TYPE_FUNCTION_HEADER_MACRO(int)
+TRIE_TYPE_FUNCTION_HEADER_MACRO(Vector3)
+TRIE_TYPE_FUNCTION_HEADER_MACRO(double)
+TRIE_TYPE_FUNCTION_HEADER_MACRO(float)
+TRIE_TYPE_FUNCTION_HEADER_MACRO(char)
+TRIE_TYPE_FUNCTION_HEADER_MACRO(int)
 
 //Generic list implementation
 //In this implementation, every new element added is copied to the list, not just referenced

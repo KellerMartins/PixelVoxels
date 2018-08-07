@@ -215,7 +215,7 @@ void DrawMenuWindow(){
                 Vector3 sunDirOld = sunDir;
                 XYZSliderField("X","Y","Z", &sunDir, (Vector3){-1,1},0,0,0, bMin.x, bMax.x - bMin.x, &currentField, &currentHeight);
                 if(sunDir.x != sunDirOld.x || sunDir.y != sunDirOld.y || sunDir.z != sunDirOld.z){
-                    InsertTrie(&Scene.data, "sunDirection", sunDir);
+                    InsertTrie_Vector3(&Scene.data, "sunDirection", sunDir);
                 }
 
 
@@ -227,7 +227,7 @@ void DrawMenuWindow(){
                 Vector3 sunColorOld = sunColor;
                 RGBField("Sun color", &sunColor, 0,0,0, bMin.x , bMax.x - bMin.x, &currentField, &currentHeight);
                 if(sunColor.x != sunColorOld.x || sunColor.y != sunColorOld.y || sunColor.z != sunColorOld.z){
-                    InsertTrie(&Scene.data, "sunColor", sunColor);
+                    InsertTrie_Vector3(&Scene.data, "sunColor", sunColor);
                 }
 
                 bMin.x += spacing;
@@ -238,7 +238,7 @@ void DrawMenuWindow(){
                 Vector3 bgColorOld = bgColor;
                 RGBField("Background col", &bgColor, 0,0,0, bMin.x , bMax.x - bMin.x, &currentField, &currentHeight);
                 if(bgColor.x != bgColorOld.x || bgColor.y != bgColorOld.y || bgColor.z != bgColorOld.z){
-                    InsertTrie(&Scene.data, "backgroundColor", bgColor);
+                    InsertTrie_Vector3(&Scene.data, "backgroundColor", bgColor);
                 }
 
             break;

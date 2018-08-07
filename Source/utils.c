@@ -94,7 +94,7 @@ void FreeTrie(Trie *trie){
 	}
 }
 
-void InsertTrieSize(Trie *trie, const char* key, void *value, int size){
+void InsertTrie(Trie *trie, const char* key, const void *value, int size, TrieType valueType){
 	if(!trie) return;
 	int i = 0;
 
@@ -111,20 +111,22 @@ void InsertTrieSize(Trie *trie, const char* key, void *value, int size){
 			cell->branch[(int)key[i++]] = newCell;
 			cell = newCell;
 		}
-		//Insert data in the trie cell pointed by the last character
-		cell->elementSize = size;
-		cell->branch['\0'] = malloc(size);
-		memcpy(cell->branch['\0'], value, size);
+		//cell now points to the '\0' cell
 	}
 
 	//If this key is already in the trie, replace the data
 	else if(key[i] == '\0'){
 		free(cell->branch['\0']);
-		cell->elementSize = size;
-		cell->branch['\0'] = malloc(size);
-		memcpy(cell->branch['\0'], value, size);
 	}
 
+	cell->elementSize = size;
+	cell->elementType = valueType;
+	cell->branch['\0'] = malloc(size);
+	memcpy(cell->branch['\0'], value, size);
+}
+
+inline void InsertTrieString(Trie *trie, const char* key, const char* value){
+	InsertTrie(trie, key, value, (strlen(value)+1)*sizeof(char), Trie_String);
 }
 
 Trie *TrieGetDataCell(Trie *trie, const char* key){
@@ -146,35 +148,51 @@ void* GetTrieElement(Trie trie, const char* key){
 	return cell? cell->branch['\0']:NULL;
 }
 
-void* GetTrieElementWithSize(Trie trie, const char* key, int *sizeOut){
+void* GetTrieElementWithProperties(Trie trie, const char* key, int *sizeOut, TrieType *typeOut){
 	Trie* cell = TrieGetDataCell(&trie, key);
-	*sizeOut = cell? cell->elementSize:0;
+	if(sizeOut)
+		*sizeOut = cell? cell->elementSize:0;
+	if(typeOut)
+		*typeOut = cell? cell->elementType:Trie_None;
+
 	return cell? cell->branch['\0']:NULL;
 }
 
 void* GetTrieElementAsPointer(Trie trie, const char* key,  void* defaultValue){
 	int size = 0;
-	void** data = GetTrieElementWithSize(trie, key, &size);
+	void** data = GetTrieElementWithProperties(trie, key, &size, NULL);
 	if(!data || size != sizeof(void*)) return defaultValue;
 	else return *data;
 }
 
-//Macro to generate GetTrieElementAs_type functions for different types
+char* GetTrieElementAsString(Trie trie, const char* key, char* defaultValue){
+	TrieType elementType;
+	char* data = GetTrieElementWithProperties(trie, key, NULL, &elementType);
+	if(!data || elementType != Trie_String) return defaultValue;
+	else return data;
+}
+
+
+//Macro to generate insertion and retrieval functions for different types
 //This was made to avoid copying and pasting the same function many times
 //Remember to call the header generation macro on utils.h when adding more types
-#define TRIE_GET_ELEMENT_TYPE_FUNCTION_TEMPLATE_MACRO(type) \
+#define TRIE_TYPE_FUNCTION_TEMPLATE_MACRO(type) \
+void InsertTrie_ ## type (Trie *trie, const char* key,  type value){\
+	InsertTrie(trie, key, &value, sizeof(type), Trie_ ## type);\
+}\
+\
 type GetTrieElementAs_ ## type (Trie trie, const char* key,  type defaultValue){\
-	int size = 0;\
-	type * data = GetTrieElementWithSize(trie, key, &size);\
-	if(!data || size != sizeof(type)) return defaultValue;\
+	TrieType elementType;\
+	type * data = GetTrieElementWithProperties(trie, key, NULL, &elementType);\
+	if(!data || elementType != Trie_ ## type) return defaultValue;\
 	else return *data;\
 }\
 
-TRIE_GET_ELEMENT_TYPE_FUNCTION_TEMPLATE_MACRO(Vector3)
-TRIE_GET_ELEMENT_TYPE_FUNCTION_TEMPLATE_MACRO(double)
-TRIE_GET_ELEMENT_TYPE_FUNCTION_TEMPLATE_MACRO(float)
-TRIE_GET_ELEMENT_TYPE_FUNCTION_TEMPLATE_MACRO(char)
-TRIE_GET_ELEMENT_TYPE_FUNCTION_TEMPLATE_MACRO(int)
+TRIE_TYPE_FUNCTION_TEMPLATE_MACRO(Vector3)
+TRIE_TYPE_FUNCTION_TEMPLATE_MACRO(double)
+TRIE_TYPE_FUNCTION_TEMPLATE_MACRO(float)
+TRIE_TYPE_FUNCTION_TEMPLATE_MACRO(char)
+TRIE_TYPE_FUNCTION_TEMPLATE_MACRO(int)
 
 
 // --------------- Generic List Functions ---------------

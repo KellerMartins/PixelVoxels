@@ -65,3 +65,11 @@ endif
 $(FOLDERS)/:
 	@echo "+ Creating build folders \"$@\""
 	$(MKDIR) $@
+
+
+clear:
+ifeq ($(OS),Windows_NT)
+	@del /s *.o
+else
+	
+endif

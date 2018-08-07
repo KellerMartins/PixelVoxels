@@ -60,7 +60,7 @@ void main(void) {
 
     vec3 ambientAndSun = vec3(0.025) + max(0,dot(normalize(sunDir*-1),ex_Normal))* sunColor * shadow;
 
-    float k = 0.8;
+    float k = 1.0;
     float expos = 1.1;
     gl_FragColor.rgb = tonemap( (log2(1.0-ex_Color)/-k) * (ambientAndSun + pointLighting) * expos);
     gl_FragColor.a = outlineHeight;

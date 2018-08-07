@@ -106,7 +106,7 @@ void main(void) {
     sub -= texture2D(shadowDepth, coords + vec2(-spread, -spread)).x;
     sub /= 9.0;
 
-    float shadow = max(0.4,1-smoothstep(0.015,0.1,sub));
+    float shadow = max(0.4,pow(1-smoothstep(0.015,0.1,sub),2.0));
 
     vec3 ambientAndSun = vec3(0.025) + max(0.0,dot(normalize(sunDir*-1),normal)) * sunColor * shadow;
 
@@ -125,7 +125,7 @@ void main(void) {
     float details = dot(normal, normalize(vec3(-1,-1,1)))>0.75? 1.2:1.0 * length(ex_Normal)>1? 1.1:1.0;
 
     //Based on this: http://www.codersnotes.com/notes/untonemapping/
-    float k = 0.8;
+    float k = 1.0;
     float expos = 1.1;
     gl_FragColor.rgb = tonemap( (log2(1.0-ex_Color)/-k) * (ambientAndSun + pointLighting) * details * expos);
     gl_FragColor.a = outlineHeight;

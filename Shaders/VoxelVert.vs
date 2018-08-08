@@ -24,7 +24,7 @@ uniform vec3 centerPos;
 uniform mat4 projection;
 uniform mat3 rotation;
 
-uniform mat4 shadowView;
+uniform mat4 shadowMatrix;
 
 out vec3 ex_Color;
 out vec3 ex_Position;

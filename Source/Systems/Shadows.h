@@ -9,6 +9,6 @@ void ShadowsUpdate();
 void ShadowsFree();
 
 GLuint GetShadowDepthTexture();
-void ShadowViewMatrix(GLfloat viewMatrix[4][4]);
+const GLfloat* GetShadowMatrix();
 
 #endif

@@ -3,14 +3,12 @@ in vec3 in_Position;
 in vec3 in_Normal;
 
 uniform int scale;
-uniform vec3 camPos;
 uniform vec3 objPos;
 uniform vec3 centerPos;
 uniform mat3 rotation;
 
 uniform vec3 sunDir;
-uniform mat4 projection;
-uniform mat4 view;
+uniform mat4 shadowMatrix;
 
 float round(float f){
     return fract(f)>=0.5? ceil(f):floor(f);
@@ -18,7 +16,7 @@ float round(float f){
 
 void main(void) {
     vec3 pos = ((in_Position - centerPos)/scale * rotation + objPos);
-    gl_Position = view * vec4(pos,1) + vec4(0,0,0.2,0);
+    gl_Position = shadowMatrix * vec4(pos,1) + vec4(0,0,0.5,0);
 
     //Discart backface vertices
     if(dot(normalize(sunDir), normalize(in_Normal)*rotation) > 0.33){

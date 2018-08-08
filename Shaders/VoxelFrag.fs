@@ -1,6 +1,4 @@
 #version 150
-// It was expressed that some drivers required this next line to function properly
-precision highp float;
 
 struct PLight{
     vec4 position;
@@ -32,7 +30,7 @@ uniform vec3 centerPos;
 uniform mat4 projection;
 uniform mat3 rotation;
 
-uniform mat4 shadowView;
+uniform mat4 shadowMatrix;
 
 uniform vec3 sunDir;
 uniform vec3 sunColor;
@@ -89,7 +87,7 @@ void main(void) {
         discard;
 
     vec3 shadowPos = (((ex_LocalPosition) - centerPos) * rotation + objPos + spritePos.xyz);
-    vec4 shadowCoords = shadowView * vec4(shadowPos,1)+vec4(0,0,0.2,0);
+    vec4 shadowCoords = shadowMatrix * vec4(shadowPos,1) + vec4(0,0,0.5,0);;
     float shadowCalc = ((shadowCoords.z)/2 + 0.5);
     vec2 coords = shadowCoords.st/2 + vec2(0.5);
 

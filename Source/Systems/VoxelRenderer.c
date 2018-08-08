@@ -84,10 +84,6 @@ void VoxelRendererUpdate(){
                                     {0                , 0                 , -2.0f/(far-near) , -(far + near)/(far - near)     },
                                     {0                , 0                 , 0                ,   1                            }};
 
-    
-    //Generate shadow view matrix
-    GLfloat ViewMatrix[4][4]={{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}};
-    ShadowViewMatrix(ViewMatrix);
 
     Vector3 sunDir = GetTrieElementAs_Vector3(Scene.data, "sunDirection", (Vector3){0.75,0.2,-1.5});
     Vector3 sunColor = GetTrieElementAs_Vector3(Scene.data, "sunColor", (Vector3){1,1,1});
@@ -164,7 +160,7 @@ void VoxelRendererUpdate(){
         GLint objPosLoc = glGetUniformLocation(Rendering.Shaders[usedProgram], "objPos");
         GLint centerPosLoc = glGetUniformLocation(Rendering.Shaders[usedProgram], "centerPos");
         GLint camPosLoc = glGetUniformLocation(Rendering.Shaders[usedProgram], "camPos");
-        GLint shadowViewLoc = glGetUniformLocation(Rendering.Shaders[usedProgram], "shadowView");
+        GLint shadowMatrixLoc = glGetUniformLocation(Rendering.Shaders[usedProgram], "shadowMatrix");
         GLint shadowDepthLoc = glGetUniformLocation(Rendering.Shaders[usedProgram], "shadowDepth");;
         GLint sunDirLoc = glGetUniformLocation(Rendering.Shaders[usedProgram], "sunDir");
         GLint sunColorLoc = glGetUniformLocation(Rendering.Shaders[usedProgram], "sunColor");
@@ -181,7 +177,7 @@ void VoxelRendererUpdate(){
         glUniform3f(sunColorLoc, sunColor.x, sunColor.y, sunColor.z);
         
         glUniform1i(shadowDepthLoc, 0);
-        glUniformMatrix4fv(shadowViewLoc, 1, GL_FALSE, (const GLfloat*)&ViewMatrix[0]);
+        glUniformMatrix4fv(shadowMatrixLoc, 1, GL_FALSE, GetShadowMatrix());
 
         glDrawArrays(GL_POINTS, 0, obj->numberOfVertices);
 

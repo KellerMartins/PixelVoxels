@@ -23,7 +23,7 @@ uniform vec3 centerPos;
 uniform mat4 projection;
 uniform mat3 rotation;
 
-uniform mat4 shadowView;
+uniform mat4 shadowMatrix;
 
 out vec3 ex_Color;
 out vec3 ex_Position;
@@ -58,7 +58,7 @@ void main(void) {
 
     //Calculate shadow projected coords
     vec3 shadowPos = ((in_Position - centerPos)/2 * rotation + objPos);
-    shadowCoords = shadowView * vec4(shadowPos,1)+vec4(0,0,0.2,0);
+    shadowCoords = shadowMatrix * vec4(shadowPos,1) + vec4(0,0,0.5,0);
     
 
     //Calculate point lighting

@@ -15,9 +15,37 @@ int ExportScene(char path[], char name[]){
 	
 	//Data encoding
 	cJSON *dataObject = cJSON_AddObjectToObject(sceneObj, "data");
-	cJSON_AddItemToObject(dataObject, "sunDirection", JSON_CreateVector3(GetTrieElementAs_Vector3(Scene.data, "sunDirection", (Vector3){1,0,-1})));
-	cJSON_AddItemToObject(dataObject, "sunColor", JSON_CreateVector3(GetTrieElementAs_Vector3(Scene.data, "sunColor", (Vector3){1,1,1})));
-	cJSON_AddItemToObject(dataObject, "backgroundColor", JSON_CreateVector3(GetTrieElementAs_Vector3(Scene.data, "backgroundColor", (Vector3){0.05,0.05,0.05})));
+
+	int count;
+	TrieElement * data = GetTrieElementsArray(Scene.data, &count);
+	for(int i=0;i<count;i++){
+		Vector3 vecVal;
+		char charVal[] = "c";
+
+		switch(data[i].type){
+			case Trie_String:
+				cJSON_AddStringToObject(dataObject, data[i].key, data[i].stringValue);
+			break;
+			case Trie_Vector3:
+				vecVal = (*data[i].vector3Value);
+				cJSON_AddItemToObject(dataObject, data[i].key, JSON_CreateVector3(vecVal));
+			break;
+			case Trie_double:
+				cJSON_AddNumberToObject(dataObject, data[i].key, *data[i].doubleValue);
+			break;
+			case Trie_float:
+				cJSON_AddNumberToObject(dataObject, data[i].key, *data[i].floatValue);
+			break;
+			case Trie_char:
+				charVal[0] = *data[i].charValue;
+				cJSON_AddStringToObject(dataObject, data[i].key, charVal);
+			break;
+			case Trie_int:
+				cJSON_AddNumberToObject(dataObject, data[i].key, *data[i].intValue);
+			break;
+		}
+	}
+	FreeTrieElementsArray(data, count);
 
 	//Entities encoding
 	cJSON *entitiesArray = cJSON_AddArrayToObject(sceneObj, "entities");

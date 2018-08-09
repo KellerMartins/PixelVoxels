@@ -63,7 +63,8 @@ void ProcessFPS() {
 
 Trie InitTrie(){
 	Trie t;
-	t.elementSize = 0;
+	t.numberOfElements = 0;
+	t.maxKeySize = 0;
 
 	int i;
 	for(i=0; i<TRIE_ALPHABET_SIZE; i++){
@@ -92,6 +93,10 @@ void FreeTrie(Trie *trie){
 		FreeTrieInternal(trie->branch[i]);
 		trie->branch[i] = NULL;
 	}
+
+	trie->numberOfElements = 0;
+	trie->maxKeySize = 0;
+
 }
 
 void InsertTrie(Trie *trie, const char* key, const void *value, int size, TrieType valueType){
@@ -117,12 +122,19 @@ void InsertTrie(Trie *trie, const char* key, const void *value, int size, TrieTy
 	//If this key is already in the trie, replace the data
 	else if(key[i] == '\0'){
 		free(cell->branch['\0']);
+		trie->numberOfElements--;
 	}
 
 	cell->elementSize = size;
 	cell->elementType = valueType;
 	cell->branch['\0'] = malloc(size);
 	memcpy(cell->branch['\0'], value, size);
+
+	trie->numberOfElements++;
+
+	int keyLength = strlen(key);
+	if(trie->maxKeySize < keyLength)
+		trie->maxKeySize = keyLength;
 }
 
 inline void InsertTrieString(Trie *trie, const char* key, const char* value){
@@ -193,6 +205,63 @@ TRIE_TYPE_FUNCTION_TEMPLATE_MACRO(double)
 TRIE_TYPE_FUNCTION_TEMPLATE_MACRO(float)
 TRIE_TYPE_FUNCTION_TEMPLATE_MACRO(char)
 TRIE_TYPE_FUNCTION_TEMPLATE_MACRO(int)
+
+
+
+int GetTrieElementsArrayInternal(Trie *trie, char* key, int depth, TrieElement* elementsArray, int position){
+	if(!trie) return 0;
+
+	int usedPositions = 0;
+	int hasData = trie->branch['\0']? 1:0;
+	if(hasData){
+		key[depth+1] = '\0';
+		char *keystr = malloc((depth+2)*sizeof(char));
+		strncpy(keystr,key, depth+2);
+		
+		TrieElement newElement = {keystr, trie->elementType, trie->elementSize, trie->branch['\0']};
+		elementsArray[position] = newElement;
+		usedPositions++;
+	}
+
+	for(int i=1; i<TRIE_ALPHABET_SIZE; i++){
+		if(trie->branch[i]){
+			key[depth+1] = i;
+			usedPositions += GetTrieElementsArrayInternal(trie->branch[i], key, depth+1,  elementsArray, position+usedPositions);
+		}
+	}
+
+	return usedPositions;
+}
+
+TrieElement *GetTrieElementsArray(Trie trie, int* outElementsCount){
+	assert(outElementsCount);
+
+	*outElementsCount = trie.numberOfElements;
+	TrieElement* array = malloc(trie.numberOfElements * sizeof(TrieElement));
+
+	char* key = malloc((trie.maxKeySize+1)*sizeof(char));
+
+	int position = 0;
+	for(int i=1; i<TRIE_ALPHABET_SIZE; i++){
+		if(trie.branch[i]){
+			key[0] = i;
+			position += GetTrieElementsArrayInternal(trie.branch[i], key, 0, array, position);
+		}
+	}
+
+	free(key);
+	return array;
+}
+
+
+void FreeTrieElementsArray(TrieElement* elementsArray, int elementsCount){
+	assert(elementsArray);
+	int i;
+	for(i=0; i<elementsCount; i++){
+		free(elementsArray[i].key);
+	}
+	free(elementsArray);
+}
 
 
 // --------------- Generic List Functions ---------------

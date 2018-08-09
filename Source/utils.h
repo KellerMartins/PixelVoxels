@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <assert.h>
 
 #include <SDL2/SDL.h>
 #include "Libs/cJSON.h"
@@ -92,10 +93,31 @@ typedef struct Pixel{
 //Add all supported types here, as 'Trie_type'
 typedef enum TrieType {Trie_None, Trie_Pointer, Trie_String, Trie_Vector3, Trie_double, Trie_float, Trie_char, Trie_int }TrieType;
 
+//Structure used to retrieve all the data from the trie
+//Add all supported types inside the union, as 'type* typeValue'
+typedef struct TrieElement{
+    char *key;
+    TrieType type;
+    unsigned size;
+    union{
+        void* pointerValue;
+        char* stringValue;
+        Vector3* vector3Value;
+        double* doubleValue;
+        float* floatValue;
+        char* charValue;
+        int* intValue;
+    };
+}TrieElement;
+
 #define TRIE_ALPHABET_SIZE 127
 typedef struct TrieCell{
     TrieType elementType;
-    unsigned elementSize;
+    unsigned maxKeySize;
+    union{
+        unsigned numberOfElements;
+        unsigned elementSize;
+    };
     //In a leaf and branch, the '\0' points to the data stored, while in a trunk it points to NULL
     //In both branch and trunk, all the other characters points to other Tries
     void* branch[TRIE_ALPHABET_SIZE];
@@ -124,6 +146,14 @@ TRIE_TYPE_FUNCTION_HEADER_MACRO(double)
 TRIE_TYPE_FUNCTION_HEADER_MACRO(float)
 TRIE_TYPE_FUNCTION_HEADER_MACRO(char)
 TRIE_TYPE_FUNCTION_HEADER_MACRO(int)
+
+//Functions to obtain all data inside a trie
+//The data returned should be used before any new replace modifications
+//are made in the trie, as the data pointed can be freed when replaced
+TrieElement *GetTrieElementsArray(Trie trie, int* outElementsCount);
+void FreeTrieElementsArray(TrieElement* elementsArray, int elementsCount);
+
+
 
 //Generic list implementation
 //In this implementation, every new element added is copied to the list, not just referenced

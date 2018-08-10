@@ -43,6 +43,8 @@ int ExportScene(char path[], char name[]){
 			case Trie_int:
 				cJSON_AddNumberToObject(dataObject, data[i].key, *data[i].intValue);
 			break;
+			default:
+			break;
 		}
 	}
 	FreeTrieElementsArray(data, count);

@@ -38,17 +38,24 @@ float round(float f){
 }
 
 void main(void) {
-    vec3 rotPos = (in_Position - centerPos)/2 * rotation;
-    float px = rotPos.x;
-    float py = rotPos.y;
-    float pz = rotPos.z;
+    gl_PointSize = 2 * spriteScale;
 
-    vec4 pixelPos = vec4( ((px + objPos.x) - (py + objPos.y))*2 + round(-camPos.x) + 0.375,
-                          ((px + objPos.x) + (py + objPos.y)) + (pz + objPos.z + camPos.z )*2 + round(-camPos.y)+ 0.375,
-                          (pz + objPos.z)-(py+px + objPos.y+objPos.x)/2, 1);
+    vec3 localPos = (in_Position - centerPos)/2 * rotation;
+    float px = (localPos.x + objPos.x) * spriteScale;
+    float py = (localPos.y + objPos.y) * spriteScale;
+    float pz = (localPos.z + objPos.z) * spriteScale;
+
+
+
+    vec4 pixelPos = vec4( (px - py)*2 + round(-camPos.x) + 0.375,
+                          (px + py) + (pz + camPos.z )*2  + round(-camPos.y) + 0.375,
+                          (localPos.z + objPos.z)-(localPos.y+localPos.x + objPos.y+objPos.x)/2 , 1);
 
     gl_Position = projection * pixelPos;
-    vec3 globalPos = vec3(px + objPos.x,py + objPos.y,pz + objPos.z);
+
+    vec3 globalPos = vec3(localPos.x + objPos.x,
+                          localPos.y + objPos.y,
+                          localPos.z + objPos.z);
 
     ex_Position = globalPos;
     ex_Color = in_Color;

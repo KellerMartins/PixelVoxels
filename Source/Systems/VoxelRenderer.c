@@ -34,7 +34,10 @@ void VoxelRendererInit(){
     if(cubeimg->format->BytesPerPixel == 4) {
         Mode = GL_RGBA;
     }
+    
     cubeTexDimension = min(cubeimg->w, cubeimg->h);
+    SetSpriteScale(cubeTexDimension/5.0);
+
     glTexImage2D(GL_TEXTURE_2D, 0, Mode, cubeimg->w, cubeimg->h, 0, Mode, GL_UNSIGNED_BYTE, cubeimg->pixels);
     
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -49,7 +52,6 @@ void VoxelRendererInit(){
     if(cubeimg->format->BytesPerPixel == 4) {
         Mode = GL_RGBA;
     }
-    cubeTexDimension = min(cubeimg->w, cubeimg->h);
     glTexImage2D(GL_TEXTURE_2D, 0, Mode, cubeimg->w, cubeimg->h, 0, Mode, GL_UNSIGNED_BYTE, cubeimg->pixels);
     
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -89,7 +91,6 @@ void VoxelRendererUpdate(){
     Vector3 sunColor = GetTrieElementAs_Vector3(Scene.data, "sunColor", (Vector3){1,1,1});
 
     //Big voxels specific locations
-    GLint spriteScaleLoc = glGetUniformLocation(Rendering.Shaders[1], "spriteScale");
     GLint texLoc = glGetUniformLocation(Rendering.Shaders[1], "tex");
     GLint texPosLoc = glGetUniformLocation(Rendering.Shaders[1], "texPos");
     
@@ -151,12 +152,12 @@ void VoxelRendererUpdate(){
 
             glUniform1i(texLoc, 1);
             glUniform1i(texPosLoc, 2);
-            glUniform1i(spriteScaleLoc, cubeTexDimension/5.0f);
         }
 
-        GLint lightBlock =  glGetUniformBlockIndex(Rendering.Shaders[usedProgram], "PointLight");;
+        GLint lightBlock =  glGetUniformBlockIndex(Rendering.Shaders[usedProgram], "PointLight");
         GLint projLoc = glGetUniformLocation(Rendering.Shaders[usedProgram], "projection");
         GLint rotLoc = glGetUniformLocation(Rendering.Shaders[usedProgram], "rotation");
+        GLint spriteScaleLoc = glGetUniformLocation(Rendering.Shaders[usedProgram], "spriteScale");
         GLint objPosLoc = glGetUniformLocation(Rendering.Shaders[usedProgram], "objPos");
         GLint centerPosLoc = glGetUniformLocation(Rendering.Shaders[usedProgram], "centerPos");
         GLint camPosLoc = glGetUniformLocation(Rendering.Shaders[usedProgram], "camPos");
@@ -170,6 +171,7 @@ void VoxelRendererUpdate(){
 
         glUniformMatrix4fv(projLoc, 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix[0]);
         glUniformMatrix3fv(rotLoc, 1, GL_FALSE, (const GLfloat*)&Transpose(rotation).m[0]);
+        glUniform1i(spriteScaleLoc, cubeTexDimension/5.0f);
         glUniform3f(objPosLoc, position.x, position.y, position.z);
         glUniform3f(centerPosLoc, obj->center.x, obj->center.y, obj->center.z);
         glUniform3f(camPosLoc, Rendering.cameraPosition.x, Rendering.cameraPosition.y, Rendering.cameraPosition.z);

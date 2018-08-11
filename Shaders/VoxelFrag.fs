@@ -127,4 +127,5 @@ void main(void) {
     float expos = 1.1;
     gl_FragColor.rgb = tonemap( (log2(1.0-ex_Color)/-k) * (ambientAndSun + pointLighting) * details * expos);
     gl_FragColor.a = outlineHeight;
+    gl_FragDepth = gl_FragCoord.z - (spritePos.x/4 + spritePos.y/4 + spritePos.z)/1000.0;
 }

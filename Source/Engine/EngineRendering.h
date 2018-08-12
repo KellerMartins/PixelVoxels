@@ -13,6 +13,8 @@
 typedef struct engineRendering{
     Vector3 cameraPosition;
 
+    float spriteScale;
+
     GLuint frameBuffer;
     GLuint screenTexture;
     GLuint depthTexture;
@@ -37,5 +39,7 @@ void ReloadShaders();
 void LoadVoxelPalette(char path[]);
 void MoveCamera(float x, float y, float z);
 void TranslateCamera(float x, float y, float z);
+
+void SetSpriteScale(float scale);
 
 #endif

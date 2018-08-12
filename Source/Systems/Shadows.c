@@ -83,7 +83,6 @@ void ShadowsUpdate(){
         
         //Ignore objects that are outside of the screen
         if(screenMax.x < 0 || screenMax.y < 0 || screenMin.x > Screen.windowWidth || screenMin.y > Screen.windowHeight) continue;
-
         shadowedObjects++;
         lastObjPos = ScalarMult(Add(minObj, maxObj), 0.5);
 
@@ -213,8 +212,10 @@ void ShadowViewMatrix(GLfloat viewMatrix[4][4], Vector3 position){
     Vector3 screenLeft = PositionToGameScreenCoords(VECTOR3_LEFT);
     Vector3 screenForward = PositionToGameScreenCoords(VECTOR3_FORWARD);
 
-    Vector3 xdir = (Vector3){(screenForward.x - screenZero.x)/Screen.windowWidth,(screenForward.y - screenZero.y)/Screen.windowWidth};
-    Vector3 ydir = (Vector3){(screenLeft.x - screenZero.x)/Screen.windowWidth,(screenLeft.y - screenZero.y)/Screen.windowHeight};
+    Vector3 xdir = (Vector3){(screenForward.x - screenZero.x)/(Screen.windowWidth*Rendering.spriteScale),
+                             (screenForward.y - screenZero.y)/(Screen.windowHeight*Rendering.spriteScale)};
+    Vector3 ydir = (Vector3){(screenLeft.x - screenZero.x)/(Screen.windowWidth*Rendering.spriteScale),
+                             (screenLeft.y - screenZero.y)/(Screen.windowHeight*Rendering.spriteScale)};
 
     position = Add(ScalarMult(xdir,position.x*1.5), 
                    ScalarMult(ydir,-position.y*1.5));

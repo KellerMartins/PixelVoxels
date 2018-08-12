@@ -58,6 +58,7 @@ int InitRenderer(){
     glDepthFunc(GL_LEQUAL);
 
 	Rendering.cameraPosition = (Vector3){0,0,0};
+    Rendering.spriteScale = 1.0;
 
     //Framebuffer
     glGenFramebuffers(1, &Rendering.frameBuffer);
@@ -95,7 +96,7 @@ int InitRenderer(){
 
     glBindFramebuffer(GL_FRAMEBUFFER,0);
 
-    
+    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
     //Enable debug output
     //glEnable( GL_DEBUG_OUTPUT );
@@ -142,13 +143,17 @@ int InitRenderer(){
 
 ////----------------- Rendering Functions //-----------------
 
+void SetSpriteScale(float scale){
+    Rendering.spriteScale = scale<=0? 1:scale;
+}
+
 Vector3 PositionToGameScreenCoords(Vector3 position){
 	Vector3 screenPos;
 	position = (Vector3){position.x,position.y,position.z};
 
 	//Position to screen projection
-	screenPos.x = (int)(((position.x) - (position.y))*2 + roundf(-Rendering.cameraPosition.x)) + 0.375;
-    screenPos.y = (int)(((position.x) + (position.y)) + (position.z + Rendering.cameraPosition.z )*2 + roundf(-Rendering.cameraPosition.y)) + 0.375;
+	screenPos.x = (int)(((position.x) - (position.y))*2*Rendering.spriteScale + roundf(-Rendering.cameraPosition.x)) + 0.375;
+    screenPos.y = (int)((((position.x) + (position.y)) + (position.z + Rendering.cameraPosition.z )*2)*Rendering.spriteScale + roundf(-Rendering.cameraPosition.y)) + 0.375;
 	screenPos.z = (position.z)/256.0;
 
 	//Transforming to screen coordinates

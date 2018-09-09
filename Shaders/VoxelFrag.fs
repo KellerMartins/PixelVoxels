@@ -124,7 +124,7 @@ void main(void) {
 
     //Based on this: http://www.codersnotes.com/notes/untonemapping/
     float k = 1.0;
-    float expos = 1.1;
+    float expos = 1.2;
     gl_FragColor.rgb = tonemap( (log2(1.0-ex_Color)/-k) * (ambientAndSun + pointLighting) * details * expos);
     gl_FragColor.a = outlineHeight;
     gl_FragDepth = gl_FragCoord.z - (spritePos.x/4 + spritePos.y/4 + spritePos.z)/1000.0;

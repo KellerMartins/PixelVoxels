@@ -68,3 +68,7 @@ $(FOLDERS)/:
 
 clear:
 	@rm -r -f -v ./Build
+
+tcc:
+	tcc $(SRC) -D SDL_DISABLE_IMMINTRIN_H $(COMPILER_FLAGS) $(LINKER_FLAGS) -run
+	

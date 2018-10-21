@@ -41,7 +41,7 @@ int InitEngine(){
 	PrintLog(Info,"Initializing Engine...\n");
 
 	InitTime();
-	InitScreen(1280,720,2,60);
+	InitScreen(1280,720,1,60);
 
 	if(!InitCore() || !InitInput() || !InitRenderer()){
 		EndEngine(1);

@@ -16,7 +16,7 @@ extern Vector3 deltaMousePos;
 
 /////////////////////////////////////////////////////////////////////////////////
 
-float positionGizmosLength = 20;
+float positionGizmosLength = 10;
 const int selectMouseOverDistance = 10;
 const int axisMouseOverDistance = 20;
 

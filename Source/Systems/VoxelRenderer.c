@@ -25,7 +25,7 @@ void VoxelRendererInit(){
     glGenTextures(2, CubeTex);
 
     //Normal
-    SDL_Surface *cubeimg = IMG_Load("Assets/Game/Textures/cube.png");
+    SDL_Surface *cubeimg = IMG_Load("Assets/Game/Textures/cubeBig.png");
     if(!cubeimg){ PrintLog(Error,"VoxelRendererInit: Failed to load normal map texture!\n"); return; }
     glBindTexture(GL_TEXTURE_2D, CubeTex[0]);
     
@@ -45,7 +45,7 @@ void VoxelRendererInit(){
     SDL_FreeSurface(cubeimg);
 
     //Position
-    cubeimg = IMG_Load("Assets/Game/Textures/cubePos.png");
+    cubeimg = IMG_Load("Assets/Game/Textures/cubeBigPos.png");
     if(!cubeimg){ PrintLog(Error,"VoxelRendererInit: Failed to load position map texture!\n"); return; }
     glBindTexture(GL_TEXTURE_2D, CubeTex[1]);
 

@@ -1,0 +1,317 @@
+{
+	"data":	{
+		"backgroundColor":	[0.22033898532390594, 0.060869563370943069, 0.0099999997764825821],
+		"sunColor":	[0.8474576473236084, 0.539130449295044, 0.19130434095859528],
+		"sunDirection":	[-0.65217393636703491, 0.46086955070495605, -0.33913043141365051]
+	},
+	"entities":	[{
+			"Transform":	{
+				"position":	[146.09953308105469, -97.289680480957031, 0],
+				"rotation":	[0, 0, 0]
+			},
+			"childs":	[{
+					"Transform":	{
+						"position":	[1.3022137880325317, 0, 3.7431008815765381],
+						"rotation":	[0, 0, 0]
+					},
+					"VoxelModel":	{
+						"modelPath":	"Assets/Game/Models/",
+						"modelName":	"dune.vox",
+						"smallScale":	false,
+						"center":	[0, 0, 0]
+					},
+					"RigidBody":	{
+						"mass":	1,
+						"bounciness":	0.20000000298023224,
+						"velocity":	[0, 0, 0],
+						"acceleration":	[0, 0, 0],
+						"useGravity":	true,
+						"isStatic":	true
+					}
+				}, {
+					"Transform":	{
+						"position":	[-86.631393432617188, 0, 3.7431008815765381],
+						"rotation":	[0, 0, 0]
+					},
+					"VoxelModel":	{
+						"modelPath":	"Assets/Game/Models/",
+						"modelName":	"dune.vox",
+						"smallScale":	false,
+						"center":	[0, 0, 0]
+					},
+					"RigidBody":	{
+						"mass":	1,
+						"bounciness":	0.20000000298023224,
+						"velocity":	[0, 0, 0],
+						"acceleration":	[0, 0, 0],
+						"useGravity":	true,
+						"isStatic":	true
+					}
+				}, {
+					"Transform":	{
+						"position":	[-175.98410034179687, 0, 3.7431008815765381],
+						"rotation":	[0, 0, 0]
+					},
+					"VoxelModel":	{
+						"modelPath":	"Assets/Game/Models/",
+						"modelName":	"dune.vox",
+						"smallScale":	false,
+						"center":	[0, 0, 0]
+					},
+					"RigidBody":	{
+						"mass":	1,
+						"bounciness":	0.20000000298023224,
+						"velocity":	[0, 0, 0],
+						"acceleration":	[0, 0, 0],
+						"useGravity":	true,
+						"isStatic":	true
+					}
+				}, {
+					"Transform":	{
+						"position":	[-261.35336303710937, 0, 3.7431008815765381],
+						"rotation":	[0, 0, 0]
+					},
+					"VoxelModel":	{
+						"modelPath":	"Assets/Game/Models/",
+						"modelName":	"dune.vox",
+						"smallScale":	false,
+						"center":	[0, 0, 0]
+					},
+					"RigidBody":	{
+						"mass":	1,
+						"bounciness":	0.20000000298023224,
+						"velocity":	[0, 0, 0],
+						"acceleration":	[0, 0, 0],
+						"useGravity":	true,
+						"isStatic":	true
+					}
+				}, {
+					"Transform":	{
+						"position":	[-348.3243408203125, 0, 3.7431008815765381],
+						"rotation":	[0, 0, 0]
+					},
+					"VoxelModel":	{
+						"modelPath":	"Assets/Game/Models/",
+						"modelName":	"dune.vox",
+						"smallScale":	false,
+						"center":	[0, 0, 0]
+					},
+					"RigidBody":	{
+						"mass":	1,
+						"bounciness":	0.20000000298023224,
+						"velocity":	[0, 0, 0],
+						"acceleration":	[0, 0, 0],
+						"useGravity":	true,
+						"isStatic":	true
+					}
+				}, {
+					"Transform":	{
+						"position":	[-437.42807006835937, 0, 3.7431008815765381],
+						"rotation":	[0, 0, 0]
+					},
+					"VoxelModel":	{
+						"modelPath":	"Assets/Game/Models/",
+						"modelName":	"dune.vox",
+						"smallScale":	false,
+						"center":	[0, 0, 0]
+					},
+					"RigidBody":	{
+						"mass":	1,
+						"bounciness":	0.20000000298023224,
+						"velocity":	[0, 0, 0],
+						"acceleration":	[0, 0, 0],
+						"useGravity":	true,
+						"isStatic":	true
+					}
+				}]
+		}, {
+			"Transform":	{
+				"position":	[369.68560791015625, 61.687290191650391, -41583.80078125],
+				"rotation":	[0, 0, 0]
+			},
+			"VoxelModel":	{
+				"modelPath":	"Assets/Game/Models/",
+				"modelName":	"bullet.vox",
+				"smallScale":	false,
+				"center":	[0, 0, 0]
+			},
+			"RigidBody":	{
+				"mass":	1,
+				"bounciness":	0.699999988079071,
+				"velocity":	[1.1000000238418579, 0, -285.74993896484375],
+				"acceleration":	[0, 0, 0],
+				"useGravity":	true,
+				"isStatic":	false
+			}
+		}, {
+			"Transform":	{
+				"position":	[-878.49957275390625, 94.6068115234375, -41521.8359375],
+				"rotation":	[0, 0, 0]
+			},
+			"VoxelModel":	{
+				"modelPath":	"Assets/Game/Models/",
+				"modelName":	"bullet.vox",
+				"smallScale":	false,
+				"center":	[0, 0, 0]
+			},
+			"RigidBody":	{
+				"mass":	1,
+				"bounciness":	0.5,
+				"velocity":	[-3.0299997329711914, 0, -285.553955078125],
+				"acceleration":	[0, 0, 0],
+				"useGravity":	true,
+				"isStatic":	false
+			}
+		}, {
+			"Transform":	{
+				"position":	[22.806064605712891, -12.141356468200684, -29959.51171875],
+				"rotation":	[0, 0, 0]
+			},
+			"VoxelModel":	{
+				"modelPath":	"Assets/Game/Models/",
+				"modelName":	"plasmaPistolSmall.vox",
+				"smallScale":	true,
+				"center":	[0, 0, 0]
+			},
+			"RigidBody":	{
+				"mass":	1,
+				"bounciness":	0.699999988079071,
+				"velocity":	[0, 0, -242.33468627929687],
+				"acceleration":	[0, 0, 0],
+				"useGravity":	true,
+				"isStatic":	false
+			}
+		}, {
+			"prefabPath":	"Assets",
+			"prefabName":	"newPrefab.prefab",
+			"Transform":	{
+				"position":	[-24.444025039672852, -39.496978759765625, 62.161197662353516],
+				"rotation":	[-22, 21.999998092651367, -22.000001907348633]
+			}
+		}, {
+			"Transform":	{
+				"position":	[-103.02890014648437, -137.47589111328125, 0],
+				"rotation":	[0, 0, -90]
+			},
+			"childs":	[{
+					"Transform":	{
+						"position":	[1.3022137880325317, 0, 3.7431008815765381],
+						"rotation":	[0, 0, 0]
+					},
+					"VoxelModel":	{
+						"modelPath":	"Assets/Game/Models/",
+						"modelName":	"dune.vox",
+						"smallScale":	false,
+						"center":	[0, 0, 0]
+					},
+					"RigidBody":	{
+						"mass":	1,
+						"bounciness":	0.20000000298023224,
+						"velocity":	[0, 0, 0],
+						"acceleration":	[0, 0, 0],
+						"useGravity":	true,
+						"isStatic":	true
+					}
+				}, {
+					"Transform":	{
+						"position":	[-86.631393432617188, 0, 3.7431008815765381],
+						"rotation":	[0, 0, 0]
+					},
+					"VoxelModel":	{
+						"modelPath":	"Assets/Game/Models/",
+						"modelName":	"dune.vox",
+						"smallScale":	false,
+						"center":	[0, 0, 0]
+					},
+					"RigidBody":	{
+						"mass":	1,
+						"bounciness":	0.20000000298023224,
+						"velocity":	[0, 0, 0],
+						"acceleration":	[0, 0, 0],
+						"useGravity":	true,
+						"isStatic":	true
+					}
+				}, {
+					"Transform":	{
+						"position":	[-175.98410034179687, 0, 3.7431008815765381],
+						"rotation":	[0, 0, 0]
+					},
+					"VoxelModel":	{
+						"modelPath":	"Assets/Game/Models/",
+						"modelName":	"dune.vox",
+						"smallScale":	false,
+						"center":	[0, 0, 0]
+					},
+					"RigidBody":	{
+						"mass":	1,
+						"bounciness":	0.20000000298023224,
+						"velocity":	[0, 0, 0],
+						"acceleration":	[0, 0, 0],
+						"useGravity":	true,
+						"isStatic":	true
+					}
+				}, {
+					"Transform":	{
+						"position":	[-261.35336303710937, 0, 3.7431008815765381],
+						"rotation":	[0, 0, 0]
+					},
+					"VoxelModel":	{
+						"modelPath":	"Assets/Game/Models/",
+						"modelName":	"dune.vox",
+						"smallScale":	false,
+						"center":	[0, 0, 0]
+					},
+					"RigidBody":	{
+						"mass":	1,
+						"bounciness":	0.20000000298023224,
+						"velocity":	[0, 0, 0],
+						"acceleration":	[0, 0, 0],
+						"useGravity":	true,
+						"isStatic":	true
+					}
+				}, {
+					"Transform":	{
+						"position":	[-348.3243408203125, 0, 3.7431008815765381],
+						"rotation":	[0, 0, 0]
+					},
+					"VoxelModel":	{
+						"modelPath":	"Assets/Game/Models/",
+						"modelName":	"dune.vox",
+						"smallScale":	false,
+						"center":	[0, 0, 0]
+					},
+					"RigidBody":	{
+						"mass":	1,
+						"bounciness":	0.20000000298023224,
+						"velocity":	[0, 0, 0],
+						"acceleration":	[0, 0, 0],
+						"useGravity":	true,
+						"isStatic":	true
+					}
+				}, {
+					"Transform":	{
+						"position":	[-437.42807006835937, 0, 3.7431008815765381],
+						"rotation":	[0, 0, 0]
+					},
+					"VoxelModel":	{
+						"modelPath":	"Assets/Game/Models/",
+						"modelName":	"dune.vox",
+						"smallScale":	false,
+						"center":	[0, 0, 0]
+					},
+					"RigidBody":	{
+						"mass":	1,
+						"bounciness":	0.20000000298023224,
+						"velocity":	[0, 0, 0],
+						"acceleration":	[0, 0, 0],
+						"useGravity":	true,
+						"isStatic":	true
+					}
+				}]
+		}, {
+			"Transform":	{
+				"position":	[0, 0, 0],
+				"rotation":	[0, 0, 0]
+			}
+		}]
+}

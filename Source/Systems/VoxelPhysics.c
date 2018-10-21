@@ -68,6 +68,12 @@ void VoxelPhysicsUpdate(){
             Vector3 collisionPoint;
             //Vector3 collisionNormal = VECTOR3_ZERO;
             if(VoxelModelVsVoxelModelCollision(entity, i,&collisionPoint)){
+
+                if(norm(GetVelocity(entity))>10 || norm(GetVelocity(i))>10){
+                    ExplodeAtPoint(entity,collisionPoint,5);   
+                    ExplodeAtPoint(i,collisionPoint,5);   
+                }
+
                 Vector3 VelA = Subtract(GetVelocity(entity) , ScalarMult(Subtract(GetVelocity(entity),GetVelocity(i)), Lerp(GetBounciness(entity),0.3,1)*2*GetMass(i)/(GetMass(entity) + GetMass(i)) ) );
                 Vector3 VelB = Add(GetVelocity(i) , ScalarMult(Subtract(GetVelocity(entity),GetVelocity(i)), Lerp(GetBounciness(i),0.5,1)*2*GetMass(entity)/(GetMass(entity) + GetMass(i)) ) );
                 //v1f = v1i -2*m2(v1i-v2i)/(m1+m2)
@@ -76,9 +82,6 @@ void VoxelPhysicsUpdate(){
                 SetVelocity(entity,VelA);
                 SetVelocity(i,VelB);
                 collided = 1;
-
-                ExplodeAtPoint(entity,collisionPoint,5);   
-                ExplodeAtPoint(i,collisionPoint,5);   
             }
         }
         

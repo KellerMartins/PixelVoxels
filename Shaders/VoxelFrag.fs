@@ -106,7 +106,7 @@ void main(void) {
 
     float shadow = max(0.4,pow(1-smoothstep(0.015,0.1,sub),2.0));
 
-    vec3 ambientAndSun = vec3(0.025) + max(0.0,dot(normalize(sunDir*-1),normal)) * sunColor * shadow;
+    vec3 ambientAndSun = vec3(0.045,0.025, 0.035) + max(0.0,dot(normalize(sunDir*-1),normal)) * sunColor * shadow;
 
     vec3 pointLighting = vec3(0);
     for(int i=0;i<MAX_POINT_LIGHTS;i++){
@@ -125,7 +125,7 @@ void main(void) {
     //Based on this: http://www.codersnotes.com/notes/untonemapping/
     float k = 1.0;
     float expos = 1.2;
-    gl_FragColor.rgb = tonemap( (log2(1.0-ex_Color)/-k) * (ambientAndSun + pointLighting) * details * expos);
+    gl_FragColor.rgb = tonemap( (log2(1.0-ex_Color*0.95)/-k) * (ambientAndSun + pointLighting) * details * expos);
     gl_FragColor.a = outlineHeight;
     gl_FragDepth = gl_FragCoord.z - (spritePos.x/4 + spritePos.y/4 + spritePos.z)/1000.0;
 }

@@ -13,7 +13,7 @@ extern int iconsSize[];
 extern Vector3 bgMediumColor;
 extern Vector3 scrollbarOverColor;
 
-//Data from Editor.c
+//Data from EntitiesPanel.c
 extern List SelectedEntities;
 
 /////////////////////////////////////////////////////////////////////////////////

@@ -10,19 +10,17 @@ extern engineECS ECS;
 extern Vector3 scrollbarOverColor;
 
 //Data from Editor.c
-extern List SelectedEntities;
 extern Vector3 mousePos;
 extern Vector3 deltaMousePos;
+
+//Data from EntitiesPanel.c
+extern List SelectedEntities;
 
 /////////////////////////////////////////////////////////////////////////////////
 
 float positionGizmosLength = 10;
 const int selectMouseOverDistance = 10;
 const int axisMouseOverDistance = 20;
-
-//Internal functions
-static int IsSelected(EntityID entity);
-static void RemoveFromSelected(EntityID entity);
 
 int movingX = 0;
 int movingY = 0;
@@ -179,30 +177,4 @@ void DrawTransformGizmos(){
             }
         }
     }
-}
-
-//Helper function
-static int IsSelected(EntityID entity){
-    ListCellPointer current = GetFirstCell(SelectedEntities);
-    while(current){
-        if(*((EntityID*)GetElement(*current)) == entity){
-            return 1;
-        }
-        current = GetNextCell(current);
-    }
-    return 0;
-}
-
-static void RemoveFromSelected(EntityID entity){
-    int index = 0;
-    ListCellPointer current = GetFirstCell(SelectedEntities);
-    while(current){
-        if(*((EntityID*)GetElement(*current)) == entity){
-            RemoveListIndex(&SelectedEntities, index);
-            return;
-        }
-        index++;
-        current = GetNextCell(current);
-    }
-    return;
 }

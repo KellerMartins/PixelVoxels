@@ -23,7 +23,6 @@ extern Vector3 lightWhite;
 extern const int scrollbarMouseOverDistance;
 extern const int scrollbarMouseWheelSpeed;
 extern const double scrollbarWidth;
-extern List SelectedEntities;
 extern Vector3 mousePos;
 extern Vector3 deltaMousePos;
 
@@ -42,9 +41,11 @@ int entityWindowTopHeightSpacing = 90;
 int entityNameLeftSpacing = 18;
 int entityBetweenSpacing = 2;
 
+//List of selected EntityIDs
+List SelectedEntities;
+
 //Internal functions
-static int IsSelected(EntityID entity);
-static void RemoveFromSelected(EntityID entity);
+void DrawScrollbar(int entityHeight);
 
 int entityStartHeight = 0;
 int movingEntitiesScrollbar = 0;
@@ -71,9 +72,6 @@ void DrawEntitiesPanel(){
     DrawTextColored("Menu", brightWhite, 16, Screen.windowHeight-(entityWindowTopHeightSpacing/2)+5, gizmosFont);
 
 
-
-
-
     //Draw Entities boxes
     int entityHeight = Screen.windowHeight + entityStartHeight-entityWindowTopHeightSpacing;
     for(entity=0;entity<=ECS.maxUsedIndex;entity++){
@@ -82,7 +80,30 @@ void DrawEntitiesPanel(){
         }
     }
 
-    //Scrollbar
+    DrawScrollbar(entityHeight);
+
+    //New Entity button
+
+    //Line separating new entity button from the entities and the scrollbar
+    DrawLine((Vector3){0,Screen.windowHeight-entityWindowTopHeightSpacing},
+             (Vector3){entityWindowLength,Screen.windowHeight-entityWindowTopHeightSpacing},
+              4,bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
+
+    //Entity element
+    bMin = (Vector3){0,Screen.windowHeight-entityWindowTopHeightSpacing+2,0};
+    bMax = (Vector3){entityWindowLength,Screen.windowHeight-(entityWindowTopHeightSpacing * 2.0/3.0),0};
+    Vector3 bColor = {bgLightColor.x, bgLightColor.y, bgLightColor.z};
+    if(MouseOverBox(mousePos, bMin, bMax,0)){
+        bColor = (Vector3){buttonOverColor.x, buttonOverColor.y, buttonOverColor.z};
+        if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
+            CreateEntity();
+        }
+    }
+    DrawRectangle(bMin, bMax, bColor.x, bColor.y, bColor.z);
+    DrawTextColored("+ Entity", brightWhite, 5, Screen.windowHeight-(entityWindowTopHeightSpacing)+5, gizmosFont);
+}
+
+void DrawScrollbar(int entityHeight){
     int mouseOverEntityPanel = MouseOverBox(mousePos, (Vector3){-1,-1,0}, (Vector3){entityWindowLength,Screen.windowHeight-entityWindowTopHeightSpacing,0},0);
     int offscreenPixels = -clamp(entityHeight-entityStartHeight,-INFINITY,0);
     
@@ -153,26 +174,6 @@ void DrawEntitiesPanel(){
             }
         }
     }
-
-    //New Entity button
-
-    //Line separating new entity button from the entities and the scrollbar
-    DrawLine((Vector3){0,Screen.windowHeight-entityWindowTopHeightSpacing},
-             (Vector3){entityWindowLength,Screen.windowHeight-entityWindowTopHeightSpacing},
-              4,bgPanelColor.x,bgPanelColor.y,bgPanelColor.z);
-
-    //Entity element
-    bMin = (Vector3){0,Screen.windowHeight-entityWindowTopHeightSpacing+2,0};
-    bMax = (Vector3){entityWindowLength,Screen.windowHeight-(entityWindowTopHeightSpacing * 2.0/3.0),0};
-    Vector3 bColor = {bgLightColor.x, bgLightColor.y, bgLightColor.z};
-    if(MouseOverBox(mousePos, bMin, bMax,0)){
-        bColor = (Vector3){buttonOverColor.x, buttonOverColor.y, buttonOverColor.z};
-        if(GetMouseButtonDown(SDL_BUTTON_LEFT)){
-            CreateEntity();
-        }
-    }
-    DrawRectangle(bMin, bMax, bColor.x, bColor.y, bColor.z);
-    DrawTextColored("+ Entity", brightWhite, 5, Screen.windowHeight-(entityWindowTopHeightSpacing)+5, gizmosFont);
 }
 
 void DrawEntityElement(EntityID entity, int *entityHeight, int depth){
@@ -240,7 +241,7 @@ void DrawEntityElement(EntityID entity, int *entityHeight, int depth){
 
 
 
-static int IsSelected(EntityID entity){
+int IsSelected(EntityID entity){
     ListCellPointer current = GetFirstCell(SelectedEntities);
     while(current){
         if(*((EntityID*)GetElement(*current)) == entity){
@@ -251,7 +252,7 @@ static int IsSelected(EntityID entity){
     return 0;
 }
 
-static void RemoveFromSelected(EntityID entity){
+void RemoveFromSelected(EntityID entity){
     int index = 0;
     ListCellPointer current = GetFirstCell(SelectedEntities);
     while(current){

@@ -6,6 +6,7 @@
 #include "../../Components/Transform.h"
 
 #include "EditorUI.h"
+#include "EntitiesPanel.h"
 
 void DrawTransformGizmos();
 

@@ -25,6 +25,8 @@ extern Vector3 lightWhite;
 
 //Data from Editor.c
 extern Vector3 mousePos;
+
+//Data from EntitiesPanel.c
 extern List SelectedEntities;
 
 //Data from FileBrowser.c

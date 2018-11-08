@@ -27,6 +27,8 @@ extern const int scrollbarMouseOverDistance;
 extern const int scrollbarMouseWheelSpeed;
 extern Vector3 mousePos;
 extern Vector3 deltaMousePos;
+
+//Data from EntitiesPanel
 extern List SelectedEntities;
 
 //Data from FileBrowser.c

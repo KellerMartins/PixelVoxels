@@ -28,6 +28,9 @@ extern DialogWindowData dialog;
 //ComponentsPanel.c
 extern int componentWindowLength;
 
+//EntitiesPanel.c
+extern List SelectedEntities;
+
 //MenuWindow.c
 extern int menuOpened;
 
@@ -62,9 +65,6 @@ char *textFieldString = NULL;
 //Input data
 Vector3 mousePos = {0,0,0};
 Vector3 deltaMousePos = {0,0,0};
-
-//List of selected EntityIDs
-List SelectedEntities;
 
 //Runs on engine start
 void EditorInit(){

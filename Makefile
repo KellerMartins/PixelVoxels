@@ -32,7 +32,7 @@ MKDIR = @mkdir -p
 endif
 
 #Name of the executable
-OBJ_NAME = Space
+OBJ_NAME = Vopix
 
 #Compilation Targets
 all : $(OBJ_NAME) 

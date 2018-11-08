@@ -1,0 +1,114 @@
+{
+	"data":	{
+		"sunDirection":	[1, 0, -1],
+		"sunColor":	[0.11016949266195297, 0.16521738469600677, 0.20000000298023224],
+		"backgroundColor":	[0.0084745762869715691, 0.043478261679410934, 0.043478261679410934]
+	},
+	"entities":	[{
+			"Transform":	{
+				"position":	[-5.7850866317749023, -8.19351863861084, 18.979114532470703],
+				"rotation":	[0, 0, -45]
+			},
+			"VoxelModel":	{
+				"modelPath":	"Assets/Game/Models/",
+				"modelName":	"minichar.vox",
+				"smallScale":	true,
+				"center":	[5, 2, 10]
+			},
+			"RigidBody":	{
+				"mass":	1,
+				"bounciness":	0.81999999284744263,
+				"velocity":	[0, 0, 0],
+				"acceleration":	[0, 0, 0],
+				"useGravity":	true,
+				"isStatic":	false
+			},
+			"childs":	[{
+					"Transform":	{
+						"position":	[0.10000000149011612, 0.20000000298023224, -5.4067025184631348],
+						"rotation":	[0, 0, 0]
+					},
+					"PointLight":	{
+						"color":	[1, 1, 1],
+						"intensity":	-0.11999999731779099,
+						"range":	6.2999978065490723,
+						"hueShift":	0
+					}
+				}]
+		}, {
+			"Transform":	{
+				"position":	[0.46472877264022827, 0, 32.856109619140625],
+				"rotation":	[0, 0, 0]
+			},
+			"VoxelModel":	{
+				"modelPath":	"Assets/Game/Models/",
+				"modelName":	"Sea.vox",
+				"smallScale":	false,
+				"center":	[16, 16, 32]
+			},
+			"RigidBody":	{
+				"mass":	1,
+				"bounciness":	0.20000000298023224,
+				"velocity":	[0, 0, 0],
+				"acceleration":	[0, 0, 0],
+				"useGravity":	true,
+				"isStatic":	true
+			},
+			"childs":	[{
+					"Transform":	{
+						"position":	[3.0947492122650146, -28.711938858032227, -8.6973514556884766],
+						"rotation":	[0, 0, 0]
+					},
+					"PointLight":	{
+						"color":	[0, 0.0625, 1],
+						"intensity":	0.090000003576278687,
+						"range":	1000,
+						"hueShift":	0
+					}
+				}, {
+					"Transform":	{
+						"position":	[-10.788987159729004, -2.0605399608612061, 9.6548290252685547],
+						"rotation":	[0, 0, 0]
+					},
+					"PointLight":	{
+						"color":	[1, 1, 1],
+						"intensity":	2.0099999904632568,
+						"range":	56.500007629394531,
+						"hueShift":	0
+					}
+				}, {
+					"Transform":	{
+						"position":	[-26.389808654785156, -1.6688499450683594, -13.32596492767334],
+						"rotation":	[0, 0, 0]
+					},
+					"PointLight":	{
+						"color":	[0.76073616743087769, 0.84375, 0.731249988079071],
+						"intensity":	0.62999999523162842,
+						"range":	513.1998291015625,
+						"hueShift":	0.14783966541290283
+					}
+				}, {
+					"Transform":	{
+						"position":	[-26.389808654785156, -1.6688499450683594, -7.6070442199707031],
+						"rotation":	[0, 0, 0]
+					},
+					"PointLight":	{
+						"color":	[0.26380369067192078, 0.43125000596046448, 0.731249988079071],
+						"intensity":	1.8300000429153442,
+						"range":	513.1998291015625,
+						"hueShift":	7.8355016708374023
+					}
+				}, {
+					"Transform":	{
+						"position":	[-10.976530075073242, -10.875720024108887, -7.6070442199707031],
+						"rotation":	[0, 0, 0]
+					},
+					"PointLight":	{
+						"color":	[0.79141104221343994, 0.78750002384185791, 0.50625002384185791],
+						"intensity":	0.70999997854232788,
+						"range":	90.500007629394531,
+						"hueShift":	7.8355016708374023
+					}
+				}]
+		}]
+}

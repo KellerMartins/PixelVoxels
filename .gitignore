@@ -1,3 +1,12 @@
 .vscode
+.scannerwork
+bw-output
 out
 gmon.out
+version.rc
+TODO
+Assets/Test Folders/
+Build
+Vopix
+Vopix.exe
+gameLog.txt

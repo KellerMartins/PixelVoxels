@@ -1,0 +1,98 @@
+{
+	"entities":	[{
+			"Transform":	{
+				"position":	[0, 0, 32.856109619140625],
+				"rotation":	[0, 0, 0]
+			},
+			"VoxelModel":	{
+				"modelPath":	"Assets/Game/Models/",
+				"modelName":	"Sea.vox",
+				"smallScale":	false,
+				"center":	[16, 16, 32]
+			},
+			"RigidBody":	{
+				"mass":	1,
+				"bounciness":	0.20000000298023224,
+				"velocity":	[0, 0, 0],
+				"acceleration":	[0, 0, 0],
+				"useGravity":	true,
+				"isStatic":	true
+			},
+			"childs":	[{
+					"Transform":	{
+						"position":	[6.7544994354248047, -28.711938858032227, -8.6973514556884766],
+						"rotation":	[0, 0, 0]
+					},
+					"PointLight":	{
+						"color":	[0, 0, 1],
+						"intensity":	0.5899999737739563,
+						"range":	1000,
+						"hueShift":	0
+					}
+				}, {
+					"Transform":	{
+						"position":	[-12.075300216674805, -2.0605399608612061, 13.914278984069824],
+						"rotation":	[0, 0, 0]
+					},
+					"PointLight":	{
+						"color":	[1, 1, 1],
+						"intensity":	2.0099999904632568,
+						"range":	100,
+						"hueShift":	0
+					}
+				}, {
+					"Transform":	{
+						"position":	[-14.929220199584961, -1.6688499450683594, -19.131380081176758],
+						"rotation":	[0, 0, 0]
+					},
+					"PointLight":	{
+						"color":	[0.056249998509883881, 0.518750011920929, 0.44374999403953552],
+						"intensity":	1.6299999952316284,
+						"range":	513.1998291015625,
+						"hueShift":	2.6611137390136719
+					}
+				}, {
+					"Transform":	{
+						"position":	[-12.629406929016113, -17.962718963623047, -16.310110092163086],
+						"rotation":	[0, 0, 0]
+					},
+					"PointLight":	{
+						"color":	[1, 1, 1],
+						"intensity":	0.75999999046325684,
+						"range":	100,
+						"hueShift":	0
+					}
+				}]
+		}, {
+			"Transform":	{
+				"position":	[-5.7850866317749023, -8.19351863861084, 18.979114532470703],
+				"rotation":	[0, 0, -45]
+			},
+			"VoxelModel":	{
+				"modelPath":	"Assets/Game/Models/",
+				"modelName":	"minichar.vox",
+				"smallScale":	true,
+				"center":	[5, 2, 10]
+			},
+			"RigidBody":	{
+				"mass":	1,
+				"bounciness":	0.81999999284744263,
+				"velocity":	[0, 0, 0],
+				"acceleration":	[0, 0, 0],
+				"useGravity":	true,
+				"isStatic":	false
+			},
+			"childs":	[{
+					"Transform":	{
+						"position":	[-0.40000000596046448, 0.20000000298023224, -5.4067025184631348],
+						"rotation":	[0, 0, 0]
+					},
+					"PointLight":	{
+						"color":	[1, 1, 1],
+						"intensity":	-0.5,
+						"range":	6.2999978065490723,
+						"hueShift":	0
+					}
+				}]
+		}]
+}

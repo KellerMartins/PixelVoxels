@@ -40,6 +40,39 @@ int InitECS(unsigned max_entities){
 	return 1;
 }
 
+void FreeECS(){
+	//Call deallocation functions of systems
+	ListCellPointer current = GetFirstCell(ECS.SystemList);
+	while(current){
+		System curSystem = *((System *)GetElement(*current));
+		curSystem.systemFree();
+
+		current = GetNextCell(current);
+	}
+	FreeList(&ECS.SystemList);
+
+	//Free all ECS structures and lists
+	for(int c=0; c<ECS.numberOfComponents; c++){
+		for(int j=0;j<ECS.maxEntities;j++){
+			if(ECS.Components[c][j].data){
+				ECS.ComponentTypes[c].destructor(&ECS.Components[c][j].data);
+			}
+		}
+		free(ECS.Components[c]);
+	}
+	free(ECS.Components);
+	free(ECS.ComponentTypes);
+
+	FreeList(&ECS.AvaliableEntitiesIndexes);
+	for(int e=0; e<=ECS.maxEntities; e++){
+		if(IsValidEntity(e))
+			FreeList(&ECS.Entities[e].childs);
+	}
+	free(ECS.Entities);
+
+	initializedECS = 0;
+}
+
 int RegisterNewComponent(char componentName[25],void (*constructorFunc)(void** data),void (*destructorFunc)(void** data),void*(*copyFunc)(void*),cJSON*(*encodeFunc)(void** data, cJSON* currentData),void* (*decodeFunc)(cJSON** data)){
 	if(!ECS.Components){
 		ECS.Components = malloc(sizeof(Component*));

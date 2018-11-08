@@ -27,16 +27,17 @@ extern Vector3 mousePos;
 /////////////////////////////////////////////////////////////////////////////////
 
 
+void FreeFoldersAndFiles();
+
 //File browser data struct
 FileBrowserData fileBrowser = {.fileExtension = "", .fileName = "", .filePath = "", .fileExtension = "", .itemsScroll = 0, .opened = 0};
 
 
 //Mode: 0 = open file, 1 = save file
 void OpenFileBrowser(int mode, char *initialPath,void (*onOpen)()){
-    //Free the folder and files lists before opening another path
+    
     if(fileBrowser.opened){
-        FreeList(&fileBrowser.folders);
-        FreeList(&fileBrowser.files);
+        FreeFoldersAndFiles();
     }
 
     fileBrowser.onConfirmFunction = *onOpen;
@@ -108,10 +109,20 @@ void FileBrowserExtension(char *ext){
     }
 }
 
+void FreeFoldersAndFiles(){
+    FreeList(&fileBrowser.folders);
+
+    ListCellPointer cell;
+    ListForEach(cell, fileBrowser.files){
+        free(((tinydir_file*)GetElement(*cell))->extension);
+    }
+    FreeList(&fileBrowser.files);
+}
+
 void CloseFileBrowser(){
     fileBrowser.opened = 0;
-    FreeList(&fileBrowser.folders);
-    FreeList(&fileBrowser.files);
+
+    FreeFoldersAndFiles();
 
     ListCellPointer cell;
     ListForEach(cell,fileBrowser.paths){
@@ -328,7 +339,9 @@ void DrawFileBrowser(){
 
                 //If there is any folder as next folder, remove from the list before adding the new folder
                 while(fileBrowser.indexPath+1 < GetLength(fileBrowser.paths)){
-                    RemoveListEnd(&fileBrowser.paths);
+                    ListCellPointer last = GetLastCell(fileBrowser.paths);
+                    free(GetElementAsType(last, char*));
+                    RemoveListCell(&fileBrowser.paths, last);
                 }
 
                 InsertListEnd(&fileBrowser.paths,&path);

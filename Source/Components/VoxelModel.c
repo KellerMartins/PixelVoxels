@@ -258,7 +258,8 @@ void LoadVoxelModel(EntityID entity, char modelPath[], char modelName[])
 int IsMultiVoxelModelFile(char modelPath[], char modelName[]){
     char fullPath[512+256];
     strncpy(fullPath,modelPath,512);
-    if(modelPath[strlen(modelPath)-1] != '/'){
+    int modelPathLen = strlen(modelPath);
+    if(modelPathLen > 0 && modelPath[modelPathLen-1] != '/'){
         strcat(fullPath,"/");
     }
     strcat(fullPath,modelName);
@@ -322,7 +323,9 @@ void InternalLoadMultiVoxelModelObject(VoxelModel **modelPointer, char modelPath
 
     char fullPath[512+256];
     strncpy(fullPath,modelPath,512);
-    if(modelPath[strlen(modelPath)-1] != '/'){
+
+    int modelPathLen = strlen(modelPath);
+    if(modelPathLen > 0 && modelPath[modelPathLen-1] != '/'){
         strcat(fullPath,"/");
     }
     strcat(fullPath,modelName);
@@ -330,7 +333,6 @@ void InternalLoadMultiVoxelModelObject(VoxelModel **modelPointer, char modelPath
 
     if(file == NULL){
 	    perror("LoadMultiVoxelModelObject");
-        //Return an empty VoxelObject in case of failure
         return;
     }
 
@@ -595,6 +597,7 @@ void InternalLoadMultiVoxelModelObject(VoxelModel **modelPointer, char modelPath
         free(chunkId);
     }else{
         PrintLog(Error,"LoadMultiVoxelModelObject: Magic word is not \"VOX \" (%s)\n",magic);
+        free(magic);
         return;
     }
     free(magic);
@@ -1002,7 +1005,8 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
 
     char fullPath[512+256];
     strncpy(fullPath,modelPath,512);
-    if(modelPath[strlen(modelPath)-1] != '/'){
+    int modelPathLen = strlen(modelPath);
+    if(modelPathLen > 0 && modelPath[modelPathLen-1] != '/'){
         strcat(fullPath,"/");
     }
     strcat(fullPath,modelName);
@@ -1072,7 +1076,7 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
 
                     //Copy to the models list
                     InsertListEnd(&modelsList,newModel);
-                    free(newModel);
+                    //free(newModel);
 
                 }else{
                     PrintLog(Error,"LoadMultiVoxelModel: An error loading has ocurred!\n");
@@ -1350,14 +1354,16 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
         if(current->Type == nTRN){
             free(current->name);
         }
+        if(current->Type == nGRP){
+            free(current->groupChildIds);
+        }
         mpNode aux = current;
         current = current->next;
         free(aux);
     }
     ListCellPointer modelsCell;
     ListForEach(modelsCell,modelsList){
-        VoxelModel* model = GetElement(*modelsCell); 
-        VoxelModelDestructor((void**)&model);
+        VoxelModelDestructor(&modelsCell->element);
     }
     FreeList(&modelsList);
 
@@ -1412,6 +1418,8 @@ void GenerateModelStructure(int nodeID, EntityID parentID,char* modelPath, char*
             SetRotation(subModel,rot);
             SetVoxelModelEnabled(subModel, enab);
             strncpy(GetVoxelModelPointer(subModel)->objectName,current->name,65);
+            strncpy(GetVoxelModelPointer(subModel)->modelPath,modelPath,512);
+            strncpy(GetVoxelModelPointer(subModel)->modelName,modelName,256);
         }
         else{
             //printf("GRP\n");

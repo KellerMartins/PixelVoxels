@@ -72,11 +72,15 @@ int ExportScene(char path[], char name[]){
 	if(file){
 		char *jsonString = cJSON_Print(sceneObj);
 		fprintf(file,"%s",jsonString);
-		free(jsonString);
 		fclose(file);
+
+		free(jsonString);
+		cJSON_Delete(sceneObj);
+		
 		return 1;
 	}else{
 		PrintLog(Error,"ExportScene: Failed to create/open json file!\n");
+		cJSON_free(sceneObj);
 		return 0;
 	}
 	

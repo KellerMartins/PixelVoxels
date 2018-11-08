@@ -111,33 +111,7 @@ void EngineUpdateEnd(){
 
 void EndEngine(int errorOcurred){
 
-	//Call deallocation functions of systems
-	ListCellPointer current = GetFirstCell(ECS.SystemList);
-	while(current){
-		System curSystem = *((System *)GetElement(*current));
-		curSystem.systemFree();
-
-		current = GetNextCell(current);
-	}
-	FreeList(&ECS.SystemList);
-
-	//Free all ECS structures and lists
-	int c,j;
-	for(c=0; c<ECS.numberOfComponents; c++){
-		for(j=0;j<ECS.maxEntities;j++){
-			if(ECS.Components[c][j].data){
-				ECS.ComponentTypes[c].destructor(&ECS.Components[c][j].data);
-			}
-		}
-		free(ECS.Components[c]);
-	}
-	free(ECS.Components);
-	free(ECS.ComponentTypes);
-
-	FreeList(&ECS.AvaliableEntitiesIndexes);
-	free(ECS.Entities);
-
-	initializedECS = 0;
+	FreeECS();
 
 	FreeInput();
 

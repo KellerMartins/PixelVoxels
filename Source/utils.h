@@ -85,7 +85,6 @@ typedef struct Pixel{
 	unsigned char g;
 	unsigned char r;
 	unsigned char a;
-	
 }Pixel;
 
 //Trie structures and interface

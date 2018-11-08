@@ -586,7 +586,7 @@ void DrawComponentsPanel(){
                         if(offscreenPixels>0){
                             double scrollbarMovement = norm(VectorProjection(deltaMousePos,(Vector3){0,1,0})) * sign(deltaMousePos.y);
                             //Skips one pixel if the value is odd, to avoid distortions when downscaling to the game resolution
-                            scrollbarMovement += sign(scrollbarMovement) * (abs(scrollbarMovement)%2? 1:0);
+                            scrollbarMovement += sign(scrollbarMovement) * ((abs(scrollbarMovement)%2 != 0)? 1:0);
                             componentStartHeight = clamp(componentStartHeight-scrollbarMovement,0,offscreenPixels);
                         }else{
                             componentStartHeight = 0;

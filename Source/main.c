@@ -130,7 +130,7 @@ int main(int argc, char *argv[]){
 		static char msInfo[20];
 		static char dtInfo[20];
 		sprintf(fpsInfo,"FPS: %4.2f", GetFPS());
-		sprintf(msInfo,"MS : %3d" ,Time.msTime);
+		sprintf(msInfo,"MS : %3u" ,Time.msTime);
 		sprintf(dtInfo,"DT : %5.4lf", Time.deltaTime);
 		SDL_Color fontColor = {255,255,255,255};
 

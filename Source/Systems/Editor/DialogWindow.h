@@ -16,7 +16,6 @@ typedef struct {
     void(*option1Function)();
     void(*option2Function)();
     void(*option3Function)();
-
 }DialogWindowData;
 
 

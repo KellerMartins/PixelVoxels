@@ -131,7 +131,7 @@ void DrawEntitiesPanel(){
                     float scrollMultiplier = clamp(offscreenPixels/(float)(Screen.windowHeight-entityWindowTopHeightSpacing),1,INFINITY);
                     double scrollbarMovement = norm(VectorProjection(deltaMousePos,(Vector3){0,1,0})) * sign(deltaMousePos.y)*scrollMultiplier;
                     //Skips one pixel if the value is odd, to avoid distortions when downscaling to the game resolution
-                    scrollbarMovement += sign(scrollbarMovement) * (abs(scrollbarMovement)%2? 1:0);
+                    scrollbarMovement += sign(scrollbarMovement) * ((abs(scrollbarMovement)%2 != 0)? 1:0);
                     entityStartHeight = clamp(entityStartHeight-scrollbarMovement,0,offscreenPixels);
                 }else{
                     entityStartHeight = 0;

@@ -600,16 +600,9 @@ inline Matrix3x3 Transpose(Matrix3x3 m){
 }
 
 Matrix3x3 Identity(){
-	Matrix3x3 m;
-
-	memset(m.m[0],0,3*sizeof(int));
-	memset(m.m[1],0,3*sizeof(int));
-	memset(m.m[2],0,3*sizeof(int));
-
-	m.m[0][0] = 1;
-	m.m[1][1] = 1;
-	m.m[2][2] = 1;
-
+	Matrix3x3 m = {{{1,0,0},
+					{0,1,0},
+					{0,0,1}}};
 	return m;
 }
 

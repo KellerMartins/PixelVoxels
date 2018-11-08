@@ -309,6 +309,8 @@ int IsMultiVoxelModelFile(char modelPath[], char modelName[]){
         free(chunkId);
     }else{
         PrintLog(Error,"IsMultiVoxelModelFile: Magic word is not \"VOX \" (%s)\n",magic);
+        free(magic);
+        fclose(file);
         return 0;
     }
     free(magic);
@@ -353,14 +355,16 @@ void InternalLoadMultiVoxelModelObject(VoxelModel **modelPointer, char modelPath
     Voxel *voxelData = NULL;
 
     char curObjName[64] = "";
-    int isHidden = 0;
+    
     int shapeIndex = 0;
     int objIndex = -1;
-    int found = 0;
+    
 
     // a MagicaVoxel .vox file starts with a 'magic' 4 character 'VOX ' identifier
     if (strcmp("VOX ",magic) == 0)
     {
+        int found = 0;
+        int isHidden = 0;
         char *chunkId = (char *)calloc(5,sizeof(char));
 
         //First, gather the nSHP index
@@ -375,11 +379,10 @@ void InternalLoadMultiVoxelModelObject(VoxelModel **modelPointer, char modelPath
             int childChunks;
             fread(&childChunks,sizeof(int),1,file);
 
-            int dataRead = 0;
             if(strcmp(chunkId,"nTRN") == 0)
             {
-                
-                int aux,pNum,editorProp;
+                int dataRead = 0;   
+                int aux,editorProp;
                 //0: Index in list
                 fread(&aux,sizeof(int),1,file);
                 dataRead+=sizeof(int);
@@ -389,7 +392,7 @@ void InternalLoadMultiVoxelModelObject(VoxelModel **modelPointer, char modelPath
 
                 if(editorProp){
                     //Parse these strings and get their data
-                    for(pNum=0;pNum<editorProp;pNum++){
+                    for(int pNum=0;pNum<editorProp;pNum++){
                         //Number of characters of the string
                         int PropertyLength1,intData;
                         fread(&PropertyLength1,sizeof(int),1,file);
@@ -597,8 +600,6 @@ void InternalLoadMultiVoxelModelObject(VoxelModel **modelPointer, char modelPath
         free(chunkId);
     }else{
         PrintLog(Error,"LoadMultiVoxelModelObject: Magic word is not \"VOX \" (%s)\n",magic);
-        free(magic);
-        return;
     }
     free(magic);
     fclose(file);
@@ -628,7 +629,7 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
 
     Voxel *voxelData = NULL;
 
-    int numVoxels = 0,modelLoaded = 0;
+    int numVoxels = 0;
     int i;
 
     //Get file length and return to start
@@ -649,6 +650,7 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
     // All MagicaVoxel .vox file starts with a 'magic' 4 character 'VOX ' identifier
     if (strcmp("VOX ",magic) == 0)
     {
+        int modelLoaded = 0;
         char *chunkId = calloc(5,sizeof(char));
 
         //While we hasnt reached the end of the file, read data
@@ -703,6 +705,7 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
                         PrintLog(Error,"InternalLoadVoxelModel: Failed to allocate voxel array!\n");
                         free(magic);
                         free(chunkId);
+                        fclose(file);
                         return;
                     }
                     
@@ -754,6 +757,8 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
         free(chunkId);
     }else{
         PrintLog(Error,"InternalLoadVoxelModel: Magic word is not 'VOX ', but '%s'\n",magic);
+        free(magic);
+        fclose(file);
         return;
     }
     free(magic);

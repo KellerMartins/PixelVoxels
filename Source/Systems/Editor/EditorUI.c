@@ -315,8 +315,8 @@ void FloatBoxActive(float *data,int ommit, Vector3 pos, Vector3 size,int intDigi
         SDL_WarpMouseInWindow(Core.window, Modulus(x, Screen.windowWidth) , y);
 
         //Ignore the jump of the mouse position caused from the loop from one edge to the other
-        int mouseLooped = (x == Modulus(x, Screen.windowWidth) && abs(deltaMousePos.x) < Screen.gameWidth);
-        *data += ( mouseLooped ? deltaMousePos.x : 0 ) / dragAmount;
+        int mouseLooped = abs(abs(deltaMousePos.x)-Screen.gameWidth) < 100;
+        *data += ( mouseLooped ?  0 : deltaMousePos.x ) / dragAmount;
 
         
         const size_t fieldLength = intDigits + decDigits + 1 // 1 for the \n

@@ -23,7 +23,7 @@ void GameStart(){
 
     //Carrega modelo da nave do player
 	
-	model = FromMagica("Models/spaceship.vox");
+	model = FromMagica("Models/Spaceship.vox");
 	model.position = (Vector3){0,30,20};
 
     //Carrega modelo da bala no pool
@@ -481,7 +481,6 @@ void MoveObjectTo(VoxelObject *obj, Vector3 movement, Vector3 rotation,	VoxelObj
                             ExplodeAtPoint(col[o],x,y,z,damageColRadius);
                             ExplodeAtPoint(obj,x,y,z,damageObjRadius);
                             allowMovement = 0;
-                            printf("Colliding");
                             break;
                         }
                     }

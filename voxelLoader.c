@@ -8,7 +8,7 @@ int LoadMap(char mapPath[]){
     FILE *map = fopen(mapPath,"r");
 
     if(map == NULL){
-        printf("> Failed to load! Error %d\n\n",errno);
+        printf("> Failed to load!\n\n");
         return -1;
     }
     FreeScene();
@@ -19,7 +19,7 @@ int LoadMap(char mapPath[]){
     scene = (VoxelObject **)calloc(sceneObjectCount,sizeof(VoxelObject*));
 
     int x,y,z;
-    char *modelString = (char *)calloc(100,sizeof(char));
+    char *modelString;
 
     for(int i=0; i<sceneObjectCount; i++){
         
@@ -40,7 +40,6 @@ int LoadMap(char mapPath[]){
         scene[i]->position = (Vector3){x,y,z};
 
     }
-    free(modelString);
     printf(">Map Loaded Sucessfully!\n\n");
     return 0;
 }

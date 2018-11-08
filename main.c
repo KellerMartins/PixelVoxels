@@ -4,8 +4,6 @@
 #include <pthread.h>
 #include <time.h>
 
-#include "soloud_c.h"
-
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include "SDL_FontCache.h"
@@ -60,14 +58,6 @@ int main(int argc, char *argv[]){
 	//Inicializações gerais
 
 	srand( (unsigned)time(NULL) );
-
-	Soloud *soloud = NULL;
-	soloud = Soloud_create();
-	if(Soloud_initEx(soloud,SOLOUD_CLIP_ROUNDOFF | SOLOUD_ENABLE_VISUALIZATION, SOLOUD_AUTO, SOLOUD_AUTO, SOLOUD_AUTO, SOLOUD_AUTO)<0){
-		printf("SoLoud could not initialize! \n");
-		ErrorOcurred = 1;
-		goto EndProgram;
-	}
 
 	if(IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG){
 		printf("SDL Image could not initialize! \n");
@@ -142,7 +132,7 @@ int main(int argc, char *argv[]){
 	EnemiesAndBullets = VoxelPointerArrayUnion(Pool[0].numberOfInstances+Pool[1].numberOfInstances,2, &(*Pool[0].objs),Pool[0].numberOfInstances, &(*Pool[1].objs),Pool[1].numberOfInstances );
 	EnemiesAndBulletsSize = Pool[0].numberOfInstances+Pool[1].numberOfInstances;
 
-	VoxelObject ob = FromMagica("Models/tests/glock.vox");
+	VoxelObject ob = FromMagica("Models/Tests/glock.vox");
 
 	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 	SDL_Texture *test = RenderIcon(&ob);
@@ -234,11 +224,6 @@ int main(int argc, char *argv[]){
 
 	free(SceneShadowCasters);
 	free(EnemiesAndBullets);
-
-	if(soloud!=NULL){
-		Soloud_deinit(soloud);
-		Soloud_destroy(soloud);
-	}
 	
 	if(render!=NULL)
 		SDL_DestroyTexture(render);

@@ -474,7 +474,7 @@ void DrawComponentsPanel(){
                             RGBField("Light color", &newColor,ommitColorX,ommitColorY,ommitColorZ, Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
                             SliderField("Hue Shift",&newShift,(Vector3){0,8*PI}, ommitShift,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
                             FloatField("Intensity",&newIntensity,100,ommitIntensity,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
-                            FloatField("Range",&newRange,10,ommitRange,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
+                            FloatField("Range",&newRange,0.1,ommitRange,Screen.windowWidth-componentWindowLength + componentNameLeftSpacing, componentWindowLength-componentWindowWidthSpacing-componentNameLeftSpacing*2 +1, &currentComponentField, &componentHeight);
 
                             int changedColorX = 0, changedColorY = 0, changedColorZ = 0;
                             int changedIntensity = 0, changedRange = 0, changedShift = 0;

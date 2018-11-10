@@ -1,13 +1,20 @@
+
+
 # Vopix Engine
+
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/d588f613f206400b847e09bcc129b298)](https://www.codacy.com?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=KellerMartins/PixelVoxels&amp;utm_campaign=Badge_Grade)
+[![CodeFactor](https://www.codefactor.io/repository/github/kellermartins/pixelvoxels/badge)](https://www.codefactor.io/repository/github/kellermartins/pixelvoxels)
+
 Pixel art voxel rendering experiment.
-#### Features:
-* ECS based architecture
-* Scene and Prefab editor
-* Simple physics collision
-* .vox File loading
+## Features
+  * ECS based architecture
+  * Scene and Prefab editor
+  * Simple kinematic and dynamic physics
+  * Lua scripting
+  * .vox File loading
     * Single object
     * Multiple objects with position and rotation
-* Multiple voxel objects rendering in isometric pixel art
+  * Multiple voxel objects rendering in an isometric pixel art style
     * OpenGL renderer
     * Outline, vignette and chromatic aberration effects
     * Point lights and directional light

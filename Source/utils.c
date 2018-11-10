@@ -661,6 +661,29 @@ Matrix3x3 MultiplyMatrix3x3(Matrix3x3 a, Matrix3x3 b){
 	return r;
 }
 
+Matrix4x4 Identity4x4(){
+	return (Matrix4x4) {{{1,0,0,0}, 
+						 {0,1,0,0}, 
+						 {0,0,1,0}, 
+						 {0,0,0,1}}};
+}
+
+Matrix4x4 GetProjectionMatrix(float rightPlane, float leftPlane, float topPlane, float bottomPlane, float nearPlane, float farPlane){
+	Matrix4x4 matrix = {{{0,0,0,0}, 
+	                     {0,0,0,0}, 
+						 {0,0,0,0}}};
+    
+    matrix.m[0][0] = 2.0f/(rightPlane-leftPlane);
+    matrix.m[1][1] = 2.0f/(topPlane-bottomPlane);
+    matrix.m[2][2] = -2.0f/(farPlane-nearPlane);
+    matrix.m[3][3] = 1;
+    matrix.m[3][0] = -(rightPlane + leftPlane)/(rightPlane - leftPlane);
+    matrix.m[3][1] = -(topPlane + bottomPlane)/(topPlane - bottomPlane);
+    matrix.m[3][2] = -(farPlane + nearPlane)/(farPlane - nearPlane);
+
+	return matrix;
+}
+
 // --------------- Numeric functions ---------------
 
 float Lerp(double t, float a, float b){

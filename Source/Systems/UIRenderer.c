@@ -58,7 +58,7 @@ GLfloat baseLineVertex[4];
 const int size = 4*2*sizeof(GLfloat);
 
 //OpenGL data
-GLfloat ProjectionMatrix[4][4] = {{0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}};
+Matrix4x4 ProjectionMatrix = {{{0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}}};
 
 //Lua fonts list
 List luaFonts;
@@ -100,22 +100,10 @@ void UIRendererUpdate(){
     }
     lastFrameSync = glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE,0); 
     glViewport(0,0,Screen.windowWidth,Screen.windowHeight);
-
-    //Define the projection matrix
-    float right = Screen.windowWidth;
-    float left = 0;
-    float top = Screen.windowHeight;
-    float bottom = 0;
-    float near = -0.1;
-    float far = 0.1;
     
-    ProjectionMatrix[0][0] = 2.0f/(right-left);
-    ProjectionMatrix[1][1] = 2.0f/(top-bottom);
-    ProjectionMatrix[2][2] = -2.0f/(far-near);
-    ProjectionMatrix[3][3] = 1;
-    ProjectionMatrix[3][0] = -(right + left)/(right - left);
-    ProjectionMatrix[3][1] = -(top + bottom)/(top - bottom);
-    ProjectionMatrix[3][2] = -(far + near)/(far - near);
+    ProjectionMatrix = GetProjectionMatrix(Screen.windowWidth, 0, 
+                                           Screen.windowHeight, 0,
+                                           -0.1, 0.1);
 
     //Disable depth test
     glDisable(GL_DEPTH_TEST);
@@ -138,7 +126,7 @@ void UIRendererUpdate(){
     //Pass active texture ID
     glUniform1i(texLoc, 0);
     //Pass the projection matrix to the shader
-    glUniformMatrix4fv(projLoc, 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix[0]);
+    glUniformMatrix4fv(projLoc, 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix.m);
 
     //Setup VBOs
     glBindBuffer(GL_ARRAY_BUFFER, vbo[1]);

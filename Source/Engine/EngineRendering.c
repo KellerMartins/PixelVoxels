@@ -183,24 +183,31 @@ void ClearRender(Vector3 col){
 
 }
 
+void DrawFullscreenQuad(){
+    GLfloat quadVertex[8] = {0, Screen.windowHeight, 0, 0, Screen.windowWidth, Screen.windowHeight, Screen.windowWidth, 0};
+    GLfloat quadUV[8] = {0,1, 0,0, 1,1, 1,0};
+
+	//Passing rectangle to the vertex VBO
+	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[0]);
+	glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat), quadVertex, GL_STREAM_DRAW);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(0);
+
+	//Passing rectangle uvs the uv VBO
+	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[1]);
+	glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat), quadUV, GL_STREAM_DRAW);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(1);
+
+	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+}
+
 void RenderToScreen(){
 
     //Define the projection matrix
-	GLfloat ProjectionMatrix[4][4] = {{0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}};
-    float right = Screen.windowWidth;
-    float left = 0;
-    float top = Screen.windowHeight;
-    float bottom = 0;
-    float near = -0.1;
-    float far = 0.1;
-    
-    ProjectionMatrix[0][0] = 2.0f/(right-left);
-    ProjectionMatrix[1][1] = 2.0f/(top-bottom);
-    ProjectionMatrix[2][2] = -2.0f/(far-near);
-    ProjectionMatrix[3][3] = 1;
-    ProjectionMatrix[3][0] = -(right + left)/(right - left);
-    ProjectionMatrix[3][1] = -(top + bottom)/(top - bottom);
-    ProjectionMatrix[3][2] = -(far + near)/(far - near);
+	Matrix4x4 ProjectionMatrix = GetProjectionMatrix(Screen.windowWidth, 0, 
+                                                     Screen.windowHeight, 0,
+                                                     -0.1, 0.1);
 
     glViewport(0,0,Screen.windowWidth,Screen.windowHeight);
     
@@ -213,7 +220,7 @@ void RenderToScreen(){
 
     glUseProgram(Rendering.Shaders[0]);
 	glUniform1i(glGetUniformLocation(Rendering.Shaders[0], "fbo_texture"), 0);
-	glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[0], "projection"), 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix[0]);
+	glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[0], "projection"), 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix.m);
 
     glUniform1f(glGetUniformLocation(Rendering.Shaders[0], "pWidth"), 1.0/(float)Screen.gameWidth);
     glUniform1f(glGetUniformLocation(Rendering.Shaders[0], "pHeight"), 1.0/(float)Screen.gameHeight);
@@ -222,22 +229,7 @@ void RenderToScreen(){
     glUniform1f(glGetUniformLocation(Rendering.Shaders[0], "redShiftPower"), 2);    
     glUniform1f(glGetUniformLocation(Rendering.Shaders[0], "redShiftSpread"), 0);
     
-	GLfloat quadVertex[8] = {0, Screen.windowHeight, 0, 0, Screen.windowWidth, Screen.windowHeight, Screen.windowWidth, 0};
-    GLfloat quadUV[8] = {0,1, 0,0, 1,1, 1,0};
-
-	//Passing rectangle to the vertex VBO
-	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[0]);
-	glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat), quadVertex, GL_STREAM_DRAW);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(0);
-
-	//Passing rectangle uvs the uv VBO
-	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[1]);
-	glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat), quadUV, GL_STREAM_DRAW);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(1);
-
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	DrawFullscreenQuad();
 
     glUseProgram(0);
     glEnable(GL_DEPTH_TEST); 
@@ -246,21 +238,9 @@ void RenderToScreen(){
 void RenderTextureToScreen(GLuint texture){
 
     //Define the projection matrix
-	GLfloat ProjectionMatrix[4][4] = {{0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}};
-    float right = Screen.windowWidth;
-    float left = 0;
-    float top = Screen.windowHeight;
-    float bottom = 0;
-    float near = -0.1;
-    float far = 0.1;
-    
-    ProjectionMatrix[0][0] = 2.0f/(right-left);
-    ProjectionMatrix[1][1] = 2.0f/(top-bottom);
-    ProjectionMatrix[2][2] = -2.0f/(far-near);
-    ProjectionMatrix[3][3] = 1;
-    ProjectionMatrix[3][0] = -(right + left)/(right - left);
-    ProjectionMatrix[3][1] = -(top + bottom)/(top - bottom);
-    ProjectionMatrix[3][2] = -(far + near)/(far - near);
+	Matrix4x4 ProjectionMatrix = GetProjectionMatrix(Screen.windowWidth, 0, 
+                                                     Screen.windowHeight, 0,
+                                                     -0.1, 0.1);
 
     glViewport(0,0,Screen.windowWidth,Screen.windowHeight);
     
@@ -273,24 +253,9 @@ void RenderTextureToScreen(GLuint texture){
 
     glUseProgram(Rendering.Shaders[5]);
 	glUniform1i(glGetUniformLocation(Rendering.Shaders[5], "texture"), 0);
-	glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[5], "projection"), 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix[0]);
+	glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[5], "projection"), 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix.m);
     
-	GLfloat quadVertex[8] = {0, Screen.windowHeight, 0, 0, Screen.windowWidth, Screen.windowHeight, Screen.windowWidth, 0};
-    GLfloat quadUV[8] = {0,1, 0,0, 1,1, 1,0};
-
-	//Passing rectangle to the vertex VBO
-	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[0]);
-	glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat), quadVertex, GL_STREAM_DRAW);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(0);
-
-	//Passing rectangle uvs the uv VBO
-	glBindBuffer(GL_ARRAY_BUFFER, Rendering.vbo2D[1]);
-	glBufferData(GL_ARRAY_BUFFER, 4 * 2 * sizeof(GLfloat), quadUV, GL_STREAM_DRAW);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
-	glEnableVertexAttribArray(1);
-
-	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+	DrawFullscreenQuad();
 
     glUseProgram(0);
     glEnable(GL_DEPTH_TEST); 
@@ -310,21 +275,9 @@ void RenderTextDebug(char *text, SDL_Color color, int x, int y, TTF_Font* font)
     if(!sFont){PrintLog(Warning,"Failed to render text!\n"); return;}
 
     //Define the projection matrix
-	GLfloat ProjectionMatrix[4][4] = {{0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0}};
-    float right = Screen.windowWidth;
-    float left = 0;
-    float top = Screen.windowHeight;
-    float bottom = 0;
-    float near = -0.1;
-    float far = 0.1;
-    
-    ProjectionMatrix[0][0] = 2.0f/(right-left);
-    ProjectionMatrix[1][1] = 2.0f/(top-bottom);
-    ProjectionMatrix[2][2] = -2.0f/(far-near);
-    ProjectionMatrix[3][3] = 1;
-    ProjectionMatrix[3][0] = -(right + left)/(right - left);
-    ProjectionMatrix[3][1] = -(top + bottom)/(top - bottom);
-    ProjectionMatrix[3][2] = -(far + near)/(far - near);
+	Matrix4x4 ProjectionMatrix = GetProjectionMatrix(Screen.windowWidth, 0, 
+                                                     Screen.windowHeight, 0,
+                                                     -0.1, 0.1);
 
     glDisable(GL_DEPTH_TEST);
     glEnable(GL_BLEND);
@@ -358,7 +311,7 @@ void RenderTextDebug(char *text, SDL_Color color, int x, int y, TTF_Font* font)
 
 	//Passing uniforms to shader
 	glUniform1i(glGetUniformLocation(Rendering.Shaders[3], "texture"), 0);
-	glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[3], "projection"), 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix[0]);
+	glUniformMatrix4fv(glGetUniformLocation(Rendering.Shaders[3], "projection"), 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix.m);
 	glUniform3f(glGetUniformLocation(Rendering.Shaders[3], "color"), 1.0f, 1.0f, 1.0f);
 	
 	glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);

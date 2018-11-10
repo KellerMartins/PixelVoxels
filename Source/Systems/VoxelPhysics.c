@@ -145,14 +145,13 @@ int VoxelModelVsVoxelModelCollision(EntityID entityA, EntityID entityB,Vector3 *
     glBindBuffer(GL_ARRAY_BUFFER, objA->vbo[0]);
     Vector3* vertices = glMapBuffer(GL_ARRAY_BUFFER, GL_READ_ONLY);
 
-    float x,y,z;
     int i,index = 0;
     int collisions = 0;
     for(i=0; i<objA->numberOfVertices; i++){
 
-        x = vertices[i].x;
-        y = vertices[i].y;
-        z = vertices[i].z;
+        float x = vertices[i].x;
+        float y = vertices[i].y;
+        float z = vertices[i].z;
 
         //Ignore invalid voxels
         if(x<0 || y<0 || z<0) continue;

@@ -71,20 +71,10 @@ void VoxelRendererUpdate(){
     glViewport(0,0,Screen.gameWidth,Screen.gameHeight);
     glBindFramebuffer(GL_FRAMEBUFFER, Rendering.frameBuffer);
     glEnable(GL_DEPTH_TEST);
-
-
-    //Define the projection matrix
-    float right = Screen.gameWidth/2;
-    float left = -Screen.gameWidth/2;
-    float top = Screen.gameHeight/2;
-    float bottom = -Screen.gameHeight/2;
-    float near = -500;
-    float far = 500;
     
-    GLfloat ProjectionMatrix[4][4]={{2.0f/(right-left), 0                 , 0                , -(right + left)/(right - left) },
-                                    {0                , 2.0f/(top-bottom) , 0                , -(top + bottom)/(top - bottom) },
-                                    {0                , 0                 , -2.0f/(far-near) , -(far + near)/(far - near)     },
-                                    {0                , 0                 , 0                ,   1                            }};
+    Matrix4x4 ProjectionMatrix = GetProjectionMatrix(Screen.gameWidth/2, -Screen.gameWidth/2, 
+                                                     Screen.gameHeight/2,-Screen.gameHeight/2,
+                                                     -500, 500);
 
 
     Vector3 sunDir = GetTrieElementAs_Vector3(Scene.data, "sunDirection", (Vector3){0.75,0.2,-1.5});
@@ -169,7 +159,7 @@ void VoxelRendererUpdate(){
         glBindBufferBase(GL_UNIFORM_BUFFER, lightBlock, GetPointLightsBuffer());
         glUniformBlockBinding(Rendering.Shaders[usedProgram], lightBlock, 0);
 
-        glUniformMatrix4fv(projLoc, 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix[0]);
+        glUniformMatrix4fv(projLoc, 1, GL_FALSE, (const GLfloat*)&ProjectionMatrix.m);
         glUniformMatrix3fv(rotLoc, 1, GL_FALSE, (const GLfloat*)&Transpose(rotation).m[0]);
         glUniform1i(spriteScaleLoc, Rendering.spriteScale);
         glUniform3f(objPosLoc, position.x, position.y, position.z);

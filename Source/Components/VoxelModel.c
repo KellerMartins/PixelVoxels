@@ -159,6 +159,9 @@ void* VoxelModelDecode(cJSON **data){
     return v;
 }
 
+
+
+
 VoxelModel* GetVoxelModelPointer(EntityID entity){
     if(!EntityContainsComponent(entity, ThisComponentID())){
         PrintLog(Warning,"GetVoxelModelPointer: Entity doesn't have a VoxelModel component. (%d)\n",entity);
@@ -569,8 +572,7 @@ void InternalLoadMultiVoxelModelObject(VoxelModel **modelPointer, char modelPath
                 obj->numberOfVertices = 0;
                 
                 //Inserting voxels into the VoxelObject structure
-                for (i = 0; i < obj->voxelCount; i++)
-                {
+                for(i = 0; i < obj->voxelCount; i++){
                     // do not store this voxel if it lies out of range of the voxel chunk (126x126x126)
                     if (voxelData[i].x > 126 || voxelData[i].y > 126 || voxelData[i].z > 126) continue;
 
@@ -630,7 +632,7 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
     Voxel *voxelData = NULL;
 
     int numVoxels = 0;
-    int i;
+    
 
     //Get file length and return to start
     fseek(file, 0L, SEEK_END);
@@ -709,7 +711,7 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
                         return;
                     }
                     
-                    for(i = 0; i < numVoxels; i++){
+                    for(int i = 0; i < numVoxels; i++){
                         //Get MagicaVoxel voxel position and color index and insert in the array
                         fread(&voxelData[i].x,sizeof(char),1,file);
                         fread(&voxelData[i].y,sizeof(char),1,file);
@@ -743,8 +745,7 @@ void InternalLoadVoxelModel(VoxelModel **modelPointer, char modelPath[], char mo
 
         
         //Inserting voxels into the VoxelObject structure
-        for (i = 0; i < numVoxels; i++)
-        {
+        for(int i = 0; i < numVoxels; i++){
             
             // do not store this voxel if it lies out of range of the voxel chunk (126x126x126)
             if (voxelData[i].x > 126 || voxelData[i].y > 126 || voxelData[i].z > 126) continue;
@@ -836,78 +837,76 @@ void CalculateRendered(EntityID entity){
         for(z = zLimitS; z<=zLimitE; z++){
             for(x = xLimitS; x<=xLimitE; x++){
                 
-                int occ = 0;
-
                 int index = (x + z * obj->dimension[0] + y * obj->dimension[0] * obj->dimension[2]);
-                int neighIndex;
-                
                 if(obj->model[index]!=0){
+                        int occ = 0;
+                        int neighIndex;
                         Vector3 vNormal = VECTOR3_ZERO;
 
                         //Calculate normal vector as the average direction without neighbors
                         if(x-1 < 0){
                             vNormal.x -= 1;
                         }else{
-                        neighIndex = (x-1) + (z) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
-                        if(obj->model[neighIndex]==0){
+                            neighIndex = (x-1) + (z) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
+                            if(obj->model[neighIndex]==0){
                                 vNormal.x -= 1;
-                        }else{
-                            occ++;
+                            }else{
+                                occ++;
                             }
                         }
 
                         if(x+1 >= obj->dimension[0]){
-                            vNormal.x += 1;
-                        }else{
-                        neighIndex = (x+1) + (z) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
-                        if(obj->model[neighIndex]==0){
                                 vNormal.x += 1;
                         }else{
-                            occ++;
+                            neighIndex = (x+1) + (z) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
+                            if(obj->model[neighIndex]==0){
+                                vNormal.x += 1;
+                            }else{
+                                occ++;
                             }
                         }
 
                         if(z-1 < 0){
                             vNormal.z -= 1;
                         }else{
-                        neighIndex = (x) + (z-1) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
-                        if(obj->model[neighIndex]==0){
+                            neighIndex = (x) + (z-1) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
+                            if(obj->model[neighIndex]==0){
                                 vNormal.z -= 1;
-                        }else{
-                            occ++;
+                            }else{
+                                occ++;
                             }
                         }
 
                         if(z+1 >= obj->dimension[2]){
                             vNormal.z += 1;
                         }else{
-                        neighIndex = (x) + (z+1) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
-                        if(obj->model[neighIndex]==0){
+                            neighIndex = (x) + (z+1) * obj->dimension[0] + (y) * obj->dimension[0] * obj->dimension[2];
+                            if(obj->model[neighIndex]==0){
                                 vNormal.z += 1;
-                        }else{
-                            occ++;
+                            }else{
+                                occ++;
                             }
                         }
 
                         if(y-1 < 0){
                             vNormal.y -= 1;
                         }else{
-                        neighIndex = (x) + (z) * obj->dimension[0] + (y-1) * obj->dimension[0] * obj->dimension[2];
-                        if(obj->model[neighIndex]==0){
+                            neighIndex = (x) + (z) * obj->dimension[0] + (y-1) * obj->dimension[0] * obj->dimension[2];
+                            if(obj->model[neighIndex]==0){
                                 vNormal.y -= 1;
-                        }else{
-                            occ++;
+                            }else{
+                                occ++;
                             }
                         }
 
                         if(y+1 >= obj->dimension[1]){
                             vNormal.y += 1;
                         }else{
-                        neighIndex = (x) + (z) * obj->dimension[0] + (y+1) * obj->dimension[0] * obj->dimension[2];
-                        if(obj->model[neighIndex]==0){
+                            neighIndex = (x) + (z) * obj->dimension[0] + (y+1) * obj->dimension[0] * obj->dimension[2];
+                            if(obj->model[neighIndex]==0){
                                 vNormal.y += 1;
-                        }else{
-                            occ++;
+                            }else{
+                                occ++;
                             }
                         }
 
@@ -931,7 +930,7 @@ void CalculateRendered(EntityID entity){
         }
     }
     
-    //If there is no vertices into the VBOs, just insert them
+    //If there are no vertices inside the VBOs, just insert them
     if(obj->numberOfVertices == 0){
         obj->numberOfVertices = requestedCount;
         memcpy(vertices,requestedVertices,requestedCount * sizeof(Vector3));
@@ -1085,6 +1084,7 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
 
                 }else{
                     PrintLog(Error,"LoadMultiVoxelModel: An error loading has ocurred!\n");
+                    free(magic);
                     fclose(file);
                     return;
                 }
@@ -1128,8 +1128,7 @@ void LoadMultiVoxelModel(EntityID entity, char modelPath[], char modelName[])
                 objPointer->numberOfVertices = 0;
                 
                 //Inserting voxels into the VoxelObject structure
-                for (i = 0; i < objPointer->voxelCount; i++)
-                {
+                for(i = 0; i < objPointer->voxelCount; i++){
                     
                     // do not store this voxel if it lies out of range of the voxel chunk (126x126x126)
                     if (voxelData[i].x > 126 || voxelData[i].y > 126 || voxelData[i].z > 126) continue;

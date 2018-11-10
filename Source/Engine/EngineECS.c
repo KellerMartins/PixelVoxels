@@ -111,7 +111,7 @@ int RegisterNewSystem(char systemName[25], int priority, ComponentMask required,
 	strncpy(newSystem.name,systemName,25);
 
 	ListCellPointer current = GetLastCell(ECS.SystemList);
-	unsigned index = GetLength(ECS.SystemList);
+	int index = GetLength(ECS.SystemList);
 	while(current){
 		System *curSystem = (System*)GetElement(*current);
 		if(curSystem->priority >= priority) break;

@@ -232,6 +232,12 @@ Vector3 RotateVector(Vector3 v, Matrix3x3 m);
 Vector3 RotatePoint(Vector3 p, Vector3 r, Vector3 pivot);
 Matrix3x3 MultiplyMatrix3x3(Matrix3x3 a, Matrix3x3 b);
 
+typedef struct Matrix4x4{
+	float m[4][4];
+}Matrix4x4;
+
+Matrix4x4 Identity4x4();
+Matrix4x4 GetProjectionMatrix(float right, float left, float top, float bottom, float near, float far);
 
 float Lerp(double t, float a, float b);
 int Step(float edge, float x );

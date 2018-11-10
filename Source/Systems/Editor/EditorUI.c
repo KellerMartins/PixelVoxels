@@ -35,38 +35,38 @@ void LoadUITexture(char *path,int index);
 
 void InitEditorUI(){
 
-    gizmosFont = TTF_OpenFont("Interface/Fonts/gros/Gros.ttf",16);
+    gizmosFont = TTF_OpenFont("Assets/Interface/Fonts/gros/Gros.ttf",16);
 	if(!gizmosFont){
 		PrintLog(Error,"InitEditorUI: Error loading font!");
 	}
 
-    gizmosFontSmall= TTF_OpenFont("Interface/Fonts/coolthre/CoolThre.ttf",12);
+    gizmosFontSmall= TTF_OpenFont("Assets/Interface/Fonts/coolthre/CoolThre.ttf",12);
     if(!gizmosFontSmall){
 		PrintLog(Error,"InitEditorUI: Error loading small font!");
 	}
 
     //Load UI icons
     glGenTextures(NUMBER_OF_ICONS, iconsTex);
-    LoadUITexture("Interface/IconsUI/add.png",0);
-    LoadUITexture("Interface/IconsUI/remove.png",1);
-    LoadUITexture("Interface/IconsUI/bin.png",2);
-    LoadUITexture("Interface/IconsUI/play.png",3);
-    LoadUITexture("Interface/IconsUI/pause.png",4);
-    LoadUITexture("Interface/IconsUI/stop.png",5);
-    LoadUITexture("Interface/IconsUI/home.png",6);
-    LoadUITexture("Interface/IconsUI/reload.png",7);
-    LoadUITexture("Interface/IconsUI/next.png",8);
-    LoadUITexture("Interface/IconsUI/previous.png",9);
-    LoadUITexture("Interface/IconsUI/folder.png",10);
-    LoadUITexture("Interface/IconsUI/file.png",11);
-    LoadUITexture("Interface/IconsUI/up.png",12);
-    LoadUITexture("Interface/IconsUI/down.png",13);
-    LoadUITexture("Interface/IconsUI/toggleOn.png",14);
-    LoadUITexture("Interface/IconsUI/toggleOff.png",15);
-    LoadUITexture("Interface/IconsUI/toggleUndefined.png",16);
-    LoadUITexture("Interface/IconsUI/voxel.png",17);
-    LoadUITexture("Interface/IconsUI/x.png",18);
-    LoadUITexture("Interface/IconsUI/save.png",19);
+    LoadUITexture("Assets/Interface/Icons/add.png",0);
+    LoadUITexture("Assets/Interface/Icons/remove.png",1);
+    LoadUITexture("Assets/Interface/Icons/bin.png",2);
+    LoadUITexture("Assets/Interface/Icons/play.png",3);
+    LoadUITexture("Assets/Interface/Icons/pause.png",4);
+    LoadUITexture("Assets/Interface/Icons/stop.png",5);
+    LoadUITexture("Assets/Interface/Icons/home.png",6);
+    LoadUITexture("Assets/Interface/Icons/reload.png",7);
+    LoadUITexture("Assets/Interface/Icons/next.png",8);
+    LoadUITexture("Assets/Interface/Icons/previous.png",9);
+    LoadUITexture("Assets/Interface/Icons/folder.png",10);
+    LoadUITexture("Assets/Interface/Icons/file.png",11);
+    LoadUITexture("Assets/Interface/Icons/up.png",12);
+    LoadUITexture("Assets/Interface/Icons/down.png",13);
+    LoadUITexture("Assets/Interface/Icons/toggleOn.png",14);
+    LoadUITexture("Assets/Interface/Icons/toggleOff.png",15);
+    LoadUITexture("Assets/Interface/Icons/toggleUndefined.png",16);
+    LoadUITexture("Assets/Interface/Icons/voxel.png",17);
+    LoadUITexture("Assets/Interface/Icons/x.png",18);
+    LoadUITexture("Assets/Interface/Icons/save.png",19);
 }
 
 void FreeEditorUI(){

@@ -1,14 +1,8 @@
 {
-	"data":	{
-		"a":	"Everybody do the flop!",
-		"backgroundColor":	[0.016949152573943138, 0.11304347962141037, 0.21739129722118378],
-		"sunColor":	[0.059322033077478409, 0.29565218091011047, 0.45217391848564148],
-		"sunDirection":	[-0.269565224647522, 1, -0.56521737575531006]
-	},
 	"entities":	[{
 			"Transform":	{
-				"position":	[1.3022137880325317, 0, 3.7431008815765381],
-				"rotation":	[0, 0, 0]
+				"position":	[1.3022137880325317, 102.97940826416016, 3.7431008815765381],
+				"rotation":	[27.000007629394531, -6, -90]
 			},
 			"VoxelModel":	{
 				"modelPath":	"Assets/Game/Models/",
@@ -25,17 +19,19 @@
 				"isStatic":	true
 			}
 		}, {
-			"prefabPath":	"Assets",
+			"prefabPath":	"Assets/Game/Prefabs/",
 			"prefabName":	"newPrefab.prefab",
 			"Transform":	{
-				"position":	[86.889266967773438, 30.503036499023437, 60.721431732177734],
+				"position":	[12.889293670654297, 17.169681549072266, 60.721431732177734],
 				"rotation":	[0, 0, -45]
 			},
-			"VoxelModel":	{
-				"modelPath":	"Assets/Game/Models/Tests",
-				"modelName":	"dragon.vox",
-				"smallScale":	true,
-				"center":	[63, 28, 44]
+			"RigidBody":	{
+				"mass":	1,
+				"bounciness":	0.20000000298023224,
+				"velocity":	[0, 0, 0],
+				"acceleration":	[0, 0, 0],
+				"useGravity":	true,
+				"isStatic":	false
 			}
 		}, {
 			"Transform":	{
@@ -44,7 +40,7 @@
 			},
 			"VoxelModel":	{
 				"modelPath":	"Assets/Game/Models/",
-				"modelName":	"bullet.vox",
+				"modelName":	"Bullet.vox",
 				"smallScale":	false,
 				"center":	[0, 0, 0]
 			},
@@ -63,7 +59,7 @@
 			},
 			"VoxelModel":	{
 				"modelPath":	"Assets/Game/Models/",
-				"modelName":	"bullet.vox",
+				"modelName":	"Bullet.vox",
 				"smallScale":	false,
 				"center":	[0, 0, 0]
 			},
@@ -77,7 +73,7 @@
 			}
 		}, {
 			"Transform":	{
-				"position":	[22.806064605712891, -12.141356468200684, 44.024662017822266],
+				"position":	[55.221012115478516, 26.934513092041016, 59.592201232910156],
 				"rotation":	[0, 0, 0]
 			},
 			"VoxelModel":	{

@@ -25,7 +25,7 @@
 			},
 			"VoxelModel":	{
 				"modelPath":	"Assets/Game/Models/",
-				"modelName":	"bullet.vox",
+				"modelName":	"Bullet.vox",
 				"smallScale":	false,
 				"center":	[0, 0, 0]
 			},
@@ -44,7 +44,7 @@
 			},
 			"VoxelModel":	{
 				"modelPath":	"Assets/Game/Models/",
-				"modelName":	"bullet.vox",
+				"modelName":	"Bullet.vox",
 				"smallScale":	false,
 				"center":	[0, 0, 0]
 			},
@@ -57,7 +57,7 @@
 				"isStatic":	false
 			}
 		}, {
-			"prefabPath":	"Assets",
+			"prefabPath":	"Assets/Game/Prefabs/",
 			"prefabName":	"newPrefab.prefab",
 			"Transform":	{
 				"position":	[-31.777360916137695, -39.496978759765625, 80.086677551269531],
@@ -83,7 +83,7 @@
 				"isStatic":	true
 			}
 		}, {
-			"prefabPath":	"Assets",
+			"prefabPath":	"Assets/Game/Prefabs/",
 			"prefabName":	"newPrefab.prefab",
 			"Transform":	{
 				"position":	[-71.777381896972656, -39.496978759765625, 79.565849304199219],

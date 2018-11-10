@@ -190,21 +190,4 @@ void ExecuteShortcuts(){
         if(GetKeyDown(SDL_SCANCODE_H)){
             hideGizmos = !hideGizmos;
         }
-
-        //Test shortcuts
-        if(GetKeyDown(SDL_SCANCODE_E)){
-            if(GetLength(SelectedEntities) == 1){
-                ListCellPointer cellp = GetFirstCell(SelectedEntities);
-                ExportEntityPrefab(GetElementAsType(cellp,EntityID), "Assets", "newPrefab");
-            }
-            //ExportScene("Assets", "newScene");
-        }
-
-        if(GetKeyDown(SDL_SCANCODE_G)){
-            EntityID newEntity = ImportEntityPrefab("Assets", "newPrefab.prefab");
-            FreeList(&SelectedEntities);
-            InsertListEnd(&SelectedEntities,&newEntity);
-            PrintLog(Info,"Created entity %d!\n",newEntity);
-            //LoadScene("Assets", "newScene.scene");
-        }
 }

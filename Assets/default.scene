@@ -49,7 +49,7 @@
 			},
 			"VoxelModel":	{
 				"modelPath":	"Assets/Game/Models/",
-				"modelName":	"bullet.vox",
+				"modelName":	"Bullet.vox",
 				"smallScale":	false,
 				"center":	[0, 0, 0]
 			},
@@ -68,7 +68,7 @@
 			},
 			"VoxelModel":	{
 				"modelPath":	"Assets/Game/Models/",
-				"modelName":	"bullet.vox",
+				"modelName":	"Bullet.vox",
 				"smallScale":	false,
 				"center":	[0, 0, 0]
 			},

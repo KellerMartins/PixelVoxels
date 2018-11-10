@@ -18,10 +18,10 @@ function getTable(foo)
     end
 end
 
-LoadFontTTF("Interface/Fonts","Visitor",64)
-LoadFontTTF("Interface/Fonts","Visitor",128)
-LoadFontTTF("Interface/Fonts/coolthre","CoolThre",16)
-LoadFontTTF("Interface/Fonts/gros/","Gros",16)
+LoadFontTTF("Assets/Interface/Fonts","Visitor",64)
+LoadFontTTF("Assets/Interface/Fonts","Visitor",128)
+LoadFontTTF("Assets/Interface/Fonts/coolthre","CoolThre",16)
+LoadFontTTF("Assets/Interface/Fonts/gros/","Gros",16)
 
 camPos = {x=0, y=0, z = 0}
 

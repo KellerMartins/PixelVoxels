@@ -117,22 +117,22 @@ int InitRenderer(){
     glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
 	
     //Compile shaders
-    if(!CompileAndLinkShader("Shaders/ScreenVert.vs","Shaders/ScreenFrag.fs",0)) PrintLog(Error,"InitRenderer: Failed to compile/link Screen shader! Description above\n");
+    if(!CompileAndLinkShader("Assets/Shaders/ScreenVert.vs","Assets/Shaders/ScreenFrag.fs",0)) PrintLog(Error,"InitRenderer: Failed to compile/link Screen shader! Description above\n");
     else PrintLog(Info,">Compiled/linked Screen shader sucessfully!\n");
 
-    if(!CompileAndLinkShader("Shaders/VoxelVert.vs","Shaders/VoxelFrag.fs",1)) PrintLog(Error,"InitRenderer: Failed to compile/link VoxelVert shader! Description above\n");
+    if(!CompileAndLinkShader("Assets/Shaders/VoxelVert.vs","Assets/Shaders/VoxelFrag.fs",1)) PrintLog(Error,"InitRenderer: Failed to compile/link VoxelVert shader! Description above\n");
     else PrintLog(Info,">Compiled/linked Voxel shader sucessfully!\n");
 
-	if(!CompileAndLinkShader("Shaders/VoxelSmallVert.vs","Shaders/VoxelSmallFrag.fs",2)) PrintLog(Error,"InitRenderer: Failed to compile/link VoxelSmall shader! Description above\n");
+	if(!CompileAndLinkShader("Assets/Shaders/VoxelSmallVert.vs","Assets/Shaders/VoxelSmallFrag.fs",2)) PrintLog(Error,"InitRenderer: Failed to compile/link VoxelSmall shader! Description above\n");
     else PrintLog(Info,">Compiled/linked VoxelSmall shader sucessfully!\n");
 
-	if(!CompileAndLinkShader("Shaders/UIVert.vs","Shaders/UIFrag.fs",3)) PrintLog(Error,"InitRenderer: Failed to compile/link UI shader! Description above\n");
+	if(!CompileAndLinkShader("Assets/Shaders/UIVert.vs","Assets/Shaders/UIFrag.fs",3)) PrintLog(Error,"InitRenderer: Failed to compile/link UI shader! Description above\n");
     else PrintLog(Info,">Compiled/linked UI shader sucessfully!\n");
 
-    if(!CompileAndLinkShader("Shaders/ShadowVert.vs","Shaders/ShadowFrag.fs",4)) PrintLog(Error,"InitRenderer: Failed to compile/link Shadow shader! Description above\n");
+    if(!CompileAndLinkShader("Assets/Shaders/ShadowVert.vs","Assets/Shaders/ShadowFrag.fs",4)) PrintLog(Error,"InitRenderer: Failed to compile/link Shadow shader! Description above\n");
     else PrintLog(Info,">Compiled/linked Shadow shader sucessfully!\n");
 
-    if(!CompileAndLinkShader("Shaders/SimpleVert.vs","Shaders/SimpleFrag.fs",5)) PrintLog(Error,"InitRenderer: Failed to compile/link Simple shader! Description above\n");
+    if(!CompileAndLinkShader("Assets/Shaders/SimpleVert.vs","Assets/Shaders/SimpleFrag.fs",5)) PrintLog(Error,"InitRenderer: Failed to compile/link Simple shader! Description above\n");
     else PrintLog(Info,">Compiled/linked Simple shader sucessfully!\n");
 
 	//Load voxel palette
@@ -458,38 +458,38 @@ void ReloadShaders(){
         glDeleteProgram(Rendering.Shaders[i]);
     }
 
-    if(!CompileAndLinkShader("Shaders/ScreenVert.vs","Shaders/ScreenFrag.fs",0)){
+    if(!CompileAndLinkShader("Assets/Shaders/ScreenVert.vs","Assets/Shaders/ScreenFrag.fs",0)){
         PrintLog(Error,"ReloadShaders: Failed to compile/link Screen shader! Description above\n");
 	}else{ 
         PrintLog(Info,">Compiled/linked Screen shader sucessfully!\n\n");
 	}
 
-    if(!CompileAndLinkShader("Shaders/VoxelVert.vs","Shaders/VoxelFrag.fs",1)){ 
+    if(!CompileAndLinkShader("Assets/Shaders/VoxelVert.vs","Assets/Shaders/VoxelFrag.fs",1)){ 
         PrintLog(Error,"ReloadShaders: Failed to compile/link Voxel shader! Description above\n");
 	}else{
         PrintLog(Info,">Compiled/linked Voxel shader sucessfully!\n\n");
 	}
 
-	if(!CompileAndLinkShader("Shaders/VoxelSmallVert.vs","Shaders/VoxelSmallFrag.fs",2)){
+	if(!CompileAndLinkShader("Assets/Shaders/VoxelSmallVert.vs","Assets/Shaders/VoxelSmallFrag.fs",2)){
 		PrintLog(Error,"ReloadShaders: Failed to compile/link VoxelSmall shader! Description above\n");
 	}   
     else{
         PrintLog(Info,">Compiled/linked VoxelSmall shader sucessfully!\n\n");
 	}
 
-	if(!CompileAndLinkShader("Shaders/UIVert.vs","Shaders/UIFrag.fs",3)){
+	if(!CompileAndLinkShader("Assets/Shaders/UIVert.vs","Assets/Shaders/UIFrag.fs",3)){
 		PrintLog(Error,"ReloadShaders: Failed to compile/link UI shader! Description above\n");
     }else{
 		PrintLog(Info,">Compiled/linked UI shader sucessfully!\n");
 	}
 
-    if(!CompileAndLinkShader("Shaders/ShadowVert.vs","Shaders/ShadowFrag.fs",4)){
+    if(!CompileAndLinkShader("Assets/Shaders/ShadowVert.vs","Assets/Shaders/ShadowFrag.fs",4)){
         PrintLog(Error,"InitRenderer: Failed to compile/link Shadow shader! Description above\n");
     }else{
         PrintLog(Info,">Compiled/linked Shadow shader sucessfully!\n");
     }
 
-    if(!CompileAndLinkShader("Shaders/SimpleVert.vs","Shaders/SimpleFrag.fs",5)){
+    if(!CompileAndLinkShader("Assets/Shaders/SimpleVert.vs","Assets/Shaders/SimpleFrag.fs",5)){
         PrintLog(Error,"InitRenderer: Failed to compile/link Simple shader! Description above\n");
     }else{
         PrintLog(Info,">Compiled/linked Simple shader sucessfully!\n");

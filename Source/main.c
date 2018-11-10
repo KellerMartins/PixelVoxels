@@ -69,12 +69,12 @@ int main(int argc, char *argv[]){
 	InitFPS();
 	
 	//Initialize font
-	font = TTF_OpenFont("Interface/Fonts/Visitor.ttf",18);
+	font = TTF_OpenFont("Assets/Interface/Fonts/Visitor.ttf",18);
 	if(!font){
 		PrintLog(Error,"Main: Error loading font!");
 	}
 
-	LoadScene("Assets", "newScene2.scene");
+	LoadScene("Assets", "default.scene");
 
 	PrintLog(Info,"GameLoop Initialized\n");
 	//Game Loop

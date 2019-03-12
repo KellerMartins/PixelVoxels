@@ -32,12 +32,12 @@ This project was created during my study on computer graphics, the C programming
 -   GLEW
 -   Lua5.3
 
-### Commands
+### Make Commands
 -   `make`
     -   Build the engine
     -   On Windows: modify INCLUDE_PATHS and LIBRARY_PATHS to the location of the libraries in your system
--   `clean`
+-   `make clean`
     -   Remove the `./Build` folder
--   `tcc`
+-   `make tcc`
     -   Compile and run the engine with the Tiny C Compiler
     -   Has some runtime issues when moving objects with the move gizmos

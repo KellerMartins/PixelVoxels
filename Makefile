@@ -14,7 +14,7 @@ FOLDERS = Build Build/Source Build/Source/Engine Build/Source/Components Build/S
 endif
 
 #COMPILER_FLAGS specifies the additional compilation options we're using
-COMPILER_FLAGS = -Wall -Wno-unused-result -Wno-missing-braces -ffast-math -O3 -g
+COMPILER_FLAGS += -Wall -Wno-unused-result -Wno-missing-braces -ffast-math -O3 -g
 
 #LINKER_FLAGS specifies the libraries we're linking against
 #Both LINKER_FLAGS and MKDIR are defined based on the OS
@@ -23,11 +23,21 @@ ifeq ($(OS),Windows_NT)
 INCLUDE_PATHS = -I $(PD) -I $(PD)\SDL2\include -I $(PD)\glew\include -I $(PD)\lua5.3\include
 LIBRARY_PATHS = -L $(PD)\SDL2\lib -L $(PD)\glew\lib -L $(PD)\lua5.3\lib
 LINKER_FLAGS = -lmingw32 -lSDL2main -lSDL2 -lSDL2_image -lSDL2_ttf -lglew32.dll -llua53 -lopengl32 Source/resource.res
-MKDIR = @mkdir
+
+FixPath = $(subst /,\,$1)
+MakeDir = if not exist "$(call FixPath,$1)" mkdir $(call FixPath,$1)
+RemoveDir = rd /s /q $(call FixPath,$1)
+RemoveFile = del /q $(call FixPath,$1)
+EchoNewline = @echo. && echo.$1
 
 else
 LINKER_FLAGS = -lSDL2 -lSDL2_image -lSDL2_ttf -lGLEW -lGL -llua5.3 -lm
-MKDIR = @mkdir -p
+
+FixPath = $1
+MakeDir = mkdir -p $1
+RemoveDir = rm -f -r $1
+RemoveFile = rm -f $1
+EchoNewline = @echo ""; echo "$1"
 
 endif
 
@@ -39,7 +49,7 @@ all : $(OBJ_NAME)
 	@echo Build finished!
 
 $(OBJ_NAME): $(FOLDERS)/ $(OBJS) 
-	@echo "+ Compiling program \"$@\""
+	$(call EchoNewline,+ Compiling program "$@")
 ifeq ($(OS),Windows_NT)
 	@$(CC) $(OBJS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(COMPILER_FLAGS) $(LINKER_FLAGS) -o $(OBJ_NAME)
 else
@@ -47,7 +57,7 @@ else
 endif
 
 Build/%.o: %.c %.h
-	@echo "- Compiling object \"$@\""
+	$(call EchoNewline,- Compiling object "$@")
 ifeq ($(OS),Windows_NT)
 	@$(CC) -c $(INCLUDE_PATHS) $(COMPILER_FLAGS) $< -o $@
 else
@@ -55,7 +65,7 @@ else
 endif
 
 Build/%.o: %.c
-	@echo "- Compiling object \"$@\""
+	$(call EchoNewline,- Compiling object "$@")
 ifeq ($(OS),Windows_NT)
 	@$(CC) -c $(INCLUDE_PATHS) $(COMPILER_FLAGS) $< -o $@
 else
@@ -63,11 +73,11 @@ else
 endif
 
 $(FOLDERS)/:
-	@echo "+ Creating build folders \"$@\""
-	$(MKDIR) $@
+	$(call EchoNewline,+ Creating build folders "$@")
+	$(call MakeDir,$@)
 
 clear:
-	@rm -r -f -v ./Build
+	-$(call RemoveDir,Build)
 
 tcc:
 	tcc $(SRC) -D SDL_DISABLE_IMMINTRIN_H $(COMPILER_FLAGS) $(LINKER_FLAGS) -run

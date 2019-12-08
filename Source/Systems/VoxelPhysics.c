@@ -267,29 +267,3 @@ void ExplodeAtPoint(EntityID entity,Vector3 point,int radius){
         obj->modificationStartY = obj->modificationStartY <0? starty:obj->modificationStartY<starty?obj->modificationStartY:starty;
         obj->modificationEndY = obj->modificationEndY <0? endy-1:obj->modificationEndY>endy-1?obj->modificationEndY:endy-1;
 }
-
-
-//Lua interface functions
-
-static int l_GetGravity (lua_State *L) {
-    lua_settop(L, 0);
-    double gravity = GetGravity();
-    lua_pushnumber(L, gravity); //Put the returned number on the stack
-    return 1; //Return number of results
-}
-
-static int l_SetGravity (lua_State *L) {
-    //Get the arguments
-    double g = luaL_checknumber (L, 1);
-
-    SetGravity(g);
-    return 0; //Return number of results
-}
-
-void VoxelPhysicsRegisterLuaFunctions(){
-    lua_pushcfunction(Core.lua, l_GetGravity);
-    lua_setglobal(Core.lua, "GetGravity");
-
-    lua_pushcfunction(Core.lua, l_SetGravity);
-    lua_setglobal(Core.lua, "SetGravity");
-}

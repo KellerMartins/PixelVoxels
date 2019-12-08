@@ -1,5 +1,4 @@
 #include "Engine.h"
-#include "Engine/EngineLuaFunctions.h"
 #include "utils.h"
 
 #include "Components/VoxelModel.h"
@@ -32,7 +31,7 @@ void* f(void* p){
 
 int main(int argc, char *argv[]){
 
-	//OpenLogFile("gameLog.txt");
+	OpenLogFile("gameLog.txt");
 	InitECS(110);
 
 	//Register ECS Components
@@ -52,19 +51,6 @@ int main(int argc, char *argv[]){
 	if(RegisterNewSystem("UIRenderer",-2,CreateComponentMaskByID(0),(ComponentMask){0},&UIRendererInit,&UIRendererUpdate,&UIRendererFree) < 0) PrintLog(Error,"Main: Failed to register UIRenderer system!\n");
 	if(RegisterNewSystem("LuaSystem",1,CreateComponentMaskByID(1,luaScriptComponent),(ComponentMask){0},&LuaSystemInit,&LuaSystemUpdate,&LuaSystemFree) < 0) PrintLog(Error,"Main: Failed to register LuaSystem system!\n");
 	if(!InitEngine()) return 1;
-
-	//Register C functions in Lua
-	//From the engine
-	EngineRegisterLuaFunctions();
-	//From components
-	TransformRegisterLuaFunctions();
-	RigidBodyRegisterLuaFunctions();
-	PointLightRegisterLuaFunctions();
-	VoxelModelRegisterLuaFunctions();
-	LuaScriptRegisterLuaFunctions();
-	//From systems
-	VoxelPhysicsRegisterLuaFunctions();
-	UIRendererRegisterLuaFunctions();
 
 	InitFPS();
 	

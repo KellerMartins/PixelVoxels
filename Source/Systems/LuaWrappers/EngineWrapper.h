@@ -1,4 +1,8 @@
-#include "EngineLuaFunctions.h"
+#ifndef ENGINELUAWRAPPER_H
+#define ENGINELUAWRAPPER_H
+
+#include "../LuaSystem.h"
+#include "../../Engine.h"
 
 extern engineECS ECS;
 extern engineCore Core;
@@ -313,19 +317,19 @@ static const char *keyNames[] = {
 
 static int l_GetKey(lua_State *L){
     int button = luaL_checkoption(L, 1, NULL, keyNames);
-    lua_pushboolean(L, GetKey(button+SDL_SCANCODE_A) );
+    lua_pushboolean(L, GetKey((SDL_Scancode)(button+SDL_SCANCODE_A)) );
     return 1; //Return number of results
 }
 
 static int l_GetKeyDown(lua_State *L){
     int button = luaL_checkoption(L, 1, NULL, keyNames);
-    lua_pushboolean(L, GetKeyDown(button+SDL_SCANCODE_A) );
+    lua_pushboolean(L, GetKeyDown((SDL_Scancode)(button+SDL_SCANCODE_A)) );
     return 1; //Return number of results
 } 
 
 static int l_GetKeyUp(lua_State *L){
     int button = luaL_checkoption(L, 1, NULL, keyNames);
-    lua_pushboolean(L, GetKeyUp(button+SDL_SCANCODE_A) );
+    lua_pushboolean(L, GetKeyUp((SDL_Scancode)(button+SDL_SCANCODE_A)) );
     return 1; //Return number of results
 } 
 
@@ -350,89 +354,91 @@ static int l_GetMouseButtonUp(lua_State *L){
 }
 
 
-void EngineRegisterLuaFunctions(){
+static void EngineRegisterLuaFunctions(lua_State *L){
 
-    lua_pushcfunction(Core.lua, l_GetComponentID);
-    lua_setglobal(Core.lua, "GetComponentID");
+    lua_pushcfunction(L, l_GetComponentID);
+    lua_setglobal(L, "GetComponentID");
 
-    lua_pushcfunction(Core.lua, l_CreateEntity);
-    lua_setglobal(Core.lua, "CreateEntity");
-    lua_pushcfunction(Core.lua, l_DestroyEntity);
-    lua_setglobal(Core.lua, "DestroyEntity");    
-    lua_pushcfunction(Core.lua, l_IsValidEntity);
-    lua_setglobal(Core.lua, "IsValidEntity");    
+    lua_pushcfunction(L, l_CreateEntity);
+    lua_setglobal(L, "CreateEntity");
+    lua_pushcfunction(L, l_DestroyEntity);
+    lua_setglobal(L, "DestroyEntity");    
+    lua_pushcfunction(L, l_IsValidEntity);
+    lua_setglobal(L, "IsValidEntity");    
 
-    lua_pushcfunction(Core.lua, l_EntityIsPrefab);
-    lua_setglobal(Core.lua, "EntityIsPrefab");
-    lua_pushcfunction(Core.lua, l_GetPrefabPath);
-    lua_setglobal(Core.lua, "GetPrefabPath");
-    lua_pushcfunction(Core.lua, l_GetPrefabName);
-    lua_setglobal(Core.lua, "GetPrefabName");
+    lua_pushcfunction(L, l_EntityIsPrefab);
+    lua_setglobal(L, "EntityIsPrefab");
+    lua_pushcfunction(L, l_GetPrefabPath);
+    lua_setglobal(L, "GetPrefabPath");
+    lua_pushcfunction(L, l_GetPrefabName);
+    lua_setglobal(L, "GetPrefabName");
 
-    lua_pushcfunction(Core.lua, l_AddComponentToEntity);
-    lua_setglobal(Core.lua, "AddComponentToEntity");
-    lua_pushcfunction(Core.lua, l_RemoveComponentFromEntity);
-    lua_setglobal(Core.lua, "RemoveComponentFromEntity");
-    lua_pushcfunction(Core.lua, l_DuplicateEntity);
-    lua_setglobal(Core.lua, "DuplicateEntity");
+    lua_pushcfunction(L, l_AddComponentToEntity);
+    lua_setglobal(L, "AddComponentToEntity");
+    lua_pushcfunction(L, l_RemoveComponentFromEntity);
+    lua_setglobal(L, "RemoveComponentFromEntity");
+    lua_pushcfunction(L, l_DuplicateEntity);
+    lua_setglobal(L, "DuplicateEntity");
 
-    lua_pushcfunction(Core.lua, l_ExportEntityPrefab);
-    lua_setglobal(Core.lua, "ExportEntityPrefab");
-    lua_pushcfunction(Core.lua, l_ImportEntityPrefab);
-    lua_setglobal(Core.lua, "ImportEntityPrefab");
-    lua_pushcfunction(Core.lua, l_ExportScene);
-    lua_setglobal(Core.lua, "ExportScene");
-    lua_pushcfunction(Core.lua, l_LoadScene);
-    lua_setglobal(Core.lua, "LoadScene");
-    lua_pushcfunction(Core.lua, l_LoadSceneAdditive);
-    lua_setglobal(Core.lua, "LoadSceneAdditive");
+    lua_pushcfunction(L, l_ExportEntityPrefab);
+    lua_setglobal(L, "ExportEntityPrefab");
+    lua_pushcfunction(L, l_ImportEntityPrefab);
+    lua_setglobal(L, "ImportEntityPrefab");
+    lua_pushcfunction(L, l_ExportScene);
+    lua_setglobal(L, "ExportScene");
+    lua_pushcfunction(L, l_LoadScene);
+    lua_setglobal(L, "LoadScene");
+    lua_pushcfunction(L, l_LoadSceneAdditive);
+    lua_setglobal(L, "LoadSceneAdditive");
 
-    lua_pushcfunction(Core.lua, l_GetEntityComponents);
-    lua_setglobal(Core.lua, "GetEntityComponents");
-    lua_pushcfunction(Core.lua, l_EntityContainsComponents);
-    lua_setglobal(Core.lua, "EntityContainsComponents");
+    lua_pushcfunction(L, l_GetEntityComponents);
+    lua_setglobal(L, "GetEntityComponents");
+    lua_pushcfunction(L, l_EntityContainsComponents);
+    lua_setglobal(L, "EntityContainsComponents");
 
-    lua_pushcfunction(Core.lua, l_EntityIsParent);
-    lua_setglobal(Core.lua, "EntityIsParent");
-    lua_pushcfunction(Core.lua, l_EntityIsChild);
-    lua_setglobal(Core.lua, "EntityIsChild");
-    lua_pushcfunction(Core.lua, l_SetEntityParent);
-    lua_setglobal(Core.lua, "SetEntityParent");
-    lua_pushcfunction(Core.lua, l_GetEntityParent);
-    lua_setglobal(Core.lua, "GetEntityParent");
-    lua_pushcfunction(Core.lua, l_UnsetParent);
-    lua_setglobal(Core.lua, "UnsetParent");
+    lua_pushcfunction(L, l_EntityIsParent);
+    lua_setglobal(L, "EntityIsParent");
+    lua_pushcfunction(L, l_EntityIsChild);
+    lua_setglobal(L, "EntityIsChild");
+    lua_pushcfunction(L, l_SetEntityParent);
+    lua_setglobal(L, "SetEntityParent");
+    lua_pushcfunction(L, l_GetEntityParent);
+    lua_setglobal(L, "GetEntityParent");
+    lua_pushcfunction(L, l_UnsetParent);
+    lua_setglobal(L, "UnsetParent");
 
-    lua_pushcfunction(Core.lua, l_GetSystemID);
-    lua_setglobal(Core.lua, "GetSystemID");
-    lua_pushcfunction(Core.lua, l_EnableSystem);
-    lua_setglobal(Core.lua, "EnableSystem");
-    lua_pushcfunction(Core.lua, l_DisableSystem);
-    lua_setglobal(Core.lua, "DisableSystem");
-    lua_pushcfunction(Core.lua, l_IsSystemEnabled);
-    lua_setglobal(Core.lua, "IsSystemEnabled");
+    lua_pushcfunction(L, l_GetSystemID);
+    lua_setglobal(L, "GetSystemID");
+    lua_pushcfunction(L, l_EnableSystem);
+    lua_setglobal(L, "EnableSystem");
+    lua_pushcfunction(L, l_DisableSystem);
+    lua_setglobal(L, "DisableSystem");
+    lua_pushcfunction(L, l_IsSystemEnabled);
+    lua_setglobal(L, "IsSystemEnabled");
 
-    lua_pushcfunction(Core.lua, l_ExitGame);
-    lua_setglobal(Core.lua, "ExitGame");
-    lua_pushcfunction(Core.lua, l_GameExited);
-    lua_setglobal(Core.lua, "GameExited");
+    lua_pushcfunction(L, l_ExitGame);
+    lua_setglobal(L, "ExitGame");
+    lua_pushcfunction(L, l_GameExited);
+    lua_setglobal(L, "GameExited");
 
-    lua_pushcfunction(Core.lua, l_PositionToGameScreenCoords);
-    lua_setglobal(Core.lua, "PositionToGameScreenCoords");
-    lua_pushcfunction(Core.lua, l_MoveCamera);
-    lua_setglobal(Core.lua, "MoveCamera");
+    lua_pushcfunction(L, l_PositionToGameScreenCoords);
+    lua_setglobal(L, "PositionToGameScreenCoords");
+    lua_pushcfunction(L, l_MoveCamera);
+    lua_setglobal(L, "MoveCamera");
 
-    lua_pushcfunction(Core.lua, l_GetKey);
-    lua_setglobal(Core.lua, "GetKey");
-    lua_pushcfunction(Core.lua, l_GetKeyDown);
-    lua_setglobal(Core.lua, "GetKeyDown");
-    lua_pushcfunction(Core.lua, l_GetKeyUp);
-    lua_setglobal(Core.lua, "GetKeyUp");
+    lua_pushcfunction(L, l_GetKey);
+    lua_setglobal(L, "GetKey");
+    lua_pushcfunction(L, l_GetKeyDown);
+    lua_setglobal(L, "GetKeyDown");
+    lua_pushcfunction(L, l_GetKeyUp);
+    lua_setglobal(L, "GetKeyUp");
 
-    lua_pushcfunction(Core.lua, l_GetMouseButton);
-    lua_setglobal(Core.lua, "GetMouseButton");
-    lua_pushcfunction(Core.lua, l_GetMouseButtonDown);
-    lua_setglobal(Core.lua, "GetMouseButtonDown");
-    lua_pushcfunction(Core.lua, l_GetMouseButtonUp);
-    lua_setglobal(Core.lua, "GetMouseButtonUp");
+    lua_pushcfunction(L, l_GetMouseButton);
+    lua_setglobal(L, "GetMouseButton");
+    lua_pushcfunction(L, l_GetMouseButtonDown);
+    lua_setglobal(L, "GetMouseButtonDown");
+    lua_pushcfunction(L, l_GetMouseButtonUp);
+    lua_setglobal(L, "GetMouseButtonUp");
 }
+
+#endif

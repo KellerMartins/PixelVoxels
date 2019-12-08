@@ -47,9 +47,6 @@ int InitEngine(){
 		EndEngine(1);
 		return 0;
 	}
-	
-	Core.lua = luaL_newstate();
-	luaL_openlibs(Core.lua);
 
 	//Call initialization function of all systems
 	ListCellPointer current = GetFirstCell(ECS.SystemList);
@@ -128,12 +125,9 @@ void EndEngine(int errorOcurred){
 		TTF_Quit();
 
 	if(SDL_WasInit(SDL_INIT_EVERYTHING)!=0)
-    	SDL_Quit();
+		SDL_Quit();
 
-	if(Core.lua)
-		lua_close(Core.lua);
-
-    if(errorOcurred){
+	if(errorOcurred){
 		PrintLog(Warning,"Engine finished with errors!\n");
 		system("pause");
 	}else{

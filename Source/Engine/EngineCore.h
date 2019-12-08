@@ -19,7 +19,7 @@ typedef struct engineCore{
     SDL_Renderer * renderer;
     SDL_Window* window;	
     SDL_GLContext glContext;
-    lua_State *lua;
+
 }engineCore;
 
 typedef struct engineScreen{

@@ -15,6 +15,4 @@ int GetLuaScriptIndex(EntityID entity);
 char *GetLuaScriptName(EntityID entity);
 char *GetLuaScriptPath(EntityID entity);
 
-void LuaScriptRegisterLuaFunctions();
-
 #endif

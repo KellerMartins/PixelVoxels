@@ -7,10 +7,6 @@
 #include <time.h>
 #include <string.h>
 
-#include <lua5.3/lua.h>
-#include <lua5.3/lualib.h>
-#include <lua5.3/lauxlib.h>
-
 #include "Libs/cJSON.h"
 
 #include <SDL2/SDL.h>
@@ -32,7 +28,5 @@ int InitEngine();
 void EngineUpdate();
 void EngineUpdateEnd();
 void EndEngine(int errorOcurred);
-
-
 
 #endif

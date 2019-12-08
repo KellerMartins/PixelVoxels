@@ -17,7 +17,5 @@ void GetGlobalTransform(EntityID entity, Vector3 *outPos, Vector3 *outEuler, Mat
 void SetPosition(EntityID entity, Vector3 pos);
 void SetRotation(EntityID entity, Vector3 rot);
 
-void TransformRegisterLuaFunctions();
-
 
 #endif

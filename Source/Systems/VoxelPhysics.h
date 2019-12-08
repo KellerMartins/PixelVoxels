@@ -18,6 +18,4 @@ void VoxelPhysicsInit();
 void VoxelPhysicsUpdate();
 void VoxelPhysicsFree();
 
-void VoxelPhysicsRegisterLuaFunctions();
-
 #endif

@@ -12,6 +12,4 @@ void DrawRectangleTextured(Vector3 min, Vector3 max, GLuint texture, float r, fl
 void DrawPoint(Vector3 pos, float size, GLuint texture, float r, float g, float b);
 void DrawLine(Vector3 min, Vector3 max, float thickness, float r, float g, float b);
 
-void UIRendererRegisterLuaFunctions();
-
 #endif

@@ -27,6 +27,4 @@ void SetUseGravity(EntityID entity,unsigned booleanVal);
 int IsStaticRigidBody(EntityID entity);
 void SetStaticRigidBody(EntityID entity,unsigned booleanVal);
 
-void RigidBodyRegisterLuaFunctions();
-
 #endif

@@ -1,6 +1,8 @@
 #include "LuaSystem.h"
+#include "LuaWrappers/Wrappers.h"
 
 static System *ThisSystem;
+static lua_State *lua;
 
 extern engineECS ECS;
 extern engineCore Core;
@@ -20,13 +22,18 @@ int ReloadScript(LuaScript* ls);
 
 //Runs on engine start
 void LuaSystemInit(){
+    lua = luaL_newstate();
+	luaL_openlibs(lua);
+
+    RegisterWrappers(lua);
+
     ThisSystem = (System*)GetElementAt(ECS.SystemList,GetSystemID("LuaSystem"));
     luaScriptList = InitList(sizeof(LuaScript));
 }
 
 //Runs each GameLoop iteration
 void LuaSystemUpdate(){
-    lua_State *L = Core.lua;
+    lua_State *L = lua;
     int status;
 
     //Run for all entities
@@ -68,6 +75,9 @@ void LuaSystemUpdate(){
 
 //Runs at engine finish
 void LuaSystemFree(){
+    if(lua)
+		lua_close(lua);
+    
     ListCellPointer cell = GetFirstCell(luaScriptList);
     while(cell){
         ListCellPointer aux = cell;
@@ -78,7 +88,7 @@ void LuaSystemFree(){
 }
 
 int LoadNewScript(char* scriptPath, char* scriptName, EntityID entity){
-    lua_State *L = Core.lua;
+    lua_State *L = lua;
     
     //Concatenate the path and name to a full path and add an '/' to the path in case it is missing
     char fullPath[512+256];
@@ -206,7 +216,7 @@ int ReloadScript(LuaScript* ls){
     }
     strcat(fullPath,ls->scriptName);
 
-    lua_State *L = Core.lua;
+    lua_State *L = lua;
 
     //Reload the script chunk into Lua
     if(luaL_loadfile(L, fullPath)) {

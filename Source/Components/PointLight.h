@@ -27,5 +27,4 @@ void SetPointLightRange(EntityID entity, float range);
 float GetPointLightHueShift(EntityID entity);
 void SetPointLightHueShift(EntityID entity, float shift);
 
-void PointLightRegisterLuaFunctions();
 #endif

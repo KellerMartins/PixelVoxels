@@ -96,7 +96,7 @@ ComponentMask CreateComponentMaskByName(int numComp, ...);
 ComponentMask CreateComponentMaskByID(int numComp, ...);
 
 EntityID CreateEntity();
-void DestroyEntity();
+void DestroyEntity(EntityID entity);
 int IsValidEntity(EntityID entity);
 int EntityIsPrefab(EntityID entity);
 char *GetPrefabPath(EntityID entity);

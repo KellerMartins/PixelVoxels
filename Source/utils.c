@@ -104,16 +104,16 @@ void InsertTrie(Trie *trie, const char* key, const void *value, int size, TrieTy
 	int i = 0;
 
 	Trie* cell = trie;
-	while(cell->branch[(int)key[i]] && key[i] != '\0'){
-		cell = cell->branch[(int)key[i++]];
+	while(cell->branch[(unsigned char)key[i]] && key[i] != '\0'){
+		cell = cell->branch[(unsigned char)key[i++]];
 	}
 
 	//If this key is not contained in the trie
-	if(!cell->branch[(int)key[i]]){
+	if(!cell->branch[(unsigned char)key[i]]){
 		//Insert the branches that are missing
 		while(key[i] != '\0'){
 			Trie* newCell = calloc(1,sizeof(Trie));
-			cell->branch[(int)key[i++]] = newCell;
+			cell->branch[(unsigned char)key[i++]] = newCell;
 			cell = newCell;
 		}
 		//cell now points to the '\0' cell
@@ -144,8 +144,8 @@ inline void InsertTrieString(Trie *trie, const char* key, const char* value){
 Trie *TrieGetDataCell(Trie *trie, const char* key){
 	int i = 0;
 	Trie* cell = trie;
-	while(cell->branch[(int)key[i]] && key[i] != '\0'){
-		cell = cell->branch[(int)key[i++]];
+	while(cell->branch[(unsigned char)key[i]] && key[i] != '\0'){
+		cell = cell->branch[(unsigned char)key[i++]];
 	}
 
 	return (key[i] == '\0')? cell:NULL;

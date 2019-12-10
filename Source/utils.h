@@ -109,7 +109,7 @@ typedef struct TrieElement{
     };
 }TrieElement;
 
-#define TRIE_ALPHABET_SIZE 127
+#define TRIE_ALPHABET_SIZE 256
 typedef struct TrieCell{
     TrieType elementType;
     unsigned maxKeySize;

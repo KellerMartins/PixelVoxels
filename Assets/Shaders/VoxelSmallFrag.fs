@@ -60,6 +60,7 @@ void main(void) {
 
     float k = 1.0;
     float expos = 1.2;
-    gl_FragColor.rgb = tonemap( (log2(1.0-ex_Color*0.95)/-k) * (ambientAndSun + pointLighting) * expos);
+    float constrast = 1.2;
+    gl_FragColor.rgb = tonemap( (log2(1.0-ex_Color*0.95)/-k) * (ambientAndSun + pointLighting) * expos)*constrast;
     gl_FragColor.a = outlineHeight;
 }

@@ -1,0 +1,57 @@
+{
+	"data":	{
+		"sunDirection":	[0.634782612323761, 0.16521738469600677, -1.5]
+	},
+	"entities":	[{
+			"Transform":	{
+				"position":	[22.806064605712891, -12.141356468200684, 44.024662017822266],
+				"rotation":	[0, 0, 0]
+			},
+			"VoxelModel":	{
+				"modelPath":	"Assets/Game/Models/",
+				"modelName":	"plasmaPistolSmall.vox",
+				"smallScale":	true,
+				"center":	[0, 0, 0]
+			},
+			"RigidBody":	{
+				"mass":	1,
+				"bounciness":	0.699999988079071,
+				"velocity":	[0, 0, 0],
+				"acceleration":	[0, 0, 0],
+				"useGravity":	true,
+				"isStatic":	false
+			}
+		}, {
+			"Transform":	{
+				"position":	[-91.195053100585938, 46.579319000244141, 3.7431008815765381],
+				"rotation":	[0, 0, -90]
+			},
+			"VoxelModel":	{
+				"modelPath":	"Assets/Game/Models/",
+				"modelName":	"dune.vox",
+				"smallScale":	false,
+				"center":	[0, 0, 0]
+			},
+			"RigidBody":	{
+				"mass":	1,
+				"bounciness":	0.20000000298023224,
+				"velocity":	[0, 0, 0],
+				"acceleration":	[0, 0, 0],
+				"useGravity":	true,
+				"isStatic":	true
+			}
+		}, {
+			"prefabPath":	"Assets/Game/Prefabs/",
+			"prefabName":	"newPrefab.prefab",
+			"Transform":	{
+				"position":	[-51.232387542724609, -8.66939640045166, 65.651168823242188],
+				"rotation":	[0, 0, 0]
+			},
+			"VoxelModel":	{
+				"modelPath":	"Assets/Game/Models",
+				"modelName":	"Spaceship.vox",
+				"smallScale":	false,
+				"center":	[16, 12, 6]
+			}
+		}]
+}
